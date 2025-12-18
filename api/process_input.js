@@ -1,5 +1,7 @@
 import * as cheerio from 'cheerio';
-import pdfInteraction from 'pdf-parse/lib/pdf-parse.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdfInteraction = require('pdf-parse');
 
 export const config = {
     api: {
@@ -41,26 +43,50 @@ export default async function handler(req, res) {
             // Remove unwanted elements
             $('script, style, nav, footer, header, noscript, iframe, .ad, .ads, .sidebar').remove();
 
-            extractedText = $('body').text().replace(/\s+/g, ' ').trim();
-            metadata = {
-                title: $('title').text() || content,
-                url: content
-            };
+            // YouTube specific metadata
+            const isVideo = content.includes('youtube.com') || content.includes('youtu.be') || content.includes('vimeo.com');
+
+            if (isVideo) {
+                // Try multiple sources for robust metadata
+                const ogTitle = $('meta[property="og:title"]').attr('content');
+                const metaTitle = $('meta[name="title"]').attr('content');
+                const docTitle = $('title').text();
+
+                const ogDesc = $('meta[property="og:description"]').attr('content');
+                const metaDesc = $('meta[name="description"]').attr('content');
+
+                const finalTitle = ogTitle || metaTitle || docTitle || "Untitled Video";
+                const finalDesc = ogDesc || metaDesc || "No description available.";
+
+                metadata = {
+                    title: finalTitle,
+                    description: finalDesc,
+                    image: $('meta[property="og:image"]').attr('content'),
+                    url: content
+                };
+                extractedText = `[VIDEO LINK ANALYSIS]\nTitle: ${finalTitle}\nDescription: ${finalDesc}\nURL: ${content}\n\n(Note: This is metadata only. The AI cannot watch the video but can discuss the topic based on this title and description.)`;
+            } else {
+                extractedText = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 20000); // Limit text length
+                metadata = {
+                    title: $('title').text() || content,
+                    url: content
+                };
+            }
 
         } else if (type === 'pdf') {
             // Content is expected to be base64 string
             const buffer = Buffer.from(content, 'base64');
             const data = await pdfInteraction(buffer);
-            
+
             extractedText = data.text.replace(/\s+/g, ' ').trim();
             metadata = {
                 pageCount: data.numpages,
                 info: data.info
             };
         } else if (type === 'doc' || type === 'txt') {
-             // Basic text decoding for now, extendable for docx later
-             const buffer = Buffer.from(content, 'base64');
-             extractedText = buffer.toString('utf-8');
+            // Basic text decoding for now, extendable for docx later
+            const buffer = Buffer.from(content, 'base64');
+            extractedText = buffer.toString('utf-8');
         } else {
             return res.status(400).json({ error: 'Unsupported type' });
         }

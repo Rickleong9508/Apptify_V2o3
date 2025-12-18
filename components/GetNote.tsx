@@ -310,7 +310,19 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
 
     const handleGlobalAskAi = async () => {
         if (!globalChatInput.trim() && globalResources.length === 0) return;
-        if (!apiKey) { alert("Please set your AI API Key in Global Settings first."); return; }
+
+        if (!apiKey) {
+            // Show error in chat instead of alert
+            setGlobalMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                title: 'System',
+                content: "⚠️ Configuration Error: Please set your AI API Key in 'Global Settings' (icon on main dashboard) to use the AI features.",
+                date: new Date().toISOString(),
+                role: 'system',
+                type: 'note'
+            }]);
+            return;
+        }
 
         const userQ = globalChatInput;
         setGlobalChatInput('');
@@ -330,6 +342,34 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
             }
         });
 
+        // --- AUTO-DETECT & PROCESS INLINE LINKS ---
+        try {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const foundUrls = userQ.match(urlRegex);
+
+            if (foundUrls && foundUrls.length > 0) {
+                // Notify user we are scanning (optional visual cue could be added to UI, but acting implicitly for now)
+                // console.log("Scanning URLs:", foundUrls);
+
+                for (const url of foundUrls) {
+                    try {
+                        const res = await fetch('/api/process_input', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type: 'url', content: url })
+                        });
+                        const data = await res.json();
+                        if (data.text) {
+                            resourceContext += `\n[Analyzed Link: ${url}]\n${data.text.slice(0, 5000)}\n--------------------\n`;
+                        }
+                    } catch (e) {
+                        console.error("Link scan failed", e);
+                        resourceContext += `\n[Link Error: ${url}] - Failed to access content.\n`;
+                    }
+                }
+            }
+        } catch (e) { console.error("URL Scan Error", e); }
+
         // Clear resources after sending (or keep them? usually clear like attachments)
         const usedResources = [...globalResources]; // Snapshot for display if needed
         setGlobalResources([]); // Clear UI
@@ -345,7 +385,9 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         setGlobalMessages(prev => [...prev, qNote]);
 
         // Build Context from ALL notes
-        let context = "You are the Global Assistant for Apptify. You have access to the user's notes, tasks, and attached resources.\n\n";
+        let context = "You are the 'GetNote' Manager. Your scope is STRICTLY limited to managing the user's Notes, Tasks, and analyzed Resources provided below.\n";
+        context += "Do NOT answer general knowledge questions (like 'who is the president', 'weather', etc.) unless they are explicitly related to a task or note content. If asked about something outside this scope, politely decline and ask to return to the notes.\n";
+        context += "You can analyze attached images and video links (metadata) to help the user manage their knowledge base.\n\n";
 
         if (resourceContext) {
             context += "--- ATTACHED RESOURCES (High Priority) ---\n" + resourceContext + "\n----------------------------------------\n\n";
