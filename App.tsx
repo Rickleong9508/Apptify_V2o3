@@ -63,8 +63,8 @@ const App: React.FC = () => {
               onClick={() => setCurrentApp(item.id as AppMode)}
               className="group relative h-80 rounded-[40px] overflow-hidden text-left transition-all duration-500 hover:-translate-y-2"
             >
-              {/* Liquid Glass Background */}
-              <div className="absolute inset-0 bg-white/40 dark:bg-white/5 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl transition-all duration-500 group-hover:bg-white/60 dark:group-hover:bg-white/10 group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)]"></div>
+              {/* Liquid Glass Background - Frosted Blue Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-blue-500/5 to-transparent backdrop-blur-2xl border border-white/40 shadow-xl transition-all duration-500 group-hover:bg-blue-400/30 group-hover:shadow-[0_20px_50px_rgba(59,130,246,0.15)]"></div>
 
               {/* Inner Gradient Glow */}
               <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${item.gradient} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
