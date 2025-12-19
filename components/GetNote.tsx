@@ -439,6 +439,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         // Build Context from ALL notes
         let context = "You are the 'GetNote' Manager. Your scope is to manage the user's Notes, Tasks, and analyzed Resources provided below.\n";
         context += "IMPORTANT: If the user provides a link or URL, I have already analyzed it for you in the 'ATTACHED RESOURCES' section. Your task is to READ that analyzed content and answer the user's questions about it, or summarize it if asked. Do NOT say you cannot access the internet; instead, use the analyzed text provided to you.\n";
+        context += "Your primary mission is to help the user manage and retrieve their data. When asked to find, show, or retrieve a specific note or piece of data, you MUST provide the FULL and ORIGINAL content of that note. Do NOT summarize, sanitize, paraphrase, or modify the content of the retrieved note. Just copy it for the user exactly as it exists in the database.\n";
         context += "Do NOT answer general knowledge questions using external info not provided here, unless the user explicitly provided a link for you to read. If asked about something unrelated to notes/tasks/links, politely decline.\n";
         context += "You can analyze attached images and video links (metadata) to help the user manage their knowledge base.\n\n";
 
@@ -449,7 +450,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         context += "--- USER NOTES ---\n";
         notes.forEach(n => {
             if (n.title || n.content) {
-                context += `Note: ${n.title || 'Untitled'}\nContent: ${n.content?.slice(0, 500)}\n\n`;
+                context += `Note: ${n.title || 'Untitled'}\nContent: ${n.content}\n\n`;
             }
         });
 
