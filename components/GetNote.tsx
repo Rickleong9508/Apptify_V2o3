@@ -635,9 +635,9 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                             )}
                         </div>
 
-                        <div className="p-4 pb-8 backdrop-blur-sm">
+                        <div className="p-4 pb-12 backdrop-blur-sm">
                             <div
-                                className="relative rounded-[28px] focus-within:shadow-inner transition-all flex items-end p-2"
+                                className="relative rounded-[28px] focus-within:shadow-inner transition-all flex items-end p-2 mb-4"
                                 style={{
                                     background: "#E0E5EC",
                                     boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
@@ -655,62 +655,12 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                     }}
                                     placeholder={isListening ? "Listening..." : "Ask anything..."}
                                     rows={1}
-                                    className="w-full bg-transparent px-4 py-3 pb-3 pr-20 text-sm font-medium text-gray-700 placeholder-gray-400 outline-none resize-none max-h-[150px] scrollbar-thin scrollbar-thumb-gray-300"
+                                    className="w-full bg-transparent px-4 py-3 text-sm font-medium text-gray-700 placeholder-gray-400 outline-none resize-none max-h-[150px] scrollbar-thin scrollbar-thumb-gray-300"
                                     style={{
                                         minHeight: '44px',
                                         overflowY: globalChatInput.length > 50 ? 'auto' : 'hidden'
                                     }}
                                 />
-
-                                {/* Controls Container */}
-                                <div className="absolute right-3 bottom-2 flex items-center gap-2">
-
-                                    {/* Mic & Lang */}
-                                    <div className="flex items-center gap-1 bg-[#E0E5EC] rounded-full px-1 py-1 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]">
-                                        <button
-                                            onClick={() => setSpeechLang(prev => prev === 'zh-CN' ? 'en-US' : 'zh-CN')}
-                                            className="text-[10px] font-bold text-gray-500 hover:text-black px-1.5 py-0.5 rounded transition-colors uppercase"
-                                            title="Switch Language"
-                                        >
-                                            {speechLang === 'zh-CN' ? 'CN' : 'EN'}
-                                        </button>
-                                        <button
-                                            onClick={toggleListening}
-                                            className={`p-1.5 rounded-full transition-all ${isListening ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-blue-500'}`}
-                                            title="Voice Input"
-                                        >
-                                            <Mic size={14} />
-                                        </button>
-                                    </div>
-
-                                    {/* Resource Actions */}
-                                    <div className="flex items-center gap-1">
-                                        {isProcessingResource ? (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mx-2"></div>
-                                        ) : (
-                                            <>
-                                                <label className="p-2 text-gray-400 hover:text-blue-500 rounded-full transition-colors cursor-pointer active:scale-90" title="Upload File (PDF/Doc/Image)">
-                                                    <Paperclip size={18} />
-                                                    <input type="file" className="hidden" onChange={(e) => handleResourceAdd(e.target.files?.[0] || null)} />
-                                                </label>
-                                            </>
-                                        )}
-                                    </div>
-
-                                    {/* Send Button */}
-                                    <button
-                                        onClick={handleGlobalAskAi}
-                                        disabled={!globalChatInput.trim()}
-                                        className="w-10 h-10 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 transition-all text-white"
-                                        style={{
-                                            background: globalChatInput.trim() ? '#4F46E5' : '#E0E5EC',
-                                            boxShadow: globalChatInput.trim() ? "3px 3px 6px rgba(79, 70, 229, 0.4)" : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff",
-                                            color: globalChatInput.trim() ? 'white' : '#9CA3AF'
-                                        }}
-                                    >
-                                        {globalChatInput.trim() ? <ArrowLeft size={16} className="rotate-90 md:rotate-0" /> : <Sparkles size={16} />}
-                                    </button>
-                                </div>
 
                                 {/* Active Resources Chips */}
                                 {globalResources.length > 0 && (
@@ -723,6 +673,62 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                         ))}
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Controls Bar Below */}
+                            <div className="flex items-center justify-between px-1">
+                                <div className="flex items-center gap-3">
+                                    {/* Mic & Lang */}
+                                    <div className="flex items-center gap-1 bg-[#E0E5EC] rounded-full px-2 py-1.5 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]">
+                                        <button
+                                            onClick={() => setSpeechLang(prev => prev === 'zh-CN' ? 'en-US' : 'zh-CN')}
+                                            className="text-[10px] font-bold text-gray-500 hover:text-black px-1.5 py-0.5 rounded transition-colors uppercase"
+                                            title="Switch Language"
+                                        >
+                                            {speechLang === 'zh-CN' ? 'CN' : 'EN'}
+                                        </button>
+                                        <button
+                                            onClick={toggleListening}
+                                            className={`p-1.5 rounded-full transition-all ${isListening ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-blue-500'}`}
+                                            title="Voice Input"
+                                        >
+                                            <Mic size={16} />
+                                        </button>
+                                    </div>
+
+                                    {/* Resource Actions */}
+                                    <div className="flex items-center gap-1">
+                                        {isProcessingResource ? (
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400 mx-2"></div>
+                                        ) : (
+                                            <label
+                                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-500 rounded-full transition-all cursor-pointer active:scale-90"
+                                                title="Upload File (PDF/Doc/Image)"
+                                                style={{
+                                                    background: "#E0E5EC",
+                                                    boxShadow: "4px 4px 8px #b8b9be, -4px -4px 8px #ffffff"
+                                                }}
+                                            >
+                                                <Paperclip size={18} />
+                                                <input type="file" className="hidden" onChange={(e) => handleResourceAdd(e.target.files?.[0] || null)} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Send Button */}
+                                <button
+                                    onClick={handleGlobalAskAi}
+                                    disabled={!globalChatInput.trim() && globalResources.length === 0}
+                                    className="w-12 h-12 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 transition-all text-white"
+                                    style={{
+                                        background: globalChatInput.trim() || globalResources.length > 0 ? '#4F46E5' : '#E0E5EC',
+                                        boxShadow: globalChatInput.trim() || globalResources.length > 0 ? "4px 4px 10px rgba(79, 70, 229, 0.4)" : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff",
+                                        color: globalChatInput.trim() || globalResources.length > 0 ? 'white' : '#9CA3AF'
+                                    }}
+                                >
+                                    {globalChatInput.trim() || globalResources.length > 0 ? <Send size={20} /> : <Sparkles size={20} />}
+                                </button>
                             </div>
                         </div>
                     </div>
