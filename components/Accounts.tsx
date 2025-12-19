@@ -291,12 +291,12 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity" onClick={() => setSelectedAccount(null)} />
 
                     <div
-                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[70vh] relative z-10 animate-scale-in origin-center my-auto"
+                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[75vh] relative z-10 animate-scale-in origin-center my-auto"
                         style={{ boxShadow: "10px 10px 30px rgba(0,0,0,0.1), -10px -10px 30px rgba(255,255,255,0.7)" }}
                     >
 
-                        <div className="p-8 pb-4">
-                            <div className="flex justify-between items-start mb-6">
+                        <div className="p-6 pb-2">
+                            <div className="flex justify-between items-start mb-4">
                                 <div className="flex-1 mr-4">
                                     {/* Editable Title */}
                                     {isEditingName ? (
@@ -366,7 +366,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                             {/* ACTION AREA - Changes based on Tab */}
                             {modalTab === 'transactions' ? (
                                 <>
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         <div className="flex items-center gap-3">
                                             <div className="flex-1 p-1 rounded-xl flex items-center transition-all bg-[#E0E5EC]" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
                                                 <span className="pl-4 text-gray-400 font-bold text-sm">RM</span>
@@ -375,7 +375,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                                                     value={amount}
                                                     onChange={e => setAmount(e.target.value)}
                                                     placeholder="0.00"
-                                                    className="w-full p-3 bg-transparent border-none focus:ring-0 text-xl font-bold text-gray-700 placeholder-gray-300 outline-none"
+                                                    className="w-full p-2 bg-transparent border-none focus:ring-0 text-xl font-bold text-gray-700 placeholder-gray-300 outline-none"
                                                 />
                                             </div>
                                         </div>
@@ -385,11 +385,11 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                                             value={description}
                                             onChange={e => setDescription(e.target.value)}
                                             placeholder="Description (e.g. Salary)"
-                                            className="w-full p-4 rounded-xl border-none focus:ring-0 text-sm font-medium transition-all text-gray-700 placeholder-gray-400 bg-[#E0E5EC] outline-none"
+                                            className="w-full p-3 rounded-xl border-none focus:ring-0 text-sm font-medium transition-all text-gray-700 placeholder-gray-400 bg-[#E0E5EC] outline-none"
                                             style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
                                         />
 
-                                        <div className="grid grid-cols-2 gap-4 pt-2">
+                                        <div className="grid grid-cols-2 gap-3 pt-1">
                                             <button
                                                 onClick={() => handleTransaction('IN')}
                                                 className="py-3 rounded-xl flex items-center justify-center space-x-2 text-green-600 transition-all active:scale-95 group font-bold bg-[#E0E5EC]"
@@ -411,8 +411,8 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                                 </>
                             ) : (
                                 <>
-                                    <div className="p-4 rounded-2xl mb-4 bg-[#E0E5EC]" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2 px-1">
+                                    <div className="p-3 rounded-2xl mb-3 bg-[#E0E5EC]" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2 px-1">
                                             <Plus size={12} strokeWidth={3} />
                                             Add New Reserve
                                         </h4>
@@ -448,8 +448,8 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                             )}
                         </div>
 
-                        <div className="flex-1 overflow-auto p-0 min-h-0 bg-[#E0E5EC]">
-                            <div className="px-8 py-3 bg-[#E0E5EC]/80 border-b border-gray-200 sticky top-0 backdrop-blur-md z-10">
+                        <div className="flex-1 overflow-auto p-0 min-h-[140px] bg-[#E0E5EC]">
+                            <div className="px-8 py-2 bg-[#E0E5EC]/80 border-b border-gray-200 sticky top-0 backdrop-blur-md z-10">
                                 <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider">
                                     {modalTab === 'transactions' ? 'Recent Activity' : 'Active Reservations'}
                                 </h4>
