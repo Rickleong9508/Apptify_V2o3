@@ -286,10 +286,13 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
 
             {/* Glass Modal */}
             {selectedAccount && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm transition-opacity" onClick={() => setSelectedAccount(null)} />
 
-                    <div className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh] relative z-10 animate-scale-in origin-center my-auto">
+                    <div
+                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[65vh] relative z-10 animate-scale-in origin-center my-auto"
+                        style={{ boxShadow: "8px 8px 24px rgba(163,177,198,0.25), -8px -8px 24px rgba(255,255,255, 0.6)" }}
+                    >
 
                         <div className="p-8 pb-4">
                             <div className="flex justify-between items-start mb-6">
@@ -444,7 +447,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                             )}
                         </div>
 
-                        <div className="flex-1 overflow-auto p-0 min-h-[200px] bg-[#E0E5EC]">
+                        <div className="flex-1 overflow-auto p-0 min-h-0 bg-[#E0E5EC]">
                             <div className="px-8 py-3 bg-[#E0E5EC]/80 border-b border-gray-200 sticky top-0 backdrop-blur-md z-10">
                                 <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider">
                                     {modalTab === 'transactions' ? 'Recent Activity' : 'Active Reservations'}

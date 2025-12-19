@@ -289,9 +289,9 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
       <WealthAiAssistant onProcessCommand={processAiCommand} />
 
       {/* FLOATING CLAY NAVIGATION DOCK */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 w-auto animate-fade-in-up opacity-0" style={{ animationDelay: '200ms' }}>
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] md:w-auto max-w-lg transition-all duration-300">
         <nav
-          className="bg-[#E0E5EC] rounded-[30px] px-6 py-4 flex items-center gap-6 transition-all hover:scale-[1.02]"
+          className="bg-[#E0E5EC] rounded-[30px] px-4 py-3 md:px-6 md:py-4 flex items-center justify-between md:gap-6 transition-all hover:scale-[1.02]"
           style={{
             boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
           }}
