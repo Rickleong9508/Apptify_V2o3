@@ -209,7 +209,8 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+            const nextHeight = textareaRef.current.scrollHeight;
+            textareaRef.current.style.height = `${Math.min(nextHeight, 150)}px`;
         }
     }, [globalChatInput]);
 
@@ -654,8 +655,11 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                     }}
                                     placeholder={isListening ? "Listening..." : "Ask anything..."}
                                     rows={1}
-                                    className="w-full bg-transparent px-4 py-3 pr-24 text-sm font-medium text-gray-700 placeholder-gray-400 outline-none resize-none max-h-[150px] scrollbar-thin scrollbar-thumb-gray-300"
-                                    style={{ minHeight: '44px' }}
+                                    className="w-full bg-transparent px-4 py-3 pb-3 pr-20 text-sm font-medium text-gray-700 placeholder-gray-400 outline-none resize-none max-h-[150px] scrollbar-thin scrollbar-thumb-gray-300"
+                                    style={{
+                                        minHeight: '44px',
+                                        overflowY: globalChatInput.length > 50 ? 'auto' : 'hidden'
+                                    }}
                                 />
 
                                 {/* Controls Container */}
@@ -685,16 +689,6 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mx-2"></div>
                                         ) : (
                                             <>
-                                                <button
-                                                    onClick={() => {
-                                                        const url = prompt("Enter URL to analyze:");
-                                                        if (url) handleResourceAdd(null, url);
-                                                    }}
-                                                    className="p-2 text-gray-400 hover:text-blue-500 rounded-full transition-colors active:scale-90"
-                                                    title="Add URL"
-                                                >
-                                                    <LinkIcon size={18} />
-                                                </button>
                                                 <label className="p-2 text-gray-400 hover:text-blue-500 rounded-full transition-colors cursor-pointer active:scale-90" title="Upload File (PDF/Doc/Image)">
                                                     <Paperclip size={18} />
                                                     <input type="file" className="hidden" onChange={(e) => handleResourceAdd(e.target.files?.[0] || null)} />
