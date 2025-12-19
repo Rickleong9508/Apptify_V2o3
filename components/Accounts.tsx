@@ -291,12 +291,12 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity" onClick={() => setSelectedAccount(null)} />
 
                     <div
-                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[75vh] relative z-10 animate-scale-in origin-center my-auto"
+                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] relative z-10 animate-scale-in origin-center my-auto"
                         style={{ boxShadow: "10px 10px 30px rgba(0,0,0,0.1), -10px -10px 30px rgba(255,255,255,0.7)" }}
                     >
 
-                        <div className="p-6 pb-2">
-                            <div className="flex justify-between items-start mb-4">
+                        <div className="px-6 pt-6 pb-2">
+                            <div className="flex justify-between items-start mb-2">
                                 <div className="flex-1 mr-4">
                                     {/* Editable Title */}
                                     {isEditingName ? (
@@ -319,18 +319,18 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                                     )}
 
                                     {/* Header Balances */}
-                                    <div className="flex items-end gap-2">
-                                        <h2 className="text-4xl font-bold text-gray-800 tracking-tight">
+                                    <div className="flex items-baseline gap-2">
+                                        <h2 className="text-3xl font-bold text-gray-800 tracking-tight leading-none">
                                             RM {(selectedAccount.balance - getTotalReserved(selectedAccount)).toLocaleString()}
                                         </h2>
-                                        <span className="text-sm text-gray-400 font-bold mb-2 uppercase tracking-wide">Available</span>
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Available</span>
                                     </div>
 
-                                    <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-gray-500">
-                                        <span className="bg-gray-200/50 px-2 py-1 rounded-md">Total: <b>RM {selectedAccount.balance.toLocaleString()}</b></span>
-                                        <span className="flex items-center gap-1 bg-yellow-100/50 text-yellow-700 px-2 py-1 rounded-md">
+                                    <div className="flex items-center gap-3 mt-1 text-[10px] font-semibold text-gray-500">
+                                        <span>TOTAL: <b>RM {selectedAccount.balance.toLocaleString()}</b></span>
+                                        <span className="flex items-center gap-1 text-yellow-700">
                                             <Lock size={10} />
-                                            Reserved: <b>RM {getTotalReserved(selectedAccount).toLocaleString()}</b>
+                                            RESERVED: <b>RM {getTotalReserved(selectedAccount).toLocaleString()}</b>
                                         </span>
                                     </div>
 
@@ -345,7 +345,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                             </div>
 
                             {/* TABS */}
-                            <div className="flex p-1.5 rounded-xl mb-6" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                            <div className="flex p-1.5 rounded-xl mb-3" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
                                 <button
                                     onClick={() => setModalTab('transactions')}
                                     className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${modalTab === 'transactions' ? 'text-blue-600 bg-[#E0E5EC] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
@@ -449,10 +449,11 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                         </div>
 
                         <div className="flex-1 overflow-auto p-0 min-h-[140px] bg-[#E0E5EC]">
-                            <div className="px-8 py-2 bg-[#E0E5EC]/80 border-b border-gray-200 sticky top-0 backdrop-blur-md z-10">
-                                <h4 className="font-bold text-gray-400 text-xs uppercase tracking-wider">
-                                    {modalTab === 'transactions' ? 'Recent Activity' : 'Active Reservations'}
+                            <div className="px-8 py-2 bg-[#E0E5EC]/80 border-b border-gray-100 sticky top-0 backdrop-blur-md z-10 flex justify-between items-center">
+                                <h4 className="font-bold text-gray-400 text-[10px] uppercase tracking-[0.15em]">
+                                    {modalTab === 'transactions' ? 'Recent Activity' : 'Active Reserves'}
                                 </h4>
+                                <List size={12} className="text-gray-300" />
                             </div>
 
                             <div className="divide-y divide-gray-200">
