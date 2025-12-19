@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Account, Transaction, Reservation } from '../types';
 import { Plus, ArrowUpRight, ArrowDownLeft, History, Wallet, Trash2, Pencil, Check, X, AlertCircle, Lock, Unlock, List } from 'lucide-react';
 
@@ -285,13 +286,13 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             </div>
 
             {/* Glass Modal */}
-            {selectedAccount && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-gray-500/30 backdrop-blur-sm transition-opacity" onClick={() => setSelectedAccount(null)} />
+            {selectedAccount && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity" onClick={() => setSelectedAccount(null)} />
 
                     <div
-                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[65vh] relative z-10 animate-scale-in origin-center my-auto"
-                        style={{ boxShadow: "8px 8px 24px rgba(163,177,198,0.25), -8px -8px 24px rgba(255,255,255, 0.6)" }}
+                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[70vh] relative z-10 animate-scale-in origin-center my-auto"
+                        style={{ boxShadow: "10px 10px 30px rgba(0,0,0,0.1), -10px -10px 30px rgba(255,255,255,0.7)" }}
                     >
 
                         <div className="p-8 pb-4">
@@ -566,7 +567,8 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                         )}
 
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
