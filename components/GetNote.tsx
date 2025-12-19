@@ -440,6 +440,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         let context = "You are the 'GetNote' Manager. Your scope is to manage the user's Notes, Tasks, and analyzed Resources provided below.\n";
         context += "IMPORTANT: If the user provides a link or URL, I have already analyzed it for you in the 'ATTACHED RESOURCES' section. Your task is to READ that analyzed content and answer the user's questions about it, or summarize it if asked. Do NOT say you cannot access the internet; instead, use the analyzed text provided to you.\n";
         context += "Your primary mission is to help the user manage and retrieve their data. When asked to find, show, or retrieve a specific note or piece of data, you MUST provide the FULL and ORIGINAL content of that note. Do NOT summarize, sanitize, paraphrase, or modify the content of the retrieved note. Just copy it for the user exactly as it exists in the database.\n";
+        context += "ANTI-HALLUCINATION RULE: If you cannot find a note that matches the user's query in the 'USER NOTES (DATABASE)' section below, you MUST state that the note was not found. Do NOT invent, assume, or write any content that is not explicitly present in the database data provided below. Accuracy is paramount.\n";
         context += "Do NOT answer general knowledge questions using external info not provided here, unless the user explicitly provided a link for you to read. If asked about something unrelated to notes/tasks/links, politely decline.\n";
         context += "You can analyze attached images and video links (metadata) to help the user manage their knowledge base.\n\n";
 
@@ -447,10 +448,17 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
             context += "--- ATTACHED RESOURCES (High Priority) ---\n" + resourceContext + "\n----------------------------------------\n\n";
         }
 
-        context += "--- USER NOTES ---\n";
+        context += "--- USER NOTES (DATABASE) ---\n";
         notes.forEach(n => {
-            if (n.title || n.content) {
-                context += `Note: ${n.title || 'Untitled'}\nContent: ${n.content}\n\n`;
+            if (n.title || n.content || (n.thread && n.thread.length > 0)) {
+                context += `[ID: ${n.id}] Title: ${n.title || 'Untitled'}\nBody: ${n.content || '(Empty)'}\n`;
+                if (n.thread && n.thread.length > 0) {
+                    context += "Nested Thread/Conversation Content:\n";
+                    n.thread.forEach(t => {
+                        context += `- [${t.role || 'User'}]: ${t.content}\n`;
+                    });
+                }
+                context += "--------------------\n\n";
             }
         });
 
