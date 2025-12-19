@@ -531,6 +531,16 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                     <div className="animate-slide-up">
                         {activeTab === 'notes' && <NotesView notes={notes} setNotes={setNotes} openGlobalChat={() => setIsGlobalChatOpen(true)} />}
                         {activeTab === 'todo' && <TodoView todos={todos} setTodos={setTodos} />}
+                        {activeTab === 'focus' && (
+                            <FocusView
+                                timeLeft={focusTimeLeft}
+                                setTimeLeft={setFocusTimeLeft}
+                                isActive={focusIsActive}
+                                setIsActive={setFocusIsActive}
+                                mode={focusMode}
+                                setMode={setFocusMode}
+                            />
+                        )}
                     </div>
                 </div>
             </main>
@@ -2103,26 +2113,158 @@ interface FocusViewProps {
 }
 
 const FocusView: React.FC<FocusViewProps> = ({ timeLeft, setTimeLeft, isActive, setIsActive, mode, setMode }) => {
-    useEffect(() => { }, []);
+    const totalTime = mode === 'FOCUS' ? 25 * 60 : 5 * 60;
+    const progress = (timeLeft / totalTime) * 100;
+
+    // SVG Circular Progress Constants
+    const size = 280;
+    const strokeWidth = 8;
+    const center = size / 2;
+    const radius = center - strokeWidth * 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (progress / 100) * circumference;
+
     const toggle = () => setIsActive(!isActive);
-    const reset = () => { setIsActive(false); setTimeLeft(mode === 'FOCUS' ? 25 * 60 : 5 * 60); };
-    const switchMode = (m: 'FOCUS' | 'BREAK') => { setMode(m); setIsActive(false); setTimeLeft(m === 'FOCUS' ? 25 * 60 : 5 * 60); };
-    const formatTime = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
+    const reset = () => {
+        setIsActive(false);
+        setTimeLeft(mode === 'FOCUS' ? 25 * 60 : 5 * 60);
+    };
+    const switchMode = (m: 'FOCUS' | 'BREAK') => {
+        setMode(m);
+        setIsActive(false);
+        setTimeLeft(m === 'FOCUS' ? 25 * 60 : 5 * 60);
+    };
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
     return (
-        <div className="flex flex-col items-center justify-center py-10 min-h-[60vh]">
-            <div className="bg-surface w-full max-w-md p-10 rounded-[40px] shadow-2xl border border-border text-center relative overflow-hidden">
-                <div className={`absolute top-0 left-0 w-full h-2 ${mode === 'FOCUS' ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                <div className="flex justify-center gap-2 mb-8 bg-input-bg p-1 rounded-full w-fit mx-auto">
-                    <button onClick={() => switchMode('FOCUS')} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${mode === 'FOCUS' ? 'bg-surface shadow-sm text-red-500' : 'text-text-muted'}`}>Focus</button>
-                    <button onClick={() => switchMode('BREAK')} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${mode === 'BREAK' ? 'bg-surface shadow-sm text-green-500' : 'text-text-muted'}`}>Break</button>
-                </div>
-                <div className="text-[6rem] md:text-[7rem] font-bold text-text-main leading-none font-mono tracking-tighter mb-8 tabular-nums">{formatTime(timeLeft)}</div>
-                <div className="flex justify-center gap-6">
-                    <button onClick={toggle} className="w-20 h-20 bg-text-main text-surface rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg">{isActive ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}</button>
-                    <button onClick={reset} className="w-20 h-20 bg-input-bg text-text-muted rounded-full flex items-center justify-center hover:bg-border transition-colors"><RotateCcw size={28} /></button>
-                </div>
-                <p className="mt-8 text-text-muted font-bold uppercase text-xs tracking-widest">{isActive ? (mode === 'FOCUS' ? 'Stay Focused' : 'Relax & Recharge') : 'Ready?'}</p>
+        <div className="flex flex-col items-center justify-center py-6 min-h-[70vh] animate-fade-in">
+            {/* Mode Selector */}
+            <div className="flex justify-center gap-2 mb-12 bg-[#E0E5EC] p-1.5 rounded-full w-fit shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]">
+                <button
+                    onClick={() => switchMode('FOCUS')}
+                    className={`px-6 py-2 rounded-full text-xs font-black transition-all duration-300 ${mode === 'FOCUS' ? 'text-gray-800 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]' : 'text-gray-400 opacity-60'}`}
+                    style={mode === 'FOCUS' ? { background: '#E0E5EC' } : {}}
+                >
+                    Focus
+                </button>
+                <button
+                    onClick={() => switchMode('BREAK')}
+                    className={`px-6 py-2 rounded-full text-xs font-black transition-all duration-300 ${mode === 'BREAK' ? 'text-gray-800 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]' : 'text-gray-400 opacity-60'}`}
+                    style={mode === 'BREAK' ? { background: '#E0E5EC' } : {}}
+                >
+                    Break
+                </button>
             </div>
+
+            {/* Main Timer Circle */}
+            <div
+                className="relative flex items-center justify-center rounded-full mb-12 transition-all duration-500"
+                style={{
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    background: "#E0E5EC",
+                    boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                }}
+            >
+                {/* Inner Recessed Circle */}
+                <div
+                    className="absolute inset-4 rounded-full flex flex-col items-center justify-center"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "inset 10px 10px 20px #b8b9be, inset -10px -10px 20px #ffffff"
+                    }}
+                >
+                    <div className="text-[5.5rem] font-bold text-gray-700 tracking-tighter leading-none mb-2 tabular-nums">
+                        {formatTime(timeLeft)}
+                    </div>
+                </div>
+
+                {/* SVG Progress Ring */}
+                <svg
+                    width={size}
+                    height={size}
+                    className="absolute inset-0 transform -rotate-90 pointer-events-none"
+                >
+                    <circle
+                        cx={center}
+                        cy={center}
+                        r={radius}
+                        fill="transparent"
+                        stroke="#b8b9be"
+                        strokeWidth={4}
+                        strokeOpacity={0.2}
+                    />
+                    <circle
+                        cx={center}
+                        cy={center}
+                        r={radius}
+                        fill="transparent"
+                        stroke="#4A4A4A"
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={circumference}
+                        style={{
+                            strokeDashoffset: offset,
+                            transition: 'stroke-dashoffset 1s linear',
+                            strokeLinecap: 'round'
+                        }}
+                    />
+                </svg>
+            </div>
+
+            {/* Control Buttons */}
+            <div className="flex gap-4 items-center">
+                <button
+                    onClick={() => setIsActive(true)}
+                    disabled={isActive}
+                    className={`
+                        px-8 py-3 rounded-[20px] font-black text-sm transition-all duration-300 active:scale-95
+                        ${isActive ? 'text-gray-300 cursor-default' : 'text-gray-600 hover:text-blue-600'}
+                    `}
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: isActive
+                            ? "inset 4px 4px 10px #b8b9be, inset -4px -4px 10px #ffffff"
+                            : "8px 8px 16px #b8b9be, -8px -8px 16px #ffffff"
+                    }}
+                >
+                    Start
+                </button>
+                <button
+                    onClick={() => setIsActive(false)}
+                    disabled={!isActive}
+                    className={`
+                        px-8 py-3 rounded-[20px] font-black text-sm transition-all duration-300 active:scale-95
+                        ${!isActive ? 'text-gray-300 cursor-default' : 'text-gray-600 hover:text-red-500'}
+                    `}
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: !isActive
+                            ? "inset 4px 4px 10px #b8b9be, inset -4px -4px 10px #ffffff"
+                            : "8px 8px 16px #b8b9be, -8px -8px 16px #ffffff"
+                    }}
+                >
+                    Pause
+                </button>
+                <button
+                    onClick={reset}
+                    className="px-8 py-3 rounded-[20px] font-black text-sm text-gray-600 hover:text-gray-900 transition-all duration-300 active:scale-95"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "8px 8px 16px #b8b9be, -8px -8px 16px #ffffff"
+                    }}
+                >
+                    Reset
+                </button>
+            </div>
+
+            <p className="mt-12 text-gray-400 font-black uppercase text-[10px] tracking-widest opacity-60">
+                {isActive ? (mode === 'FOCUS' ? 'Stay Focused' : 'Relax & Recharge') : 'Ready to begin?'}
+            </p>
         </div>
     );
 };
