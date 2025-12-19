@@ -33,12 +33,12 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-center p-6 transition-all duration-500 font-sans selection:bg-gray-300">
+    <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-start pt-16 md:pt-24 p-6 transition-all duration-500 font-sans selection:bg-gray-300">
 
-      <div className="max-w-md w-full flex flex-col items-center gap-10">
+      <div className="max-w-md w-full flex flex-col items-center gap-8 translate-y-[-20px] md:translate-y-[-40px]">
 
         {/* Header */}
-        <div className="text-center space-y-2 mt-8 animate-fade-in-down">
+        <div className="text-center space-y-2 animate-fade-in-down">
           <h1 className="text-6xl font-bold tracking-tight text-[#444] drop-shadow-sm">
             Apptify
           </h1>
