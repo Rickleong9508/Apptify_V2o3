@@ -40,7 +40,8 @@ import {
     Film,
     Send,
     Search,
-    MoreHorizontal
+    MoreHorizontal,
+    Languages
 } from 'lucide-react';
 import { aiService, AIProvider } from '../services/aiService';
 
@@ -170,6 +171,12 @@ const calculatePriority = (dateStr: string): PriorityLevel => {
     return 'T3';
 };
 
+// --- Types ---
+interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+}
+
 // --- Main Component ---
 const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     const [activeTab, setActiveTab] = useState<'notes' | 'todo' | 'focus'>('notes');
@@ -191,6 +198,50 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     const [isAiThinking, setIsAiThinking] = useState(false);
     const [globalResources, setGlobalResources] = useState<Resource[]>([]);
     const [isProcessingResource, setIsProcessingResource] = useState(false);
+
+    // --- Voice Input State ---
+    const [isListening, setIsListening] = useState(false);
+    const [speechLang, setSpeechLang] = useState<'zh-CN' | 'en-US'>('zh-CN');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const recognitionRef = useRef<any>(null);
+
+    // Adjust textarea height
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+        }
+    }, [globalChatInput]);
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+        } else {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.lang = speechLang;
+                recognition.continuous = false; // Set to true if you want continuous dictation until stop
+                recognition.interimResults = false;
+
+                recognition.onstart = () => setIsListening(true);
+                recognition.onend = () => setIsListening(false);
+                recognition.onresult = (event: any) => {
+                    const transcript = event.results[0][0].transcript;
+                    setGlobalChatInput(prev => prev + (prev ? ' ' : '') + transcript);
+                };
+                recognition.onerror = (event: any) => {
+                    console.error("Speech Error", event.error);
+                    setIsListening(false);
+                };
+                recognitionRef.current = recognition;
+                recognition.start();
+            } else {
+                alert("Speech recognition not supported in this browser.");
+            }
+        }
+    };
 
     // Shared state for API
     const [aiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
@@ -385,8 +436,9 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         setGlobalMessages(prev => [...prev, qNote]);
 
         // Build Context from ALL notes
-        let context = "You are the 'GetNote' Manager. Your scope is STRICTLY limited to managing the user's Notes, Tasks, and analyzed Resources provided below.\n";
-        context += "Do NOT answer general knowledge questions (like 'who is the president', 'weather', etc.) unless they are explicitly related to a task or note content. If asked about something outside this scope, politely decline and ask to return to the notes.\n";
+        let context = "You are the 'GetNote' Manager. Your scope is to manage the user's Notes, Tasks, and analyzed Resources provided below.\n";
+        context += "IMPORTANT: If the user provides a link or URL, I have already analyzed it for you in the 'ATTACHED RESOURCES' section. Your task is to READ that analyzed content and answer the user's questions about it, or summarize it if asked. Do NOT say you cannot access the internet; instead, use the analyzed text provided to you.\n";
+        context += "Do NOT answer general knowledge questions using external info not provided here, unless the user explicitly provided a link for you to read. If asked about something unrelated to notes/tasks/links, politely decline.\n";
         context += "You can analyze attached images and video links (metadata) to help the user manage their knowledge base.\n\n";
 
         if (resourceContext) {
@@ -438,30 +490,38 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     ];
 
     return (
-        <div className="flex h-screen overflow-hidden text-[#1D1D1F] bg-[#F2F2F7] font-sans selection:bg-blue-500/20 transition-colors duration-300 relative">
+        <div className="flex h-screen overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-blue-500/20 transition-colors duration-300 relative">
 
             {/* Main Content Area */}
-            <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth bg-[#F2F2F7]">
+            <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
                 <div className="max-w-5xl mx-auto p-4 md:p-8 pb-40 animate-fade-in relative min-h-full">
 
                     {/* Header aka Dynamic Island Area */}
                     <div className="sticky top-4 z-30 mb-8 flex justify-between items-center px-2">
                         <div
                             onClick={onExit}
-                            className="flex items-center gap-3 pl-2 opacity-60 hover:opacity-100 transition-all cursor-pointer group bg-white/50 backdrop-blur-md px-4 py-2 rounded-full shadow-sm hover:shadow-md"
+                            className="flex items-center gap-3 pl-2 opacity-60 hover:opacity-100 transition-all cursor-pointer group px-4 py-2 rounded-[20px]"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
                         >
-                            <div className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-gray-600 shadow-inner group-hover:scale-110 transition-transform">
                                 <Triangle size={10} fill="currentColor" className="rotate-180" />
                             </div>
-                            <span className="font-semibold text-sm tracking-tight text-black">Apptify OS</span>
+                            <span className="font-semibold text-sm tracking-tight text-gray-700">Apptify OS</span>
                         </div>
 
                         {/* Global AI Trigger */}
                         <button
                             onClick={() => setIsGlobalChatOpen(true)}
-                            className="bg-black/80 backdrop-blur-md text-white px-5 py-2.5 rounded-full flex items-center gap-2 shadow-lg hover:bg-black hover:scale-105 transition-all active:scale-95 group"
+                            className="text-gray-700 px-5 py-2.5 rounded-[20px] flex items-center gap-2 transition-all active:scale-95 group hover:text-blue-600"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
                         >
-                            <Sparkles size={16} className="text-yellow-300 group-hover:rotate-12 transition-transform" />
+                            <Sparkles size={16} className="text-amber-500 group-hover:rotate-12 transition-transform" />
                             <span className="font-bold text-sm">Ask AI</span>
                         </button>
                     </div>
@@ -474,9 +534,15 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                 </div>
             </main>
 
-            {/* FLOATING GLASS NAVIGATION DOCK (iPhone Style) */}
+            {/* FLOATING CLAY NAVIGATION DOCK */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 w-auto">
-                <nav className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[32px] px-2 py-2 flex items-center gap-2 ring-1 ring-black/5 hover:scale-[1.02] transition-transform">
+                <nav
+                    className="rounded-[32px] px-2 py-2 flex items-center gap-4 transition-transform hover:scale-[1.02]"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                    }}
+                >
                     {navItems.map((item) => {
                         const isActive = activeTab === item.id;
                         const Icon = item.icon;
@@ -486,112 +552,183 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                 onClick={() => setActiveTab(item.id as any)}
                                 className={`
                                     flex items-center justify-center w-14 h-14 rounded-[24px] transition-all duration-300 relative group
-                                    ${isActive ? 'bg-white shadow-md text-black' : 'text-gray-400 hover:bg-white/40 hover:text-gray-600'}
+                                    ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}
                                 `}
+                                style={isActive ? {
+                                    background: "#E0E5EC",
+                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                } : {}}
                             >
                                 <Icon
                                     size={24}
                                     strokeWidth={isActive ? 2.5 : 2}
                                 />
-                                {isActive && <div className="absolute -bottom-1 w-1 h-1 bg-black rounded-full mb-2"></div>}
                             </button>
                         )
                     })}
                 </nav>
             </div>
 
-            {/* GLOBAL AI OVERLAY */}
+            {/* GLOBAL AI OVERLAY - CLAY STYLE */}
             {isGlobalChatOpen && (
                 <div className="fixed inset-0 z-50 flex justify-end">
-                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsGlobalChatOpen(false)}></div>
-                    <div className="w-full max-w-[420px] bg-[#F2F2F7] h-full shadow-2xl relative flex flex-col animate-slide-left border-l border-white/50">
-                        <div className="p-4 pt-6 backdrop-blur-xl bg-white/80 sticky top-0 z-10 flex justify-between items-center shadow-sm">
-                            <h3 className="font-bold text-lg flex items-center gap-2 text-black"><Sparkles size={18} className="text-purple-600" /> Intelligence</h3>
-                            <button onClick={() => setIsGlobalChatOpen(false)} className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300 transition-colors"><X size={18} /></button>
+                    <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setIsGlobalChatOpen(false)}></div>
+                    <div className="w-full max-w-[450px] bg-[#E0E5EC] h-full shadow-2xl relative flex flex-col animate-slide-left border-l border-white/40">
+                        <div
+                            className="p-4 pt-6 sticky top-0 z-10 flex justify-between items-center z-50"
+                            style={{ background: "#E0E5EC", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}
+                        >
+                            <h3 className="font-bold text-lg flex items-center gap-2 text-gray-700"><Sparkles size={18} className="text-purple-500" /> Intelligence</h3>
+                            <button
+                                onClick={() => setIsGlobalChatOpen(false)}
+                                className="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-red-500 transition-colors active:scale-95"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                <X size={18} />
+                            </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-6">
                             {globalMessages.length === 0 && (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
-                                    <Bot size={48} className="mb-4" />
+                                    <Bot size={48} className="mb-4 text-gray-300" />
                                     <p className="text-sm font-medium">How can I help you today?</p>
                                 </div>
                             )}
                             {globalMessages.map((msg, i) => (
                                 <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-black text-white' : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'}`}>
-                                        {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
+                                    <div
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm ${msg.role === 'user' ? 'bg-gray-700' : 'bg-blue-500'}`}
+                                        style={{ boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" }}
+                                    >
+                                        {msg.role === 'user' ? <User size={16} /> : <Sparkles size={16} />}
                                     </div>
-                                    <div className={`p-4 rounded-[20px] max-w-[85%] text-sm shadow-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-black text-white rounded-tr-sm'
-                                        : 'bg-white text-gray-800 rounded-tl-sm'
-                                        }`}>
+                                    <div
+                                        className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed ${msg.role === 'user'
+                                            ? 'bg-[#E0E5EC] text-gray-800 rounded-tr-md' // User Bubble
+                                            : 'bg-[#E0E5EC] text-gray-800 rounded-tl-md' // AI Bubble
+                                            }`}
+                                        style={msg.role === 'user' ? {
+                                            boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                        } : {
+                                            background: "#E0E5EC",
+                                            boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                        }}
+                                    >
                                         <p className="whitespace-pre-wrap">{msg.content}</p>
                                     </div>
                                 </div>
                             ))}
                             {isAiThinking && (
                                 <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0 animate-pulse"><Sparkles size={14} className="text-gray-400" /></div>
-                                    <div className="p-3 bg-white rounded-[20px] rounded-tl-sm text-xs font-bold text-gray-400 shadow-sm">
+                                    <div className="w-10 h-10 rounded-full bg-[#E0E5EC] flex items-center justify-center shrink-0 animate-pulse shadow-sm">
+                                        <Sparkles size={16} className="text-blue-400" />
+                                    </div>
+                                    <div className="p-4 bg-[#E0E5EC] rounded-[20px] rounded-tl-sm text-xs font-bold text-gray-400 shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff]">
                                         Thinking...
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="p-4 bg-white/80 backdrop-blur-xl border-t border-gray-200/50 pb-8">
-                            <div className="relative bg-gray-100 rounded-[24px] focus-within:bg-white focus-within:shadow-md transition-all border border-transparent focus-within:border-purple-100">
-                                <input
+                        <div className="p-4 pb-8 backdrop-blur-sm">
+                            <div
+                                className="relative rounded-[28px] focus-within:shadow-inner transition-all flex items-end p-2"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                <textarea
+                                    ref={textareaRef}
                                     value={globalChatInput}
                                     onChange={e => setGlobalChatInput(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleGlobalAskAi(); }}
-                                    placeholder="Ask anything..."
-                                    className="w-full bg-transparent px-5 py-4 pr-12 text-sm font-medium text-black placeholder-gray-400 outline-none"
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleGlobalAskAi();
+                                        }
+                                    }}
+                                    placeholder={isListening ? "Listening..." : "Ask anything..."}
+                                    rows={1}
+                                    className="w-full bg-transparent px-4 py-3 pr-24 text-sm font-medium text-gray-700 placeholder-gray-400 outline-none resize-none max-h-[150px] scrollbar-thin scrollbar-thumb-gray-300"
+                                    style={{ minHeight: '44px' }}
                                 />
 
-                                {/* Resource Bar */}
-                                <div className="absolute right-12 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    {isProcessingResource ? (
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                                    ) : (
-                                        <>
-                                            <button
-                                                onClick={() => {
-                                                    const url = prompt("Enter URL to analyze:");
-                                                    if (url) handleResourceAdd(null, url);
-                                                }}
-                                                className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-200 rounded-full transition-colors"
-                                                title="Add URL"
-                                            >
-                                                <LinkIcon size={16} />
-                                            </button>
-                                            <label className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-200 rounded-full transition-colors cursor-pointer" title="Upload File (PDF/Doc/Image)">
-                                                <Paperclip size={16} />
-                                                <input type="file" className="hidden" onChange={(e) => handleResourceAdd(e.target.files?.[0] || null)} />
-                                            </label>
-                                        </>
-                                    )}
+                                {/* Controls Container */}
+                                <div className="absolute right-3 bottom-2 flex items-center gap-2">
+
+                                    {/* Mic & Lang */}
+                                    <div className="flex items-center gap-1 bg-[#E0E5EC] rounded-full px-1 py-1 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]">
+                                        <button
+                                            onClick={() => setSpeechLang(prev => prev === 'zh-CN' ? 'en-US' : 'zh-CN')}
+                                            className="text-[10px] font-bold text-gray-500 hover:text-black px-1.5 py-0.5 rounded transition-colors uppercase"
+                                            title="Switch Language"
+                                        >
+                                            {speechLang === 'zh-CN' ? 'CN' : 'EN'}
+                                        </button>
+                                        <button
+                                            onClick={toggleListening}
+                                            className={`p-1.5 rounded-full transition-all ${isListening ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-blue-500'}`}
+                                            title="Voice Input"
+                                        >
+                                            <Mic size={14} />
+                                        </button>
+                                    </div>
+
+                                    {/* Resource Actions */}
+                                    <div className="flex items-center gap-1">
+                                        {isProcessingResource ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mx-2"></div>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => {
+                                                        const url = prompt("Enter URL to analyze:");
+                                                        if (url) handleResourceAdd(null, url);
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:text-blue-500 rounded-full transition-colors active:scale-90"
+                                                    title="Add URL"
+                                                >
+                                                    <LinkIcon size={18} />
+                                                </button>
+                                                <label className="p-2 text-gray-400 hover:text-blue-500 rounded-full transition-colors cursor-pointer active:scale-90" title="Upload File (PDF/Doc/Image)">
+                                                    <Paperclip size={18} />
+                                                    <input type="file" className="hidden" onChange={(e) => handleResourceAdd(e.target.files?.[0] || null)} />
+                                                </label>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Send Button */}
+                                    <button
+                                        onClick={handleGlobalAskAi}
+                                        disabled={!globalChatInput.trim()}
+                                        className="w-10 h-10 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 transition-all text-white"
+                                        style={{
+                                            background: globalChatInput.trim() ? '#4F46E5' : '#E0E5EC',
+                                            boxShadow: globalChatInput.trim() ? "3px 3px 6px rgba(79, 70, 229, 0.4)" : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff",
+                                            color: globalChatInput.trim() ? 'white' : '#9CA3AF'
+                                        }}
+                                    >
+                                        {globalChatInput.trim() ? <ArrowLeft size={16} className="rotate-90 md:rotate-0" /> : <Sparkles size={16} />}
+                                    </button>
                                 </div>
 
                                 {/* Active Resources Chips */}
                                 {globalResources.length > 0 && (
                                     <div className="absolute bottom-full left-0 mb-2 px-2 flex gap-2 flex-wrap">
                                         {globalResources.map(res => (
-                                            <div key={res.id} className="bg-black text-white text-xs px-3 py-1 rounded-full flex items-center gap-2 shadow-sm animate-slide-up">
+                                            <div key={res.id} className="bg-gray-200 text-gray-700 text-xs px-3 py-1 rounded-full flex items-center gap-2 shadow-sm animate-slide-up border border-gray-300">
                                                 <span className="max-w-[100px] truncate">{res.name}</span>
-                                                <button onClick={() => setGlobalResources(p => p.filter(r => r.id !== res.id))} className="hover:text-red-300"><X size={12} /></button>
+                                                <button onClick={() => setGlobalResources(p => p.filter(r => r.id !== res.id))} className="hover:text-red-500"><X size={12} /></button>
                                             </div>
                                         ))}
                                     </div>
                                 )}
-                                <button
-                                    onClick={handleGlobalAskAi}
-                                    disabled={!globalChatInput.trim()}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-20 transition-all shadow-sm"
-                                >
-                                    <ArrowLeft size={14} className="rotate-90 md:rotate-0" />
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -678,15 +815,25 @@ const CalendarStrip = ({ selectedDate, setSelectedDate, todos }: { selectedDate:
     };
 
     return (
-        <div className="bg-white rounded-[32px] p-6 mb-8 shadow-sm border border-black/5 select-none relative overflow-hidden group/cal">
+        <div
+            className="rounded-[32px] p-6 mb-8 select-none relative overflow-hidden group/cal"
+            style={{
+                background: "#E0E5EC",
+                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+            }}
+        >
             <div className="flex justify-between items-center mb-6 px-2">
                 {/* Visual handle */}
-                <button className="p-2 hover:bg-gray-100 rounded-full"><div className="w-4 h-0.5 bg-gray-800 my-0.5"></div><div className="w-2 h-0.5 bg-gray-800 my-0.5"></div></button>
+                <button className="p-2 rounded-full text-gray-400"><div className="w-4 h-0.5 bg-gray-400 my-0.5"></div><div className="w-2 h-0.5 bg-gray-400 my-0.5"></div></button>
                 <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg text-gray-800">{selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                    <span className="font-bold text-lg text-gray-700">{selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
                     {/* Return to Today Button "Pinned" */}
                     {selectedDate.toDateString() !== new Date().toDateString() && (
-                        <button onClick={jumpToToday} className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-bold animate-fade-in flex items-center gap-1 hover:bg-gray-800">
+                        <button
+                            onClick={jumpToToday}
+                            className="bg-[#E0E5EC] px-3 py-1 rounded-full text-[10px] font-bold animate-fade-in flex items-center gap-1 text-blue-600 transition-colors"
+                            style={{ boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" }}
+                        >
                             <Target size={10} /> Today
                         </button>
                     )}
@@ -715,23 +862,29 @@ const CalendarStrip = ({ selectedDate, setSelectedDate, todos }: { selectedDate:
                         <div
                             key={i}
                             onClick={() => setSelectedDate(date)}
-                            className={`flex flex-col items-center gap-3 min-w-[3.5rem] transition-all snap-center group ${isSelected ? 'scale-110 opacity-100' : 'opacity-40 hover:opacity-100'}`}
+                            className={`flex flex-col items-center gap-3 min-w-[3.5rem] transition-all snap-center group ${isSelected ? 'scale-110 opacity-100' : 'opacity-50 hover:opacity-100'}`}
                         >
-                            <span className={`text-xs font-bold ${isToday ? 'text-purple-600' : 'text-gray-500'}`}>{isToday ? 'TODAY' : dayLabel}</span>
-                            <div className={`
-                                w-10 h-10 flex items-center justify-center rounded-full text-base font-bold transition-all relative
-                                ${isSelected
-                                    ? 'bg-orange-400 text-white shadow-lg shadow-orange-400/40'
-                                    : (isToday ? 'bg-purple-100 text-purple-600 border border-purple-200' : 'text-gray-800 group-hover:bg-gray-100 hover:scale-110')
-                                }
-                            `}>
+                            <span className={`text-xs font-bold ${isToday ? 'text-blue-500' : 'text-gray-500'}`}>{isToday ? 'TODAY' : dayLabel}</span>
+                            <div
+                                className={`
+                                    w-12 h-12 flex items-center justify-center rounded-[16px] text-base font-bold transition-all relative
+                                    ${isSelected ? 'text-blue-600' : 'text-gray-600'}
+                                `}
+                                style={isSelected ? {
+                                    background: "#E0E5EC",
+                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                } : {
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
                                 {dayNum}
                                 {/* Star Indicator */}
                                 {showStar && (
                                     <Star
                                         size={10}
                                         fill="currentColor"
-                                        className={`absolute -top-1 -right-1 ${isSelected ? 'text-yellow-200' : 'text-orange-400'}`}
+                                        className={`absolute -top-1 -right-1 ${isSelected ? 'text-amber-400' : 'text-amber-500/50'}`}
                                     />
                                 )}
                             </div>
@@ -995,14 +1148,24 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
     // 1. EDIT MODE
     if (isEditing) {
         return (
-            <div className="fixed inset-0 z-50 bg-[#F2F2F7] flex flex-col animate-slide-up">
+            <div className="fixed inset-0 z-50 bg-[#E0E5EC] flex flex-col animate-slide-up">
                 {/* Editor Header */}
-                <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+                <div
+                    className="backdrop-blur-xl px-6 py-4 flex justify-between items-center sticky top-0 z-10"
+                    style={{ background: "#E0E5EC", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}
+                >
                     <button onClick={handleSave} className="flex items-center gap-2 text-blue-600 font-bold hover:opacity-80 transition-opacity">
                         <ArrowLeft size={20} /> <span className="text-sm">Done</span>
                     </button>
                     <div className="flex gap-2">
-                        <button onClick={() => setInteractionMode(interactionMode === 'VIEW' ? 'EDIT' : 'VIEW')} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+                        <button
+                            onClick={() => setInteractionMode(interactionMode === 'VIEW' ? 'EDIT' : 'VIEW')}
+                            className="p-2 rounded-full text-gray-500 hover:text-blue-500 transition-colors"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
                             {interactionMode === 'VIEW' ? <Edit2 size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
@@ -1010,20 +1173,26 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-4xl mx-auto w-full">
                     {/* Main Content Form */}
-                    <div className="bg-white rounded-[32px] p-8 shadow-sm mb-8">
+                    <div
+                        className="rounded-[32px] p-8 mb-8"
+                        style={{
+                            background: "#E0E5EC",
+                            boxShadow: "inset 9px 9px 16px #b8b9be, inset -9px -9px 16px #ffffff"
+                        }}
+                    >
                         <input
                             type="text"
                             value={editForm.title || ''}
                             onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
                             placeholder="Title"
-                            className="w-full text-4xl font-bold mb-6 outline-none placeholder-gray-300"
+                            className="w-full text-4xl font-bold mb-6 outline-none placeholder-gray-400 bg-transparent text-gray-700"
                             readOnly={interactionMode === 'VIEW'}
                         />
                         <textarea
                             value={editForm.content || ''}
                             onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
                             placeholder="Start typing..."
-                            className="w-full h-40 text-lg leading-relaxed text-gray-800 outline-none resize-none placeholder-gray-300"
+                            className="w-full h-40 text-lg leading-relaxed text-gray-700 outline-none resize-none placeholder-gray-400 bg-transparent"
                             readOnly={interactionMode === 'VIEW'}
                         />
                     </div>
@@ -1033,7 +1202,15 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-4">Knowledge Stream</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {currentThread.map((entry) => (
-                                <div key={entry.id} onClick={() => handleOpenReview(entry)} className="bg-white p-5 rounded-[24px] shadow-sm border border-transparent hover:border-black/5 hover:shadow-md cursor-pointer transition-all active:scale-95 group relative overflow-hidden">
+                                <div
+                                    key={entry.id}
+                                    onClick={() => handleOpenReview(entry)}
+                                    className="p-5 rounded-[24px] cursor-pointer transition-all active:scale-95 group relative overflow-hidden"
+                                    style={{
+                                        background: "#E0E5EC",
+                                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                    }}
+                                >
                                     {/* Simple rendering for stream items */}
                                     {entry.image && <img src={entry.image} className="w-full h-32 object-cover rounded-xl mb-3" />}
                                     {entry.attachments?.map(att => att.type === 'image' && <img key={att.id} src={att.content} className="w-full h-32 object-cover rounded-xl mb-3" />)}
@@ -1052,13 +1229,22 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                 </div>
 
                 {/* Input Bar */}
-                <div className="p-4 bg-white/90 backdrop-blur-md border-t border-gray-200 sticky bottom-0 z-20 pb-8 safe-area-bottom">
-                    <div className="max-w-4xl mx-auto flex items-center gap-3 bg-gray-100 p-2 rounded-[28px] pr-2 focus-within:bg-white focus-within:ring-2 ring-blue-500/20 transition-all shadow-sm">
-                        <label className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full cursor-pointer transition-colors">
+                <div
+                    className="p-4 backdrop-blur-md sticky bottom-0 z-20 pb-8 safe-area-bottom"
+                    style={{ background: "rgba(224, 229, 236, 0.9)" }}
+                >
+                    <div
+                        className="max-w-4xl mx-auto flex items-center gap-3 p-2 rounded-[28px] pr-2 transition-all"
+                        style={{
+                            background: "#E0E5EC",
+                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                        }}
+                    >
+                        <label className="p-3 text-gray-500 hover:text-blue-600 rounded-full cursor-pointer transition-colors hover:bg-gray-200">
                             <Plus size={20} />
                             <input type="file" onChange={handleFileUpload} className="hidden" multiple />
                         </label>
-                        <button onClick={handleAddLink} className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full cursor-pointer transition-colors">
+                        <button onClick={handleAddLink} className="p-3 text-gray-500 hover:text-blue-600 rounded-full cursor-pointer transition-colors hover:bg-gray-200">
                             <LinkIcon size={20} />
                         </button>
                         <input
@@ -1066,26 +1252,41 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                             onChange={e => setNewThreadInput(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') addToThread(); }}
                             placeholder="Add a quick note, image, or link..."
-                            className="flex-1 bg-transparent outline-none text-base"
+                            className="flex-1 bg-transparent outline-none text-base text-gray-700 placeholder-gray-400 px-2"
                         />
-                        <button onClick={addToThread} disabled={!newThreadInput.trim()} className="bg-blue-600 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center disabled:opacity-30 hover:bg-blue-700 transition-colors">
+                        <button
+                            onClick={addToThread}
+                            disabled={!newThreadInput.trim()}
+                            className="text-white rounded-full p-2 w-10 h-10 flex items-center justify-center disabled:opacity-30 transition-all active:scale-95"
+                            style={{
+                                background: newThreadInput.trim() ? '#4F46E5' : '#E0E5EC',
+                                boxShadow: newThreadInput.trim() ? "3px 3px 6px rgba(79, 70, 229, 0.4)" : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff",
+                                color: newThreadInput.trim() ? 'white' : '#9CA3AF'
+                            }}
+                        >
                             <ArrowLeft size={20} className="rotate-90 md:rotate-0" />
                         </button>
                     </div>
                 </div>
 
-                {/* REVIEW MODAL */}
+                {/* REVIEW MODAL - CLAY STYLE */}
                 {reviewingItem && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
-                        <div className="bg-white rounded-[32px] w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-                            <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
+                        <div
+                            className="rounded-[32px] w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                            }}
+                        >
+                            <div className="p-4 flex justify-between items-center" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
                                 <h3 className="font-bold text-gray-500 uppercase tracking-wider text-xs">Review Item</h3>
                                 <div className="flex gap-2">
-                                    <button onClick={() => setReviewEditMode(!reviewEditMode)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                    <button onClick={() => setReviewEditMode(!reviewEditMode)} className="p-2 hover:text-blue-500 text-gray-500 rounded-full transition-colors">
                                         {reviewEditMode ? <Eye size={18} /> : <Edit2 size={18} />}
                                     </button>
-                                    <button onClick={handleDeleteReviewItem} className="p-2 hover:bg-red-100 text-red-500 rounded-full transition-colors"><Trash2 size={18} /></button>
-                                    <button onClick={() => setReviewingItem(null)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={18} /></button>
+                                    <button onClick={handleDeleteReviewItem} className="p-2 hover:text-red-500 text-gray-400 rounded-full transition-colors"><Trash2 size={18} /></button>
+                                    <button onClick={() => setReviewingItem(null)} className="p-2 hover:text-gray-700 text-gray-400 rounded-full transition-colors"><X size={18} /></button>
                                 </div>
                             </div>
 
@@ -1095,13 +1296,22 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                                         <textarea
                                             value={reviewForm.content}
                                             onChange={e => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
-                                            className="w-full h-40 border border-gray-200 rounded-xl p-4 focus:ring-2 ring-blue-500/20 outline-none resize-none"
+                                            className="w-full h-40 rounded-xl p-4 outline-none resize-none bg-[#E0E5EC] text-gray-700"
+                                            style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
                                         />
-                                        {/* Edit Attachments list would go here */}
-                                        <button onClick={handleSaveReview} className="w-full bg-black text-white py-3 rounded-xl font-bold hover:scale-[1.02] transition-transform">Save Changes</button>
+                                        <button
+                                            onClick={handleSaveReview}
+                                            className="w-full py-3 rounded-xl font-bold transition-transform active:scale-95 text-blue-600"
+                                            style={{
+                                                background: "#E0E5EC",
+                                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                            }}
+                                        >
+                                            Save Changes
+                                        </button>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 text-gray-700">
                                         {reviewingItem.image && <img src={reviewingItem.image} className="w-full rounded-2xl" />}
                                         {reviewingItem.attachments?.map(att => att.type === 'image' && <img key={att.id} src={att.content} className="w-full rounded-2xl" />)}
                                         <p className="text-lg leading-relaxed whitespace-pre-wrap">{reviewingItem.content}</p>
@@ -1127,35 +1337,48 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
         <div className="space-y-8">
             <div className="flex justify-between items-center pb-4">
                 <div>
-                    <h2 className="text-[32px] font-bold text-black tracking-tight leading-tight">My Notes</h2>
-                    <p className="text-gray-500 font-medium mt-1">Capture ideas and organize your life.</p>
+                    <h2 className="text-[32px] font-bold tracking-tight leading-tight text-gray-700">My Notes</h2>
+                    <p className="text-gray-400 font-medium mt-1">Capture ideas and organize your life.</p>
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-all active:scale-95 group"
+                    className="w-12 h-12 rounded-xl flex items-center justify-center transition-all active:scale-95 group text-gray-600 hover:text-blue-500"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "6px 6px 12px #b8b9be, -6px -6px 12px #ffffff"
+                    }}
                 >
                     <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
                 </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {notes.map(note => (
-                    <div key={note.id} onClick={() => handleEdit(note)} className="bg-white p-6 rounded-[32px] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group flex flex-col h-[280px] relative overflow-hidden border border-transparent hover:border-black/5">
+                {notes.map((note, idx) => (
+                    <div
+                        key={note.id}
+                        onClick={() => handleEdit(note)}
+                        className="p-6 rounded-[32px] cursor-pointer group flex flex-col h-[280px] relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-xl animate-scale-in opacity-0"
+                        style={{
+                            background: "#E0E5EC",
+                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                            animationDelay: `${idx * 100}ms`
+                        }}
+                    >
 
                         {/* Image Preview */}
                         {note.image && (
-                            <div className="absolute top-0 left-0 w-full h-32 opacity-90 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-0 left-0 w-full h-32 opacity-80 group-hover:opacity-100 transition-opacity">
                                 <img src={note.image} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent"></div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#E0E5EC] via-[#E0E5EC]/50 to-transparent"></div>
                             </div>
                         )}
 
                         <div className="relative z-10 flex flex-col h-full">
                             <div className="flex-1">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-xl leading-tight line-clamp-2 text-black group-hover:text-purple-600 transition-colors">{note.title || "Untitled Note"}</h3>
+                                    <h3 className="font-bold text-xl leading-tight line-clamp-2 text-gray-700 group-hover:text-blue-600 transition-colors">{note.title || "Untitled Note"}</h3>
                                     {note.thread && note.thread.length > 0 && (
-                                        <div className="bg-gray-100 text-gray-500 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
+                                        <div className="text-gray-500 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 bg-[#E0E5EC] shadow-inner">
                                             <Database size={10} /> {note.thread.length}
                                         </div>
                                     )}
@@ -1165,9 +1388,9 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                                 </p>
                             </div>
 
-                            <div className="mt-4 flex justify-between items-center pt-4 border-t border-gray-100/50">
+                            <div className="mt-4 flex justify-between items-center pt-4 border-t border-gray-300/20">
                                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{new Date(note.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                                <button onClick={(e) => handleDelete(note.id, e)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all md:opacity-0 group-hover:opacity-100">
+                                <button onClick={(e) => handleDelete(note.id, e)} className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-all md:opacity-0 group-hover:opacity-100 hover:bg-gray-200">
                                     <Trash2 size={16} />
                                 </button>
                             </div>
@@ -1176,11 +1399,23 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                 ))}
 
                 {/* Create New Card */}
-                <div onClick={handleCreate} className="h-[280px] rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-white hover:border-purple-200 hover:text-purple-600 transition-all gap-3 group">
-                    <div className="w-16 h-16 rounded-full bg-gray-50 group-hover:bg-purple-50 flex items-center justify-center transition-colors">
+                <div
+                    onClick={handleCreate}
+                    className="h-[280px] rounded-[32px] flex flex-col items-center justify-center text-gray-400 cursor-pointer transition-all gap-3 group opacity-70 hover:opacity-100"
+                    style={{
+                        border: "2px dashed #b8b9be"
+                    }}
+                >
+                    <div
+                        className="w-16 h-16 rounded-full flex items-center justify-center transition-colors text-gray-500 group-hover:text-blue-500"
+                        style={{
+                            background: "#E0E5EC",
+                            boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                        }}
+                    >
                         <Plus size={32} className="group-hover:scale-110 transition-transform" />
                     </div>
-                    <span className="font-bold">Create New Note</span>
+                    <span className="font-bold text-gray-500 group-hover:text-blue-600">Create New Note</span>
                 </div>
             </div>
         </div>
@@ -1326,28 +1561,65 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
             <CalendarStrip selectedDate={selectedDate} setSelectedDate={setSelectedDate} todos={todos} />
 
             {/* View Switcher */}
-            <div className="flex bg-gray-100 p-1 rounded-xl w-fit mb-6">
-                <button onClick={() => setViewMode('active')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'active' ? 'bg-white shadow-sm text-black' : 'text-gray-400'}`}>Cards</button>
-                <button onClick={() => setViewMode('timeline')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'timeline' ? 'bg-white shadow-sm text-black' : 'text-gray-400'}`}>Timeline</button>
-                <button onClick={() => setViewMode('history')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'history' ? 'bg-white shadow-sm text-black' : 'text-gray-400'}`}>History</button>
+            <div
+                className="flex p-1 rounded-xl w-fit mb-6"
+                style={{
+                    background: "#E0E5EC",
+                    boxShadow: "inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff"
+                }}
+            >
+                <button
+                    onClick={() => setViewMode('active')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'active' ? 'text-blue-600' : 'text-gray-400'}`}
+                    style={viewMode === 'active' ? {
+                        background: "#E0E5EC",
+                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                    } : {}}
+                >
+                    Cards
+                </button>
+                <button
+                    onClick={() => setViewMode('timeline')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'timeline' ? 'text-blue-600' : 'text-gray-400'}`}
+                    style={viewMode === 'timeline' ? {
+                        background: "#E0E5EC",
+                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                    } : {}}
+                >
+                    Timeline
+                </button>
+                <button
+                    onClick={() => setViewMode('history')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'history' ? 'text-blue-600' : 'text-gray-400'}`}
+                    style={viewMode === 'history' ? {
+                        background: "#E0E5EC",
+                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                    } : {}}
+                >
+                    History
+                </button>
             </div>
 
             {/* MODE: GLOBAL TIMELINE (Grouped) */}
             {viewMode === 'timeline' && (
                 <div className="animate-fade-in relative pl-4 space-y-8">
                     {/* Continuous Vertical Line */}
-                    <div className="absolute left-[27px] top-4 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-purple-300 opacity-50"></div>
+                    <div className="absolute left-[27px] top-4 bottom-0 w-1 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] rounded-full opacity-50"></div>
 
                     {Object.entries(groupedTasks).map(([dateLabel, tasks]) => (
                         <div key={dateLabel}>
-                            {/* Sticky Header with Glass Effect */}
-                            <div className="sticky top-0 z-20 bg-[#F6F7FB]/80 backdrop-blur-md py-3 mb-4 pl-12 -ml-2 transition-all">
-                                <span className={`text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm border border-white/20 backdrop-blur-md
+                            {/* Sticky Header */}
+                            <div className="sticky top-0 z-20 py-3 mb-4 pl-12 -ml-2 transition-all">
+                                <span className={`text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full
                                     ${dateLabel === new Date().toDateString()
-                                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                                        : 'bg-white/60 text-gray-500'
+                                        ? 'text-blue-600'
+                                        : 'text-gray-500'
                                     }
-                                `}>
+                                `}
+                                    style={{
+                                        background: "#E0E5EC",
+                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    }}>
                                     {dateLabel === new Date().toDateString() ? 'Today' : dateLabel}
                                 </span>
                             </div>
@@ -1358,54 +1630,58 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                     const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                     const thumbnail = task.attachments?.find(a => a.startsWith('data:image'));
 
-                                    // Use dynamic gradient for ALL tasks in timeline to make it colorful
-                                    const safeId = String(task.id || "");
-                                    const charCode = safeId.charCodeAt(safeId.length - 1) || 0;
-                                    const grad = gradients[charCode % gradients.length] || gradients[0];
-
-                                    // Liquid Glass Effect Classes
-                                    const glassClasses = `
-                                        bg-gradient-to-br ${grad} 
-                                        backdrop-blur-xl bg-opacity-90
-                                        border border-white/40
-                                        shadow-lg shadow-black/5
-                                    `;
-
                                     return (
-                                        <div key={task.id} className="relative pl-12 group">
+                                        <div key={task.id} className="relative pl-12 group animate-slide-in-right opacity-0" style={{ animationDelay: `${idx * 100}ms` }}>
                                             {/* Timeline Node */}
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-[3px] z-10 bg-white border-purple-300 shadow-sm group-hover:scale-125 transition-transform"></div>
+                                            <div
+                                                className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full z-10 transition-transform group-hover:scale-125 border border-white/20"
+                                                style={{
+                                                    background: "#E0E5EC",
+                                                    boxShadow: "2px 2px 4px #b8b9be, -2px -2px 4px #ffffff"
+                                                }}
+                                            ></div>
 
-                                            {/* Liquid Card */}
-                                            <div onClick={() => setPreviewTask(task)} className={`
-                                                relative p-5 rounded-[24px] cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1
-                                                ${glassClasses}
-                                            `}>
-                                                {/* Shine Effect */}
-                                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-
+                                            {/* Clay Card */}
+                                            <div
+                                                onClick={() => setPreviewTask(task)}
+                                                className="relative p-5 rounded-[24px] cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 text-gray-700"
+                                                style={{
+                                                    background: "#E0E5EC",
+                                                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                                }}
+                                            >
                                                 <div className="flex justify-between items-start mb-2 relative z-10">
-                                                    <h3 className="font-bold text-lg text-gray-900/90 drop-shadow-sm">{task.title}</h3>
-                                                    <span className="text-xs font-bold bg-white/30 px-2 py-0.5 rounded-md backdrop-blur-sm text-gray-800">{timeStr}</span>
+                                                    <h3 className="font-bold text-lg text-gray-800">{task.title}</h3>
+                                                    <span className="text-xs font-bold text-gray-500">{timeStr}</span>
                                                 </div>
 
                                                 <div className="flex items-start gap-3 relative z-10">
                                                     {thumbnail && (
-                                                        <img src={thumbnail} className="w-16 h-16 rounded-xl object-cover border-2 border-white/30 shadow-sm" />
+                                                        <img src={thumbnail} className="w-16 h-16 rounded-xl object-cover shadow-sm" />
                                                     )}
-                                                    <p className="text-sm mb-4 line-clamp-2 mt-1 text-gray-800/80 font-medium">
+                                                    <p className="text-sm mb-4 line-clamp-2 mt-1 text-gray-600 font-medium">
                                                         {task.description || "No details"}
                                                     </p>
                                                 </div>
 
                                                 <div className="flex items-center justify-between relative z-10">
                                                     <div className="flex -space-x-2">
-                                                        <div className="w-8 h-8 rounded-full border-2 border-white/50 bg-white/30 flex items-center justify-center text-[10px] font-bold backdrop-blur-sm text-gray-800 shadow-sm">Me</div>
+                                                        <div
+                                                            className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600"
+                                                            style={{
+                                                                background: "#E0E5EC",
+                                                                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                            }}
+                                                        >Me</div>
                                                     </div>
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={(e) => toggleComplete(task.id, e)}
-                                                            className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-white/30 hover:bg-white/50 text-gray-800 backdrop-blur-md shadow-sm border border-white/20"
+                                                            className="w-10 h-10 rounded-full flex items-center justify-center transition-colors text-gray-500 hover:text-green-500"
+                                                            style={{
+                                                                background: "#E0E5EC",
+                                                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                            }}
                                                         >
                                                             <CheckCircle2 size={20} />
                                                         </button>
@@ -1442,44 +1718,87 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             const dateStr = task.deadline ? new Date(task.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'No Date';
 
                             return (
-                                <div key={task.id} className="group relative w-full h-48 [perspective:1000px] cursor-pointer" onClick={() => setPreviewTask(task)}>
-                                    <div className="relative w-full h-full transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] rounded-[24px] shadow-lg">
-                                        <div className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-[24px] bg-gradient-to-br ${grad} p-5 flex flex-col justify-between overflow-hidden shadow-lg border border-white/40`}>
-                                            <div className="absolute top-0 right-0 p-10 bg-white/10 rounded-full -mr-6 -mt-6 blur-2xl"></div>
+                                <div key={task.id} className="group relative w-full h-48 [perspective:1000px] cursor-pointer animate-fade-in-up opacity-0" onClick={() => setPreviewTask(task)} style={{ animationDelay: `${idx * 100}ms` }}>
+                                    <div className="relative w-full h-full transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] rounded-[24px]">
+                                        {/* Front */}
+                                        <div
+                                            className="absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-[24px] p-5 flex flex-col justify-between overflow-hidden"
+                                            style={{
+                                                background: "#E0E5EC",
+                                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                            }}
+                                        >
                                             <div className="flex justify-between items-start z-10">
-                                                <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-xl flex items-center justify-center text-current shadow-sm">
+                                                <div
+                                                    className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-600"
+                                                    style={{
+                                                        background: "#E0E5EC",
+                                                        boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                                    }}
+                                                >
                                                     {thumbnail
                                                         ? <img src={thumbnail} className="w-full h-full object-cover rounded-xl" />
                                                         : <CheckCircle2 size={20} />
                                                     }
                                                 </div>
-                                                <span className="text-[10px] font-black uppercase bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-current tracking-wider border border-white/10">{task.priority}</span>
+                                                <span
+                                                    className="text-[10px] font-black uppercase px-2 py-1 rounded-full text-gray-500"
+                                                    style={{
+                                                        background: "#E0E5EC",
+                                                        boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                    }}
+                                                >
+                                                    {task.priority}
+                                                </span>
                                             </div>
-                                            <div className="z-10 text-current">
-                                                <h3 className="font-bold text-lg leading-tight mb-1 line-clamp-2 drop-shadow-sm">{task.title}</h3>
-                                                <div className="flex items-center gap-1 opacity-80 font-bold text-xs uppercase">
+                                            <div className="z-10">
+                                                <h3 className="font-bold text-lg leading-tight mb-1 line-clamp-2 text-gray-800">{task.title}</h3>
+                                                <div className="flex items-center gap-1 opacity-60 font-bold text-xs uppercase text-gray-500">
                                                     <CalendarIcon size={10} />
                                                     {dateStr}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className={`absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-[24px] bg-white p-5 flex flex-col justify-between shadow-xl border-2 border-purple-50`}>
+
+                                        {/* Back */}
+                                        <div
+                                            className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-[24px] p-5 flex flex-col justify-between"
+                                            style={{
+                                                background: "#E0E5EC",
+                                                boxShadow: "inset 9px 9px 16px #b8b9be, inset -9px -9px 16px #ffffff"
+                                            }}
+                                        >
                                             <div>
-                                                <h3 className="font-bold text-gray-800 text-sm mb-2">Details</h3>
+                                                <h3 className="font-bold text-gray-700 text-sm mb-2">Details</h3>
                                                 <p className="text-xs text-gray-500 line-clamp-4 leading-relaxed">
                                                     {task.description || "No description provided."}
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[10px] font-bold text-gray-400">Click to Preview</span>
-                                                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center shadow-lg"><Eye size={14} /></div>
+                                                <div
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-blue-500"
+                                                    style={{
+                                                        background: "#E0E5EC",
+                                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                    }}
+                                                >
+                                                    <Eye size={14} />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             )
                         })}
-                        <button onClick={() => setIsFormOpen(true)} className="w-full h-48 border-2 border-dashed border-gray-200 rounded-[24px] flex flex-col items-center justify-center gap-2 text-gray-400 hover:bg-gray-50 hover:border-gray-300 transition-all">
+                        <button
+                            onClick={() => setIsFormOpen(true)}
+                            className="w-full h-48 rounded-[24px] flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-500 transition-all"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff"
+                            }}
+                        >
                             <Plus size={32} />
                             <span className="text-sm font-bold">New Task</span>
                         </button>
@@ -1494,12 +1813,19 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                         <button onClick={() => setViewMode('active')} className="text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors">Back</button>
                     </div>
                     {todos.filter(t => t.completed).map(task => (
-                        <div key={task.id} className="bg-white p-5 rounded-[24px] shadow-sm flex items-center gap-4 hover:shadow-md transition-all group opacity-60 hover:opacity-100">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+                        <div
+                            key={task.id}
+                            className="p-5 rounded-[24px] flex items-center gap-4 transition-all group opacity-60 hover:opacity-100"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff"
+                            }}
+                        >
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-gray-400">
                                 <Check size={20} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-gray-800 text-lg line-through">{task.title}</h3>
+                                <h3 className="font-bold text-gray-600 text-lg line-through">{task.title}</h3>
                                 <p className="text-xs text-gray-400 font-bold">Completed on {task.completedAt ? new Date(task.completedAt).toLocaleDateString() : ''}</p>
                             </div>
                             <button onClick={() => deleteTask(task.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
@@ -1512,42 +1838,88 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
 
             {/* Floating FAB */}
             <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30">
-                <button onClick={() => setIsFormOpen(true)} className="w-16 h-16 bg-gradient-to-r from-orange-400 to-red-400 rounded-full shadow-xl shadow-orange-500/30 flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-all"><Plus size={32} /></button>
+                <button
+                    onClick={() => setIsFormOpen(true)}
+                    className="w-16 h-16 rounded-full flex items-center justify-center text-blue-600 hover:scale-105 active:scale-95 transition-all"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                    }}
+                >
+                    <Plus size={32} />
+                </button>
             </div>
 
             {/* PREVIEW MODAL */}
             {previewTask && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setPreviewTask(null)} />
-                    <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl relative z-10 animate-scale-in overflow-hidden flex flex-col max-h-[85vh]">
-                        <div className={`h-40 shrink-0 relative bg-gradient-to-r from-blue-400 to-purple-500`}>
-                            {previewTask.attachments?.find(a => a.startsWith('data:image')) && (
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setPreviewTask(null)} />
+                    <div
+                        className="w-full max-w-lg rounded-[32px] relative z-10 animate-scale-in overflow-hidden flex flex-col max-h-[85vh]"
+                        style={{
+                            background: "#E0E5EC",
+                            boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                        }}
+                    >
+                        <div className={`h-40 shrink-0 relative bg-[#E0E5EC] flex items-center justify-center overflow-hidden`}>
+                            {previewTask.attachments?.find(a => a.startsWith('data:image')) ? (
                                 <img src={previewTask.attachments.find(a => a.startsWith('data:image'))} className="w-full h-full object-cover cursor-pointer" onClick={() => setViewingAttachment(previewTask.attachments?.find(a => a.startsWith('data:image')) || null)} />
+                            ) : (
+                                <div className="text-gray-300"><ImageIcon size={48} /></div>
                             )}
-                            <button onClick={() => setPreviewTask(null)} className="absolute top-4 right-4 bg-black/30 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/50 transition-colors"><X size={20} /></button>
+                            <button
+                                onClick={() => setPreviewTask(null)}
+                                className="absolute top-4 right-4 text-gray-500 p-2 rounded-full hover:text-gray-700 transition-colors"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
                         <div className="p-6 md:p-8 overflow-y-auto">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="text-2xl font-bold text-gray-900 leading-tight mb-2">{previewTask.title}</h3>
+                                    <h3 className="text-2xl font-bold text-gray-700 leading-tight mb-2">{previewTask.title}</h3>
                                     <div className="flex items-center gap-2">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getPriorityColor(previewTask.priority)}`}>{previewTask.priority}</span>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold text-gray-500 shadow-inner bg-[#E0E5EC]`}>{previewTask.priority}</span>
                                         <span className="text-xs font-bold text-gray-400 flex items-center gap-1"><CalendarIcon size={12} />{previewTask.deadline ? new Date(previewTask.deadline).toLocaleString() : 'No Deadline'}</span>
                                     </div>
                                 </div>
-                                <button onClick={() => toggleComplete(previewTask.id)} className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${previewTask.completed ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-green-100 hover:text-green-500'}`}><Check size={24} /></button>
+                                <button
+                                    onClick={() => toggleComplete(previewTask.id)}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${previewTask.completed ? 'text-green-500' : 'text-gray-400 hover:text-green-500'}`}
+                                    style={previewTask.completed ? {
+                                        background: "#E0E5EC",
+                                        boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                    } : {
+                                        background: "#E0E5EC",
+                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    }}
+                                >
+                                    <Check size={24} />
+                                </button>
                             </div>
                             <div className="space-y-6">
                                 <div>
                                     <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Description</h4>
-                                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{previewTask.description || "No additional details provided."}</p>
+                                    <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{previewTask.description || "No additional details provided."}</p>
                                 </div>
                                 {previewTask.attachments && previewTask.attachments.length > 0 && (
                                     <div>
                                         <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">Attachments</h4>
                                         <div className="grid grid-cols-2 gap-3">
                                             {previewTask.attachments.map((att, i) => (
-                                                <div key={i} onClick={() => setViewingAttachment(att)} className="relative rounded-xl overflow-hidden bg-gray-100 border border-gray-200 aspect-video group cursor-pointer hover:shadow-lg transition-all">
+                                                <div
+                                                    key={i}
+                                                    onClick={() => setViewingAttachment(att)}
+                                                    className="relative rounded-xl overflow-hidden aspect-video group cursor-pointer hover:shadow-lg transition-all"
+                                                    style={{
+                                                        background: "#E0E5EC",
+                                                        boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                                    }}
+                                                >
                                                     {att.startsWith('data:image') ? <img src={att} className="w-full h-full object-cover" /> : <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 p-2 text-center text-xs font-bold break-all"><FileText size={24} className="mb-2" />{att.replace('FILE:', '')}</div>}
                                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"><Maximize2 className="text-white drop-shadow-md" size={24} /></div>
                                                 </div>
@@ -1557,9 +1929,18 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                 )}
                             </div>
                         </div>
-                        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between gap-4">
-                            <button onClick={() => deleteTask(previewTask.id)} className="px-6 py-3 rounded-xl font-bold text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"><Trash2 size={18} /> Delete</button>
-                            <button onClick={() => handleEditTask(previewTask)} className="flex-1 bg-black text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center gap-2"><Edit2 size={18} /> Edit Task</button>
+                        <div className="p-4 flex justify-between gap-4">
+                            <button onClick={() => deleteTask(previewTask.id)} className="px-6 py-3 rounded-xl font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-2"><Trash2 size={18} /> Delete</button>
+                            <button
+                                onClick={() => handleEditTask(previewTask)}
+                                className="flex-1 text-gray-600 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 hover:text-blue-500"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                <Edit2 size={18} /> Edit Task
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1578,39 +1959,133 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
             {/* FORM MODAL (Unchanged) */}
             {isFormOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* ... (Existing form markup) ... */}
-                    {/* For brevity, re-using previous form logic structure, ensure it's closed correctly */}
-                    <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm" onClick={resetForm} />
-                    <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl relative z-10 animate-scale-in p-6 max-h-[90vh] overflow-y-auto">
-                        <h3 className="font-bold text-xl text-gray-800 mb-6">{editingId ? 'Edit Task' : 'New Task'}</h3>
-                        <input className="w-full bg-gray-50 rounded-2xl px-5 py-4 font-bold text-gray-800 focus:ring-0 outline-none mb-4 text-xl placeholder-gray-300" placeholder="What do you want to do?" value={newTitle} onChange={e => setNewTitle(e.target.value)} autoFocus />
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={resetForm} />
+                    <div
+                        className="w-full max-w-lg rounded-[32px] relative z-10 animate-scale-in p-6 max-h-[90vh] overflow-y-auto"
+                        style={{
+                            background: "#E0E5EC",
+                            boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                        }}
+                    >
+                        <h3 className="font-bold text-xl text-gray-700 mb-6">{editingId ? 'Edit Task' : 'New Task'}</h3>
+                        <input
+                            className="w-full rounded-2xl px-5 py-4 font-bold text-gray-700 focus:ring-0 outline-none mb-4 text-xl placeholder-gray-400"
+                            placeholder="What do you want to do?"
+                            value={newTitle}
+                            onChange={e => setNewTitle(e.target.value)}
+                            autoFocus
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                            }}
+                        />
                         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
                             {['T0', 'T1', 'T2', 'T3'].map(p => (
-                                <button key={p} onClick={() => setNewPriority(p as PriorityLevel)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${newPriority === p ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>{p === 'T0' ? 'Urgent' : p}</button>
+                                <button
+                                    key={p}
+                                    onClick={() => setNewPriority(p as PriorityLevel)}
+                                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${newPriority === p ? 'text-blue-600' : 'text-gray-400'}`}
+                                    style={newPriority === p ? {
+                                        background: "#E0E5EC",
+                                        boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                    } : {
+                                        background: "#E0E5EC",
+                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    }}
+                                >
+                                    {p === 'T0' ? 'Urgent' : p}
+                                </button>
                             ))}
                         </div>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <input type="date" className="bg-gray-50 rounded-xl p-3 text-sm font-bold text-gray-600 outline-none" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} />
-                            <input type="time" className="bg-gray-50 rounded-xl p-3 text-sm font-bold text-gray-600 outline-none" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} />
+                            <input
+                                type="date"
+                                className="rounded-xl p-3 text-sm font-bold text-gray-700 outline-none"
+                                value={newDeadline}
+                                onChange={e => setNewDeadline(e.target.value)}
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                }}
+                            />
+                            <input
+                                type="time"
+                                className="rounded-xl p-3 text-sm font-bold text-gray-700 outline-none"
+                                value={newStartTime}
+                                onChange={e => setNewStartTime(e.target.value)}
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                }}
+                            />
                         </div>
-                        <textarea placeholder="Description" className="w-full bg-gray-50 rounded-xl p-3 text-sm font-bold text-gray-600 outline-none mb-4 resize-none h-24" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
+                        <textarea
+                            placeholder="Description"
+                            className="w-full rounded-xl p-3 text-sm font-bold text-gray-700 outline-none mb-4 resize-none h-24"
+                            value={newDesc}
+                            onChange={e => setNewDesc(e.target.value)}
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                            }}
+                        />
                         {/* Attachments */}
                         <div className="flex gap-4 mb-6">
-                            <label className="flex flex-col items-center justify-center w-20 h-20 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"><ImageIcon size={20} className="text-gray-400 mb-1" /><span className="text-[10px] text-gray-400 font-bold">Image</span><input type="file" accept="image/*" className="hidden" onChange={handleFileAttach} /></label>
-                            <label className="flex flex-col items-center justify-center w-20 h-20 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"><Play size={20} className="text-gray-400 mb-1" /><span className="text-[10px] text-gray-400 font-bold">Video</span><input type="file" accept="video/*" className="hidden" onChange={handleFileAttach} /></label>
-                            <label className="flex flex-col items-center justify-center w-20 h-20 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"><FileText size={20} className="text-gray-400 mb-1" /><span className="text-[10px] text-gray-400 font-bold">Doc</span><input type="file" className="hidden" onChange={handleFileAttach} /></label>
+                            <label
+                                className="flex flex-col items-center justify-center w-20 h-20 rounded-xl cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                <ImageIcon size={20} className="text-gray-500 mb-1" /><span className="text-[10px] text-gray-500 font-bold">Image</span><input type="file" accept="image/*" className="hidden" onChange={handleFileAttach} />
+                            </label>
+                            <label
+                                className="flex flex-col items-center justify-center w-20 h-20 rounded-xl cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                <Play size={20} className="text-gray-500 mb-1" /><span className="text-[10px] text-gray-500 font-bold">Video</span><input type="file" accept="video/*" className="hidden" onChange={handleFileAttach} />
+                            </label>
+                            <label
+                                className="flex flex-col items-center justify-center w-20 h-20 rounded-xl cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                <FileText size={20} className="text-gray-500 mb-1" /><span className="text-[10px] text-gray-500 font-bold">Doc</span><input type="file" className="hidden" onChange={handleFileAttach} />
+                            </label>
                         </div>
                         {newAttachments.length > 0 && (
                             <div className="flex gap-2 mb-6 overflow-x-auto">
                                 {newAttachments.map((att, idx) => (
-                                    <div key={idx} className="w-16 h-16 rounded-xl bg-gray-100 border border-gray-200 shrink-0 overflow-hidden relative">
-                                        {att.startsWith('data:image') ? <img src={att} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-500 font-bold p-1 text-center break-all">{att.substring(0, 10)}...</div>}
-                                        <button onClick={() => setNewAttachments(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5"><X size={10} /></button>
+                                    <div
+                                        key={idx}
+                                        className="w-16 h-16 rounded-xl shrink-0 overflow-hidden relative"
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: "inset 2px 2px 4px #b8b9be, inset -2px -2px 4px #ffffff"
+                                        }}
+                                    >
+                                        {att.startsWith('data:image') ? <img src={att} className="w-full h-full object-cover opacity-80" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-500 font-bold p-1 text-center break-all">{att.substring(0, 10)}...</div>}
+                                        <button onClick={() => setNewAttachments(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-gray-500/50 text-white rounded-full p-0.5 hover:bg-red-500"><X size={10} /></button>
                                     </div>
                                 ))}
                             </div>
                         )}
-                        <button onClick={handleSave} className="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-lg active:scale-[0.98] transition-all">{editingId ? 'Save Changes' : 'Create Task'}</button>
+                        <button
+                            onClick={handleSave}
+                            className="w-full py-4 rounded-2xl font-bold transition-transform active:scale-98 text-blue-600"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                            }}
+                        >
+                            {editingId ? 'Save Changes' : 'Create Task'}
+                        </button>
                     </div>
                 </div>
             )}

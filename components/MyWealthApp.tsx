@@ -254,23 +254,29 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden text-primary bg-background selection:bg-primary/10 transition-colors duration-300 relative">
+    <div className="flex h-screen overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-gray-300 transition-colors duration-300 relative">
 
       {/* Main Content Area */}
       <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
         {/* Added extra bottom padding (pb-40) to accommodate floating bar */}
-        <div className="max-w-5xl mx-auto p-6 md:p-12 pb-40 animate-fade-in">
+        <div className="max-w-5xl mx-auto p-6 md:p-12 pb-40">
 
           {/* Minimal Header Branding */}
-          <div className="flex items-center gap-2 mb-8 opacity-40 hover:opacity-100 transition-opacity w-fit select-none cursor-pointer" onClick={onExit}>
-            <div className="w-5 h-5 bg-primary text-background rounded-full flex items-center justify-center shadow-sm">
-              <Triangle size={10} fill="currentColor" className="rotate-180" />
+          <div className="flex items-center gap-2 mb-8 opacity-60 hover:opacity-100 transition-opacity w-fit select-none cursor-pointer group animate-fade-in-down" onClick={onExit}>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-700 transition-transform active:scale-95 group-hover:scale-105"
+              style={{
+                background: "#E0E5EC",
+                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+              }}
+            >
+              <Triangle size={14} fill="currentColor" className="rotate-180" />
             </div>
-            <span className="font-semibold text-sm tracking-tight text-primary">MyWealth</span>
+            <span className="font-bold text-lg tracking-tight text-gray-700">MyWealth</span>
           </div>
 
           {/* Component Render */}
-          <div key={activeTab} className="animate-slide-up">
+          <div key={activeTab} className="animate-fade-in-up">
             {activeTab === 'dashboard' && <Dashboard accounts={accounts} monthlyData={monthlyData} loans={loans} stocks={stocks} exchangeRate={exchangeRate} />}
             {activeTab === 'accounts' && <Accounts accounts={accounts} setAccounts={setAccounts} />}
             {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} />}
@@ -282,9 +288,14 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
       <WealthAiAssistant onProcessCommand={processAiCommand} />
 
-      {/* FLOATING GLASS NAVIGATION DOCK */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-[420px]">
-        <nav className="bg-surface/80 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl rounded-3xl px-4 py-4 flex items-center justify-between ring-1 ring-black/5 dark:ring-white/5 transition-all hover:scale-[1.01]">
+      {/* FLOATING CLAY NAVIGATION DOCK */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 w-auto animate-fade-in-up opacity-0" style={{ animationDelay: '200ms' }}>
+        <nav
+          className="bg-[#E0E5EC] rounded-[30px] px-6 py-4 flex items-center gap-6 transition-all hover:scale-[1.02]"
+          style={{
+            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+          }}
+        >
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             const Icon = item.icon;
@@ -292,25 +303,20 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className="flex flex-col items-center justify-center gap-1 w-10 h-10 group transition-all duration-300 relative"
+                className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 relative group
+                    ${isActive ? 'text-blue-600 transform -translate-y-1' : 'text-gray-400 hover:text-gray-600'}
+                `}
+                style={isActive ? {
+                  background: "#E0E5EC",
+                  boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                } : {}}
               >
-                <div className={`
-                        transition-all duration-300 
-                        ${isActive
-                    ? 'text-primary -translate-y-1 scale-110'
-                    : 'text-text-muted hover:text-text-main hover:-translate-y-0.5'
-                  }
-                    `}>
-                  <Icon
-                    size={22}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
-                </div>
+                <Icon
+                  size={22}
+                  strokeWidth={isActive ? 2.5 : 2}
+                  className="transition-all"
+                />
 
-                <div className={`
-                        absolute -bottom-1 w-1 h-1 rounded-full bg-primary transition-all duration-300
-                        ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
-                    `}></div>
               </button>
             )
           })}

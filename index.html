@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      // darkMode: 'class', // Removed
+      // darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -30,6 +30,43 @@
             'apple': '0 4px 24px rgba(0,0,0,0.04)',
             'apple-hover': '0 8px 32px rgba(0,0,0,0.08)',
             'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+            'clay-card': '9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)',
+            'clay-inner': 'inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff',
+            'clay-btn': '5px 5px 10px #b8b9be, -5px -5px 10px #ffffff',
+          },
+          animation: {
+            'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'fade-in-down': 'fadeInDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'scale-in': 'scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'bounce-soft': 'bounceSoft 2s infinite ease-in-out',
+            'pulse-soft': 'pulseSoft 3s infinite ease-in-out',
+            'slide-in-right': 'slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          },
+          keyframes: {
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeInDown: {
+              '0%': { opacity: '0', transform: 'translateY(-20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            scaleIn: {
+              '0%': { opacity: '0', transform: 'scale(0.95)' },
+              '100%': { opacity: '1', transform: 'scale(1)' },
+            },
+            bounceSoft: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-5px)' },
+            },
+            pulseSoft: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.7' },
+            },
+            slideInRight: {
+              '0%': { opacity: '0', transform: 'translateX(20px)' },
+              '100%': { opacity: '1', transform: 'translateX(0)' },
+            }
           }
         }
       }

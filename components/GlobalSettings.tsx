@@ -140,33 +140,52 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#121212] text-text-main flex flex-col items-center p-6 animate-fade-in">
-
+        <div className="min-h-screen bg-[#E0E5EC] text-gray-700 flex flex-col items-center p-6 animate-fade-in font-sans">
             <div className="max-w-3xl w-full space-y-8">
                 {/* Header */}
-                <div className="flex items-center gap-4">
-                    <button onClick={onExit} className="p-3 bg-surface rounded-full shadow-sm hover:scale-105 transition-transform text-text-main">
+                <div className="flex items-center gap-4 animate-fade-in-down">
+                    <button
+                        onClick={onExit}
+                        className="p-3 rounded-full transition-all active:scale-95 text-gray-600 hover:text-blue-500"
+                        style={{
+                            background: "#E0E5EC",
+                            boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                        }}
+                    >
                         <ArrowLeft size={24} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-bold">Global Settings</h1>
-                        <p className="text-text-muted">Configure AI & Data for all applications</p>
+                        <h1 className="text-3xl font-bold text-gray-700">Global Settings</h1>
+                        <p className="text-gray-500 font-medium">Configure AI & Data for all applications</p>
                     </div>
                 </div>
 
                 {/* AI Configuration Card */}
-                <div className="bg-surface p-8 rounded-[32px] shadow-xl border border-border">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center">
-                            <BrainCircuit size={20} />
+                <div
+                    className="p-8 rounded-[32px] animate-scale-in opacity-0"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                        animationDelay: '100ms'
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-8">
+                        <div
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-purple-600"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            <BrainCircuit size={24} />
                         </div>
-                        <h2 className="text-xl font-bold">AI Intelligence</h2>
+                        <h2 className="text-2xl font-bold text-gray-700">AI Intelligence</h2>
                     </div>
 
                     {/* Provider Select */}
-                    <div className="mb-6">
-                        <label className="text-xs font-bold text-text-muted uppercase mb-3 block">Service Provider</label>
-                        <div className="grid grid-cols-3 gap-3">
+                    <div className="mb-8">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Service Provider</label>
+                        <div className="grid grid-cols-3 gap-4">
                             {[
                                 { id: 'google', label: 'Google Gemini' },
                                 { id: 'deepseek', label: 'DeepSeek' },
@@ -179,13 +198,24 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         setCheckStatus('idle');
                                         setStatusMsg('');
                                     }}
-                                    className={`py-3 px-2 rounded-xl text-sm font-bold transition-all border-2 ${aiProvider === p.id ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-border bg-input-bg text-text-muted hover:border-purple-200'}`}
+                                    className={`py-4 px-2 rounded-2xl text-sm font-bold transition-all ${aiProvider === p.id ? 'text-purple-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    style={{
+                                        background: "#E0E5EC",
+                                        boxShadow: aiProvider === p.id
+                                            ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    }}
                                 >
                                     {p.label}
                                 </button>
                             ))}
                         </div>
-                        <div className="mt-3 p-3 bg-input-bg rounded-xl text-xs text-text-muted">
+                        <div
+                            className="mt-4 p-4 rounded-2xl text-xs font-medium text-gray-500"
+                            style={{
+                                boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                            }}
+                        >
                             {aiProvider === 'google' && <p>✅ <b>Recommended:</b> Native support for Gemini. Fast & Reliable.</p>}
                             {aiProvider === 'deepseek' && <p>✅ <b>Optimized:</b> Requests are routed through local proxy to bypass CORS.</p>}
                             {aiProvider === 'openrouter' && <p>✅ <b>Best Compatibility:</b> Access DeepSeek, Claude, and Llama.</p>}
@@ -193,11 +223,11 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                     </div>
 
                     {/* API Key */}
-                    <div className="mb-6">
-                        <label className="text-xs font-bold text-text-muted uppercase mb-2 block">
+                    <div className="mb-8">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">
                             {aiProvider === 'google' ? 'Google AI Studio Key' : aiProvider === 'deepseek' ? 'DeepSeek API Key' : 'OpenRouter Key'}
                         </label>
-                        <div className="flex gap-2">
+                        <div className="flex gap-4">
                             <input
                                 type="password"
                                 value={apiKey}
@@ -206,12 +236,19 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     setCheckStatus('idle');
                                 }}
                                 placeholder={aiProvider === 'google' ? "AIzaSy..." : "sk-..."}
-                                className="flex-1 bg-input-bg p-4 rounded-xl border border-border focus:ring-2 focus:ring-purple-500/20 font-mono text-sm outline-none"
+                                className="flex-1 p-4 rounded-2xl font-mono text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                style={{
+                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                }}
                             />
                             <button
                                 onClick={checkConnection}
                                 disabled={!apiKey || checkStatus === 'checking'}
-                                className={`px-6 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${checkStatus === 'success' ? 'bg-green-500 text-white' : checkStatus === 'error' ? 'bg-red-500 text-white' : 'bg-text-main text-surface hover:opacity-90'}`}
+                                className={`px-6 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 active:scale-95 ${checkStatus === 'success' ? 'text-green-500' : checkStatus === 'error' ? 'text-red-500' : 'text-gray-600'}`}
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
                             >
                                 {checkStatus === 'checking' ? <Activity className="animate-spin" size={18} /> :
                                     checkStatus === 'success' ? <Check size={18} /> :
@@ -220,7 +257,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             </button>
                         </div>
                         {statusMsg && (
-                            <p className={`text-xs font-bold mt-2 ${checkStatus === 'success' ? 'text-green-600' : checkStatus === 'error' ? 'text-red-600' : 'text-text-muted'}`}>
+                            <p className={`text-xs font-bold mt-3 pl-2 ${checkStatus === 'success' ? 'text-green-600' : checkStatus === 'error' ? 'text-red-600' : 'text-gray-400'}`}>
                                 {statusMsg}
                             </p>
                         )}
@@ -228,19 +265,37 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                     {/* Model Select */}
                     <div>
-                        <label className="text-xs font-bold text-text-muted uppercase mb-3 block">Model Selection</label>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Model Selection</label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             {/* Google Options */}
                             {aiProvider === 'google' && (
                                 <>
-                                    <div onClick={() => setAiModel('gemini-2.5-flash')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${aiModel === 'gemini-2.5-flash' ? 'border-purple-600 bg-purple-50' : 'border-border'}`}>
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">Gemini 2.5 Flash</span>{aiModel === 'gemini-2.5-flash' && <CheckCircle2 size={16} className="text-purple-600" />}</div>
-                                        <div className="text-xs text-text-muted flex items-center gap-1"><Zap size={10} className="text-yellow-500" /> Fast & Efficient</div>
+                                    <div
+                                        onClick={() => setAiModel('gemini-2.5-flash')}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'gemini-2.5-flash' ? 'text-purple-600' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === 'gemini-2.5-flash'
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">Gemini 2.5 Flash</span>{aiModel === 'gemini-2.5-flash' && <CheckCircle2 size={16} />}</div>
+                                        <div className="text-xs text-gray-400 flex items-center gap-1"><Zap size={10} className="text-yellow-500" /> Fast & Efficient</div>
                                     </div>
-                                    <div onClick={() => setAiModel('gemini-3-pro-preview')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${aiModel === 'gemini-3-pro-preview' ? 'border-purple-600 bg-purple-50' : 'border-border'}`}>
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">Gemini 3 Pro</span>{aiModel === 'gemini-3-pro-preview' && <CheckCircle2 size={16} className="text-purple-600" />}</div>
-                                        <div className="text-xs text-text-muted flex items-center gap-1"><BrainCircuit size={10} className="text-blue-500" /> High Intelligence</div>
+                                    <div
+                                        onClick={() => setAiModel('gemini-3-pro-preview')}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'gemini-3-pro-preview' ? 'text-purple-600' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === 'gemini-3-pro-preview'
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">Gemini 3 Pro</span>{aiModel === 'gemini-3-pro-preview' && <CheckCircle2 size={16} />}</div>
+                                        <div className="text-xs text-gray-400 flex items-center gap-1"><BrainCircuit size={10} className="text-blue-500" /> High Intelligence</div>
                                     </div>
                                 </>
                             )}
@@ -248,13 +303,31 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             {/* DeepSeek Options */}
                             {aiProvider === 'deepseek' && (
                                 <>
-                                    <div onClick={() => setAiModel('deepseek-chat')} className={`p-4 rounded-xl border-2 cursor-pointer ${aiModel === 'deepseek-chat' ? 'border-purple-600 bg-purple-50' : 'border-border'}`}>
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">DeepSeek V3 (Chat)</span>{aiModel === 'deepseek-chat' && <CheckCircle2 size={16} className="text-purple-600" />}</div>
-                                        <div className="text-xs text-text-muted">Standard high-performance model</div>
+                                    <div
+                                        onClick={() => setAiModel('deepseek-chat')}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'deepseek-chat' ? 'text-purple-600' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === 'deepseek-chat'
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">DeepSeek V3 (Chat)</span>{aiModel === 'deepseek-chat' && <CheckCircle2 size={16} />}</div>
+                                        <div className="text-xs text-gray-400">Standard high-performance model</div>
                                     </div>
-                                    <div onClick={() => setAiModel('deepseek-reasoner')} className={`p-4 rounded-xl border-2 cursor-pointer ${aiModel === 'deepseek-reasoner' ? 'border-purple-600 bg-purple-50' : 'border-border'}`}>
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">DeepSeek R1 (Reasoner)</span>{aiModel === 'deepseek-reasoner' && <CheckCircle2 size={16} className="text-purple-600" />}</div>
-                                        <div className="text-xs text-text-muted">Specialized in logic & reasoning</div>
+                                    <div
+                                        onClick={() => setAiModel('deepseek-reasoner')}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'deepseek-reasoner' ? 'text-purple-600' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === 'deepseek-reasoner'
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">DeepSeek R1 (Reasoner)</span>{aiModel === 'deepseek-reasoner' && <CheckCircle2 size={16} />}</div>
+                                        <div className="text-xs text-gray-400">Specialized in logic & reasoning</div>
                                     </div>
                                 </>
                             )}
@@ -277,29 +350,40 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             <div
                                                 key={m.id}
                                                 onClick={() => setAiModel(m.id)}
-                                                className={`p-3 rounded-xl border cursor-pointer transition-all flex justify-between items-center ${aiModel === m.id ? 'border-purple-600 bg-purple-50' : 'border-border hover:border-purple-300'}`}
+                                                className={`p-4 rounded-2xl cursor-pointer transition-all active:scale-95 ${aiModel === m.id ? 'text-purple-600' : 'text-gray-600 hover:text-gray-800'}`}
+                                                style={{
+                                                    background: "#E0E5EC",
+                                                    boxShadow: aiModel === m.id
+                                                        ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                        : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                }}
                                             >
                                                 <div>
-                                                    <div className="font-bold text-sm">{m.name}</div>
-                                                    <div className="text-[10px] text-text-muted">{m.provider}</div>
+                                                    <div className="font-bold text-sm flex items-center justify-between">
+                                                        {m.name}
+                                                        {aiModel === m.id && <CheckCircle2 size={16} />}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 font-medium">{m.provider}</div>
                                                 </div>
-                                                {aiModel === m.id && <CheckCircle2 size={16} className="text-purple-600" />}
                                             </div>
                                         ))}
                                     </div>
 
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <MessageSquare size={14} className="text-text-muted" />
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <MessageSquare size={16} className="text-gray-400" />
                                         </div>
                                         <input
-                                            className="w-full bg-input-bg p-3 pl-9 rounded-xl border border-border text-sm focus:ring-2 focus:ring-purple-500/20 outline-none"
+                                            className="w-full pl-10 p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
                                             placeholder="Or enter custom Model ID (e.g. mistralai/mistral-large-latest)"
                                             value={aiModel}
                                             onChange={e => setAiModel(e.target.value)}
+                                            style={{
+                                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                            }}
                                         />
-                                        <p className="text-[10px] text-text-muted mt-2 ml-1">
-                                            Copy ID from <a href="https://openrouter.ai/models" target="_blank" className="text-purple-600 underline">openrouter.ai/models</a>
+                                        <p className="text-[10px] text-gray-400 font-bold mt-2 ml-2 tracking-wide">
+                                            Copy ID from <a href="https://openrouter.ai/models" target="_blank" className="text-blue-500 underline decoration-blue-500/30">openrouter.ai/models</a>
                                         </p>
                                     </div>
                                 </div>
@@ -309,38 +393,71 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 </div>
 
                 {/* Backup Card */}
-                <div className="bg-surface p-8 rounded-[32px] shadow-xl border border-border">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
-                            <Database size={20} />
+                <div
+                    className="p-8 rounded-[32px] animate-fade-in-up opacity-0"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                        animationDelay: '200ms'
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-8">
+                        <div
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            <Database size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold">Data Management</h2>
-                            <p className="text-sm text-text-muted">Backup applies to MyWealth, GetNote & Settings</p>
+                            <h2 className="text-2xl font-bold text-gray-700">Data Management</h2>
+                            <p className="text-sm text-gray-500 font-medium">Backup applies to MyWealth, GetNote & Settings</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <button
                             onClick={handleFullBackup}
-                            className="p-6 rounded-2xl bg-input-bg border border-border hover:border-blue-500 hover:bg-blue-500/5 transition-all group text-left"
+                            className="p-6 rounded-[24px] transition-all active:scale-95 group text-left relative overflow-hidden text-gray-600 hover:text-blue-600"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                            }}
                         >
-                            <div className="w-10 h-10 bg-blue-500/10 text-blue-600 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                <Download size={20} />
+                            <div
+                                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:-translate-y-1 text-gray-500 group-hover:text-blue-500"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                }}
+                            >
+                                <Download size={22} />
                             </div>
-                            <h3 className="font-bold text-lg mb-1">Export Full Backup</h3>
-                            <p className="text-xs text-text-muted">Save all application data to a single JSON file.</p>
+                            <h3 className="font-bold text-xl mb-1">Export Backup</h3>
+                            <p className="text-xs text-gray-400 font-medium">Save all app data to a single JSON.</p>
                         </button>
 
                         <button
                             onClick={() => document.getElementById('global-restore')?.click()}
-                            className="p-6 rounded-2xl bg-input-bg border border-border hover:border-green-500 hover:bg-green-500/5 transition-all group text-left"
+                            className="p-6 rounded-[24px] transition-all active:scale-95 group text-left relative overflow-hidden text-gray-600 hover:text-blue-600"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                            }}
                         >
-                            <div className="w-10 h-10 bg-green-500/10 text-green-600 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                <Upload size={20} />
+                            <div
+                                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:-translate-y-1 text-gray-500 group-hover:text-blue-500"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                }}
+                            >
+                                <Upload size={22} />
                             </div>
-                            <h3 className="font-bold text-lg mb-1">Restore Data</h3>
-                            <p className="text-xs text-text-muted">Load data from a backup file.</p>
+                            <h3 className="font-bold text-xl mb-1">Restore Data</h3>
+                            <p className="text-xs text-gray-400 font-medium">Restore from a backup file.</p>
                             <input
                                 id="global-restore"
                                 type="file"

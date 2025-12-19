@@ -11,17 +11,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function createServer() {
     const app = express();
 
-    // Middleware to parse JSON bodies (limit 10mb as per config)
-    app.use(express.json({ limit: '10mb' }));
-
     // Create Vite server in middleware mode
     const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: 'spa',
     });
 
-    // API Route Handler
-    app.post('/api/process_input', async (req, res) => {
+    // API Route Handler (Parse JSON ONLY for this route to avoid breaking proxies)
+    app.post('/api/process_input', express.json({ limit: '10mb' }), async (req, res) => {
         console.log('API Request received: /api/process_input');
         try {
             await processInputHandler(req, res);
@@ -36,8 +33,9 @@ async function createServer() {
 
     const port = 3001;
     app.listen(port, () => {
+        console.log(`\n\n=== SERVER RESTARTED (FIXED PROXY) ===`);
         console.log(`Server running at http://localhost:${port}`);
-        console.log(`> API endpoint ready at http://localhost:${port}/api/process_input`);
+        console.log(`> API endpoint ready at http://localhost:${port}/api/process_input\n`);
     });
 }
 

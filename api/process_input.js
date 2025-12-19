@@ -47,24 +47,74 @@ export default async function handler(req, res) {
             const isVideo = content.includes('youtube.com') || content.includes('youtu.be') || content.includes('vimeo.com');
 
             if (isVideo) {
-                // Try multiple sources for robust metadata
-                const ogTitle = $('meta[property="og:title"]').attr('content');
-                const metaTitle = $('meta[name="title"]').attr('content');
-                const docTitle = $('title').text();
+                // 1. Try Transcript (Best for "Reading" content)
+                try {
+                    const { YoutubeTranscript } = await import('youtube-transcript');
+                    const transcriptItems = await YoutubeTranscript.fetchTranscript(content);
+                    const transcriptText = transcriptItems.map(item => item.text).join(' ');
 
-                const ogDesc = $('meta[property="og:description"]').attr('content');
-                const metaDesc = $('meta[name="description"]').attr('content');
+                    // Get metadata for title via oEmbed (public & reliable)
+                    let title = "YouTube Video";
+                    try {
+                        const oembedParams = new URLSearchParams({ url: content, format: 'json' });
+                        const oembedRes = await fetch(`https://www.youtube.com/oembed?${oembedParams.toString()}`);
+                        if (oembedRes.ok) {
+                            const oembedData = await oembedRes.json();
+                            title = oembedData.title;
+                            metadata = {
+                                title: oembedData.title,
+                                author: oembedData.author_name,
+                                image: oembedData.thumbnail_url,
+                                url: content
+                            };
+                        }
+                    } catch (e) { }
 
-                const finalTitle = ogTitle || metaTitle || docTitle || "Untitled Video";
-                const finalDesc = ogDesc || metaDesc || "No description available.";
+                    extractedText = `[VIDEO TRANSCRIPT ANALYSIS]\nVideo Title: ${title}\nURL: ${content}\n\n--- TRANSCRIPT ---\n${transcriptText.slice(0, 20000)}\n... (truncated if too long)`;
 
-                metadata = {
-                    title: finalTitle,
-                    description: finalDesc,
-                    image: $('meta[property="og:image"]').attr('content'),
-                    url: content
-                };
-                extractedText = `[VIDEO LINK ANALYSIS]\nTitle: ${finalTitle}\nDescription: ${finalDesc}\nURL: ${content}\n\n(Note: This is metadata only. The AI cannot watch the video but can discuss the topic based on this title and description.)`;
+                } catch (transcriptError) {
+                    console.log("Transcript failed, falling back to metadata", transcriptError.message);
+
+                    // 2. Fallback to oEmbed Metadata (Reliable Title/Author)
+                    let finalTitle = "Untitled Video";
+                    let finalDesc = "No description available (Transcript unavailable).";
+
+                    try {
+                        const oembedParams = new URLSearchParams({ url: content, format: 'json' });
+                        const oembedRes = await fetch(`https://www.youtube.com/oembed?${oembedParams.toString()}`);
+                        if (oembedRes.ok) {
+                            const oembedData = await oembedRes.json();
+                            finalTitle = oembedData.title;
+                            metadata = {
+                                title: finalTitle,
+                                image: oembedData.thumbnail_url,
+                                author: oembedData.author_name,
+                                url: content
+                            };
+                            // oEmbed doesn't give description, but better than nothing.
+                            finalDesc = `By ${oembedData.author_name}`;
+                        } else {
+                            // 3. Last Resort: Cheerio Scraping (Flaky)
+                            const ogTitle = $('meta[property="og:title"]').attr('content');
+                            const metaTitle = $('meta[name="title"]').attr('content');
+                            const docTitle = $('title').text();
+                            const ogDesc = $('meta[property="og:description"]').attr('content');
+
+                            finalTitle = ogTitle || metaTitle || docTitle || finalTitle;
+                            finalDesc = ogDesc || finalDesc;
+
+                            metadata = {
+                                title: finalTitle,
+                                description: finalDesc,
+                                image: $('meta[property="og:image"]').attr('content'),
+                                url: content
+                            };
+                        }
+                    } catch (e) { console.error("oEmbed failed", e); }
+
+                    extractedText = `[VIDEO METADATA ONLY]\nTitle: ${finalTitle}\nDescription: ${finalDesc}\nURL: ${content}\n\n(Note: The AI could not retrieve the video transcript/subtitles. It can only discuss the metadata.)`;
+                }
+
             } else {
                 extractedText = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 20000); // Limit text length
                 metadata = {
