@@ -35,8 +35,8 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, loans, sto
     // 2. Calculate Liabilities (Loans)
     const totalLiabilities = useMemo(() => loans.reduce((sum, l) => sum + l.remainingAmount, 0), [loans]);
 
-    // 3. Net Worth
-    const netWorth = totalAssets - totalLiabilities;
+    // 3. Net Worth (User requested: Wallet + Portfolio, excluding loans from this calc)
+    const netWorth = totalAssets;
 
     // 4. Monthly Flows
     const monthlyExpensesTotal = useMemo(() => monthlyData.expenses.reduce((sum, e) => sum + e.amount, 0), [monthlyData]);
@@ -81,9 +81,9 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, loans, sto
 
                     <div className="grid grid-cols-2 gap-8 border-t border-gray-300 pt-6">
                         <div>
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Assets</p>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Cash</p>
                             <p className="text-xl font-bold text-green-500">
-                                + RM {totalAssets.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                + RM {totalCash.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </p>
                         </div>
                         <div>
