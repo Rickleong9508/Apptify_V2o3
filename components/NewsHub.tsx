@@ -161,7 +161,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
         <div className="fixed inset-0 z-50 bg-[#E0E5EC] text-[#4A4A4A] flex flex-col font-sans">
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-[#E0E5EC] z-10"
+            <div className="flex items-center justify-between px-4 md:px-6 py-4 bg-[#E0E5EC] z-10 sticky top-0"
                 style={{ boxShadow: "0 4px 6px -1px rgba(163,177,198,0.3)" }}>
                 <button
                     onClick={onExit}
@@ -171,11 +171,14 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                         boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
                     }}
                 >
-                    <ArrowLeft size={24} />
+                    <ArrowLeft size={20} />
                 </button>
 
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold tracking-tight text-gray-700 hidden md:block">NewsHub Beta</h1>
+
+                    {/* Mobile Title (visible only on small screens) */}
+                    <h1 className="text-lg font-bold tracking-tight text-gray-700 block md:hidden">NewsHub</h1>
 
                     {/* Language Toggle */}
                     <div className="flex items-center p-1 rounded-full bg-[#E0E5EC]"
@@ -206,14 +209,14 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                         boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
                     }}
                 >
-                    <RefreshCw size={24} />
+                    <RefreshCw size={20} />
                 </button>
             </div>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
 
                 {/* Sidebar (Desktop) */}
-                <div className="hidden md:flex flex-col w-72 bg-[#E0E5EC] border-r border-gray-300/50 p-4 space-y-2 overflow-y-auto">
+                <div className="hidden md:flex flex-col w-72 bg-[#E0E5EC] border-r border-gray-300/50 p-4 space-y-2 overflow-y-auto shrink-0">
                     <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-2 mb-2">Sources ({lang.toUpperCase()})</h2>
 
                     {sources.map(source => (
@@ -253,13 +256,13 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                     </button>
                 </div>
 
-                {/* Mobile Source Selector */}
-                <div className="md:hidden flex overflow-x-auto p-4 gap-3 bg-[#E0E5EC] border-b border-gray-300/50 shrink-0">
+                {/* Mobile Source Selector (Improved) */}
+                <div className="md:hidden flex overflow-x-auto p-4 gap-3 bg-[#E0E5EC] border-b border-gray-300/50 shrink-0 no-scrollbar">
                     {sources.map(source => (
                         <button
                             key={source.id}
                             onClick={() => setActiveSourceId(source.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all shrink-0
                 ${activeSourceId === source.id
                                     ? 'text-blue-600'
                                     : 'text-gray-600'}`}
@@ -271,13 +274,13 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                 boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
                             }}
                         >
-                            {source.id.startsWith('custom_') ? <Rss size={14} /> : <source.icon size={14} />}
+                            <source.icon size={14} />
                             {source.name}
                         </button>
                     ))}
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium text-gray-500 border border-gray-400 border-dashed"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium text-gray-500 border border-gray-400 border-dashed shrink-0"
                     >
                         <Plus size={14} />
                         Add
@@ -286,7 +289,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-8">
-                    <div className="max-w-4xl mx-auto space-y-6">
+                    <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
 
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-20 opacity-50 space-y-4">
@@ -318,10 +321,10 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                             boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
                                         }}
                                     >
-                                        <div className="flex flex-col md:flex-row gap-6">
-                                            {/* Image Section (if exists) */}
+                                        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+                                            {/* Image Section (Stacking optimized) */}
                                             {item.image && (
-                                                <div className="w-full md:w-48 h-32 md:h-auto shrink-0 rounded-xl overflow-hidden bg-gray-200">
+                                                <div className="w-full h-48 md:w-48 md:h-32 shrink-0 rounded-xl overflow-hidden bg-gray-200">
                                                     <img
                                                         src={item.image}
                                                         alt={item.title}
@@ -338,7 +341,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                                             {item.title}
                                                         </h3>
                                                     </a>
-                                                    <p className="text-sm text-gray-400 line-clamp-2 md:line-clamp-3 mb-3">
+                                                    <p className="text-sm text-gray-400 line-clamp-3 mb-3">
                                                         {item.metadata}
                                                     </p>
                                                 </div>
