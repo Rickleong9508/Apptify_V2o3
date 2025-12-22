@@ -192,46 +192,5 @@ export const aiService = {
         }
     },
 
-    analyzeBetaTestValuation: async (
-        provider: AIProvider,
-        model: string,
-        apiKey: string,
-        symbol: string,
-        financials: any
-    ): Promise<any> => {
-        const prompt = `
-        You are a Valuation Expert. Analyze ${symbol} based on these financials:
-        ${JSON.stringify(financials, null, 2)}
 
-        Generate assumptions for a 5-Year DCF/Scenario Valuation model.
-        Provide TWO scenarios: "mid" (Base Case) and "good" (Optimistic Case).
-        
-        For each scenario, estimate:
-        - revenueCagr: Expected 5y Revenue CAGR (decimal, e.g. 0.05 for 5%)
-        - operatingMargin: Long-term Operating Margin (decimal)
-        - taxRate: Effective Tax Rate (decimal, default ~0.21)
-        - dilution: Expected Annual Share Dilution (decimal, e.g. 0.01 for 1%)
-        - peMultiple: 5y Exit P/E Ratio
-
-        Also provide a brief "analysis" text (max 3 sentences) explaining the rationale.
-
-        Output ONLY JSON:
-        {
-          "scenarios": {
-            "mid": { "revenueCagr": number, "operatingMargin": number, "taxRate": number, "dilution": number, "peMultiple": number },
-            "good": { "revenueCagr": number, "operatingMargin": number, "taxRate": number, "dilution": number, "peMultiple": number }
-          },
-          "analysis": "string"
-        }
-        `;
-
-        try {
-            const responseText = await aiService.generate(provider, model, apiKey, prompt);
-            const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(cleanJson);
-        } catch (error) {
-            console.error("BetaTest Valuation Error:", error);
-            throw error;
-        }
-    }
 };

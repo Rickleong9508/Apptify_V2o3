@@ -4,9 +4,10 @@ import MyWealthApp from './components/MyWealthApp';
 import GetNote from './components/GetNote';
 import GlobalSettings from './components/GlobalSettings';
 import AutoCount from './components/AutoCount';
-import BetaTest from './components/BetaTest';
+import NewsHub from './components/NewsHub';
 
-type AppMode = 'launcher' | 'mywealth' | 'getnote' | 'settings' | 'autocount' | 'betatest';
+
+type AppMode = 'launcher' | 'mywealth' | 'getnote' | 'settings' | 'autocount' | 'newshub';
 
 const App: React.FC = () => {
   const [currentApp, setCurrentApp] = useState<AppMode>('launcher');
@@ -28,9 +29,11 @@ const App: React.FC = () => {
     return <AutoCount onExit={() => setCurrentApp('launcher')} />;
   }
 
-  if (currentApp === 'betatest') {
-    return <BetaTest onExit={() => setCurrentApp('launcher')} />;
+  if (currentApp === 'newshub') {
+    return <NewsHub onExit={() => setCurrentApp('launcher')} />;
   }
+
+
 
   return (
     <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-start pt-16 md:pt-24 p-6 transition-all duration-500 font-sans selection:bg-gray-300">
@@ -52,7 +55,7 @@ const App: React.FC = () => {
             { id: 'mywealth', icon: Wallet, title: 'MyWealth', desc: 'Finance & Portfolio' },
             { id: 'autocount', icon: Cpu, title: 'AutoCount', desc: 'AI Object Valuation' },
             { id: 'getnote', icon: NotebookPen, title: 'GetNote', desc: 'Second Brain' },
-            { id: 'betatest', icon: Sparkles, title: 'BetaTest', desc: 'AI Stock Analyst' },
+            { id: 'newshub', icon: Sparkles, title: 'NewsHub Beta', desc: 'Tech & Trends' },
           ].map((item, index) => (
             <button
               key={item.id}

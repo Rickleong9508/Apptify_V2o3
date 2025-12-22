@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import processInputHandler from './api/process_input.js';
+import { getNews } from './api/news_sources.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -24,6 +25,19 @@ async function createServer() {
             await processInputHandler(req, res);
         } catch (e) {
             console.error("API Handler Error", e);
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    // NewsHub API Route
+    app.post('/api/news', express.json(), async (req, res) => {
+        try {
+            const { source, url } = req.body;
+            console.log(`Fetching news for source: ${source} ${url ? '(' + url + ')' : ''}`);
+            const news = await getNews(source, url);
+            res.json(news);
+        } catch (e) {
+            console.error("News API Error", e);
             res.status(500).json({ error: e.message });
         }
     });
