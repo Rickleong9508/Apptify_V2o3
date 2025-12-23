@@ -30,20 +30,144 @@ const PRESET_SOURCES_EN: Source[] = [
     { id: 'intl', name: 'International', icon: Globe, type: 'rss', url: 'http://feeds.bbci.co.uk/news/world/rss.xml' },
     { id: 'malaysia', name: 'Malaysia News', icon: Globe, type: 'rss', url: 'https://www.thestar.com.my/rss/news/nation' },
     { id: 'us_stocks', name: 'US Stocks', icon: Globe, type: 'rss', url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html' },
-    { id: 'my_stocks', name: 'Malaysia Stocks', icon: Globe, type: 'rss', url: 'https://www.thestar.com.my/rss/business/marketwatch' },
+    { id: 'my_stocks', name: 'Malaysia Stocks', icon: Globe, type: 'rss', url: 'https://www.thestar.com.my/rss/business' },
     { id: 'lifestyle', name: 'Lifestyle', icon: Globe, type: 'rss', url: 'https://www.thestar.com.my/rss/lifestyle' },
     { id: 'ai', name: 'AI News', icon: Globe, type: 'rss', url: 'https://wired.com/feed/tag/ai/latest/rss' },
 ];
 
 // Chinese Presets (Sin Chew Daily & TechNode CN for authentic content)
 const PRESET_SOURCES_CN: Source[] = [
-    { id: 'intl', name: '国际新闻', icon: Globe, type: 'rss', url: 'https://www.sinchew.com.my/category/international/feed/' },
-    { id: 'malaysia', name: '马来西亚新闻', icon: Globe, type: 'rss', url: 'https://www.sinchew.com.my/category/nation/feed/' },
+    { id: 'intl', name: '国际新闻', icon: Globe, type: 'rss', url: 'https://www.orientaldaily.com.my/feeds/rss/international' },
+    { id: 'malaysia', name: '马来西亚新闻', icon: Globe, type: 'rss', url: 'https://www.orientaldaily.com.my/feeds/rss/nation' },
     { id: 'us_stocks', name: '美股新闻', icon: Globe, type: 'rss', url: 'https://wallstreetcn.com/rss/global' }, // WallstreetCN for Global/US markets
-    { id: 'my_stocks', name: '马股新闻', icon: Globe, type: 'rss', url: 'https://www.sinchew.com.my/category/business/feed/' },
-    { id: 'lifestyle', name: '副刊', icon: Globe, type: 'rss', url: 'https://www.sinchew.com.my/category/vice/feed/' },
+    { id: 'my_stocks', name: '马股新闻', icon: Globe, type: 'rss', url: 'https://www.orientaldaily.com.my/feeds/rss/business' },
+    { id: 'lifestyle', name: '副刊', icon: Globe, type: 'rss', url: 'https://www.orientaldaily.com.my/feeds/rss/lifestyle' },
     { id: 'ai', name: 'AI 领域', icon: Globe, type: 'rss', url: 'https://cn.technode.com/feed/' }, // TechNode CN
 ];
+
+import { aiService, AIProvider } from '../services/aiService';
+
+const NewsCard: React.FC<{ item: NewsItem; lang: 'en' | 'cn' }> = ({ item, lang }) => {
+    const [translatedTitle, setTranslatedTitle] = useState(item.title);
+    const [translatedMeta, setTranslatedMeta] = useState(item.metadata);
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [hasTranslated, setHasTranslated] = useState(false);
+
+    // Auto-translate if lang is 'cn' but content seems English (simple heuristic)
+    // Actually, usually users want to click to translate
+    const handleTranslate = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (hasTranslated) {
+            // Revert
+            setTranslatedTitle(item.title);
+            setTranslatedMeta(item.metadata);
+            setHasTranslated(false);
+            return;
+        }
+
+        setIsTranslating(true);
+        try {
+            const apiKey = localStorage.getItem('app_global_api_key') || '';
+            const provider = (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google';
+            const model = localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash';
+
+            const prompt = `Translate the following news title and summary to ${lang === 'cn' ? 'Simpified Chinese (zh-CN)' : 'English'}. Return JSON: { "title": "...", "summary": "..." }
+            
+            Title: ${item.title}
+            Summary: ${item.metadata}`;
+
+            const res = await aiService.generate(provider, model, apiKey, prompt);
+            const jsonStr = res.replace(/```json/g, '').replace(/```/g, '').trim();
+            const data = JSON.parse(jsonStr);
+
+            setTranslatedTitle(data.title);
+            setTranslatedMeta(data.summary);
+            setHasTranslated(true);
+        } catch (e) {
+            console.error("Translation failed", e);
+            alert("Translation failed. Check API Settings.");
+        } finally {
+            setIsTranslating(false);
+        }
+    };
+
+    return (
+        <div
+            className="group rounded-2xl p-5 md:p-6 transition-all duration-300 hover:-translate-y-1 block bg-[#E0E5EC]"
+            style={{
+                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+            }}
+        >
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+                {/* Image Section (Stacking optimized) */}
+                {item.image && (
+                    <div className="w-full h-48 md:w-48 md:h-32 shrink-0 rounded-xl overflow-hidden bg-gray-200">
+                        <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                        />
+                    </div>
+                )}
+
+                <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
+                            <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 leading-relaxed group-hover:text-blue-600 transition-colors">
+                                {translatedTitle}
+                            </h3>
+                        </a>
+                        <p className="text-sm text-gray-400 line-clamp-3 mb-3">
+                            {translatedMeta}
+                        </p>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-auto">
+                        <div className="flex items-center gap-3 text-xs md:text-sm text-gray-500 font-medium">
+                            <span className="bg-gray-200/50 px-2 py-1 rounded text-gray-600 border border-gray-300/30">
+                                {item.source}
+                            </span>
+                            <span>{item.time}</span>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleTranslate}
+                                disabled={isTranslating}
+                                className={`p-2 rounded-lg flex items-center justify-center transition-all active:scale-95 ${hasTranslated ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'}`}
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: isTranslating || hasTranslated
+                                        ? "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                        : "4px 4px 8px #b8b9be, -4px -4px 8px #ffffff"
+                                }}
+                                title="Translate Content"
+                            >
+                                {isTranslating ? <RefreshCw size={18} className="animate-spin" /> : <Globe size={18} />}
+                            </button>
+
+                            <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hidden md:flex p-2 rounded-lg items-center justify-center text-gray-400 group-hover:text-blue-500 transition-all active:scale-95"
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "4px 4px 8px #b8b9be, -4px -4px 8px #ffffff"
+                                }}
+                            >
+                                <ExternalLink size={18} />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
     const [lang, setLang] = useState<'en' | 'cn'>('en');
@@ -314,62 +438,11 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                     </div>
                                 )}
                                 {news.map((item, index) => (
-                                    <div
+                                    <NewsCard
                                         key={index}
-                                        className="group rounded-2xl p-5 md:p-6 transition-all duration-300 hover:-translate-y-1 block bg-[#E0E5EC]"
-                                        style={{
-                                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                        }}
-                                    >
-                                        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-                                            {/* Image Section (Stacking optimized) */}
-                                            {item.image && (
-                                                <div className="w-full h-48 md:w-48 md:h-32 shrink-0 rounded-xl overflow-hidden bg-gray-200">
-                                                    <img
-                                                        src={item.image}
-                                                        alt={item.title}
-                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                        onError={(e) => (e.currentTarget.style.display = 'none')}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <div className="flex-1 flex flex-col justify-between">
-                                                <div>
-                                                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
-                                                        <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 leading-relaxed group-hover:text-blue-600 transition-colors">
-                                                            {item.title}
-                                                        </h3>
-                                                    </a>
-                                                    <p className="text-sm text-gray-400 line-clamp-3 mb-3">
-                                                        {item.metadata}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex items-center justify-between mt-auto">
-                                                    <div className="flex items-center gap-3 text-xs md:text-sm text-gray-500 font-medium">
-                                                        <span className="bg-gray-200/50 px-2 py-1 rounded text-gray-600 border border-gray-300/30">
-                                                            {item.source}
-                                                        </span>
-                                                        <span>{item.time}</span>
-                                                    </div>
-
-                                                    <a
-                                                        href={item.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="hidden md:flex p-2 rounded-lg items-center justify-center text-gray-400 group-hover:text-blue-500 transition-all active:scale-95"
-                                                        style={{
-                                                            background: "#E0E5EC",
-                                                            boxShadow: "4px 4px 8px #b8b9be, -4px -4px 8px #ffffff"
-                                                        }}
-                                                    >
-                                                        <ExternalLink size={18} />
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        item={item}
+                                        lang={lang}
+                                    />
                                 ))}
                             </>
                         )}

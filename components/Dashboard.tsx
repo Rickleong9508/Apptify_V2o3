@@ -1,16 +1,17 @@
 import React, { useMemo } from 'react';
-import { Account, MonthlyData, Loan, Stock } from '../types';
+import { Account, MonthlyData, Loan, Stock, Expense } from '../types';
 import { Wallet, TrendingUp, TrendingDown, DollarSign, Activity, ArrowUpRight, ArrowDownLeft, PieChart, Lock, Unlock } from 'lucide-react';
 
 interface DashboardProps {
     accounts: Account[];
     monthlyData: MonthlyData;
+    fixedExpenses: Expense[];
     loans: Loan[];
     stocks: Stock[];
     exchangeRate: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, loans, stocks, exchangeRate }) => {
+const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate }) => {
 
     // 1. Calculate Total Assets (Cash + Stock Value)
     const totalCash = useMemo(() => accounts.reduce((sum, acc) => sum + acc.balance, 0), [accounts]);
@@ -39,7 +40,9 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, loans, sto
     const netWorth = totalAssets;
 
     // 4. Monthly Flows
-    const monthlyExpensesTotal = useMemo(() => monthlyData.expenses.reduce((sum, e) => sum + e.amount, 0), [monthlyData]);
+    const monthlyOneTimeExpenses = useMemo(() => monthlyData.expenses.reduce((sum, e) => sum + e.amount, 0), [monthlyData]);
+    const monthlyRecurringExpenses = useMemo(() => fixedExpenses ? fixedExpenses.reduce((sum, e) => sum + e.amount, 0) : 0, [fixedExpenses]);
+    const monthlyExpensesTotal = monthlyOneTimeExpenses + monthlyRecurringExpenses;
     const monthlyCashFlow = monthlyData.income - monthlyExpensesTotal;
     const savingsRate = monthlyData.income > 0 ? ((monthlyData.income - monthlyExpensesTotal) / monthlyData.income) * 100 : 0;
 
@@ -209,15 +212,29 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, loans, sto
                             </div>
                         </div>
 
-                        {/* Expenses */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl text-red-600 flex items-center justify-center transition-transform hover:scale-105" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
-                                    <ArrowUpRight size={20} />
+                        {/* Expenses (Split into One-Time and Recurring) */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl text-red-600 flex items-center justify-center transition-transform hover:scale-105" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                                        <ArrowUpRight size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 font-bold uppercase">Expenses</p>
+                                        <p className="font-bold text-lg text-gray-700">RM {monthlyExpensesTotal.toLocaleString()}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-gray-400 font-bold uppercase">Expenses</p>
-                                    <p className="font-bold text-lg text-gray-700">RM {monthlyExpensesTotal.toLocaleString()}</p>
+                            </div>
+
+                            {/* Breakdown */}
+                            <div className="flex items-center gap-2 pl-[64px]">
+                                <div className="flex-1 px-3 py-2 rounded-xl" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase">One-Time</p>
+                                    <p className="text-sm font-bold text-gray-600">RM {monthlyOneTimeExpenses.toLocaleString()}</p>
+                                </div>
+                                <div className="flex-1 px-3 py-2 rounded-xl" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase">Recurring</p>
+                                    <p className="text-sm font-bold text-gray-600">RM {monthlyRecurringExpenses.toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>

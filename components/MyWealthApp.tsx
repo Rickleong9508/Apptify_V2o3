@@ -277,7 +277,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
           {/* Component Render */}
           <div key={activeTab} className="animate-fade-in-up">
-            {activeTab === 'dashboard' && <Dashboard accounts={accounts} monthlyData={monthlyData} loans={loans} stocks={stocks} exchangeRate={exchangeRate} />}
+            {activeTab === 'dashboard' && <Dashboard accounts={accounts} monthlyData={monthlyData} fixedExpenses={fixedExpenses} loans={loans} stocks={stocks} exchangeRate={exchangeRate} />}
             {activeTab === 'accounts' && <Accounts accounts={accounts} setAccounts={setAccounts} />}
             {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} />}
             {activeTab === 'loans' && <Loans loans={loans} setLoans={setLoans} />}
