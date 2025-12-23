@@ -128,6 +128,42 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     loadData();
   }, [session, user]); // Reload when session changes
 
+  // --- Realtime Sync Subscription ---
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase.channel(`mywealth_sync_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'user_data', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const newData = payload.new as any;
+          if (newData && newData.data) {
+            const cloudApp = newData.data.mywealth || newData.data; // Support legacy
+            // Check if it's actually different/newer? 
+            // For now, strict sync to ensure data propagation
+            console.log("Realtime: Remote update received", cloudApp);
+
+            setAccounts(cloudApp.accounts || []);
+            setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
+            setFixedExpenses(cloudApp.fixedExpenses || []);
+            setLoans(cloudApp.loans || []);
+            setStocks(cloudApp.stocks || []);
+            setExchangeRate(cloudApp.exchangeRate || 4.5);
+
+            // Visual feedback
+            setIsSyncing(true);
+            setTimeout(() => setIsSyncing(false), 1000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   // --- Save Data (Local & Cloud) ---
   useEffect(() => {
     if (!isDataLoaded) return;

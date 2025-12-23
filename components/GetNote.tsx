@@ -321,6 +321,36 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         loadData();
     }, [session, user]);
 
+    // --- Realtime Sync Subscription ---
+    useEffect(() => {
+        if (!user) return;
+
+        const channel = supabase.channel(`getnote_sync_${user.id}`)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'user_data', filter: `user_id=eq.${user.id}` },
+                (payload) => {
+                    const newData = payload.new as any;
+                    if (newData && newData.data && newData.data.getnote) {
+                        const cloudApp = newData.data.getnote;
+                        console.log("Realtime: Remote update received (GetNote)", cloudApp);
+
+                        setNotes(cloudApp.notes || []);
+                        setTodos(cloudApp.todos || []);
+
+                        // Visual Sync Indicator
+                        setIsSyncing(true);
+                        setTimeout(() => setIsSyncing(false), 1000);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user]);
+
     // --- Save Data (Local & Cloud) ---
     useEffect(() => {
         if (!isDataLoaded) return;
