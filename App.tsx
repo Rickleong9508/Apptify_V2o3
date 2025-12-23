@@ -4,13 +4,16 @@ import MyWealthApp from './components/MyWealthApp';
 import GetNote from './components/GetNote';
 import GlobalSettings from './components/GlobalSettings';
 import AutoCount from './components/AutoCount';
-import NewsHub from './components/NewsHub';
 
+import NewsHub from './components/NewsHub';
+import AuthModal from './components/AuthModal'; // New Import
 
 type AppMode = 'launcher' | 'mywealth' | 'getnote' | 'settings' | 'autocount' | 'newshub';
 
 const App: React.FC = () => {
   const [currentApp, setCurrentApp] = useState<AppMode>('launcher');
+
+
 
 
   if (currentApp === 'mywealth') {
@@ -41,7 +44,7 @@ const App: React.FC = () => {
       <div className="max-w-md w-full flex flex-col items-center gap-8 translate-y-[-20px] md:translate-y-[-40px]">
 
         {/* Header */}
-        <div className="text-center space-y-2 animate-fade-in-down">
+        <div className="text-center space-y-2 animate-fade-in-down w-full relative">
           <h1 className="text-6xl font-bold tracking-tight text-[#444] drop-shadow-sm">
             Apptify
           </h1>
@@ -106,6 +109,8 @@ const App: React.FC = () => {
         </button>
 
       </div>
+
+
     </div>
   );
 };

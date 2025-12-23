@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { aiService, AIProvider } from '../services/aiService';
+import { useAuth } from './AuthProvider';
+import AuthModal from './AuthModal'; // New Import
 
 interface GlobalSettingsProps {
     onExit: () => void;
@@ -139,24 +141,97 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
         reader.readAsText(file);
     };
 
+    const { session, user, signOut } = useAuth();
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [confirmLogout, setConfirmLogout] = useState(false); // New state for inline confirmation
+
     return (
         <div className="min-h-screen bg-[#E0E5EC] text-gray-700 flex flex-col items-center p-6 animate-fade-in font-sans">
             <div className="max-w-3xl w-full space-y-8">
                 {/* Header */}
-                <div className="flex items-center gap-4 animate-fade-in-down">
-                    <button
-                        onClick={onExit}
-                        className="p-3 rounded-full transition-all active:scale-95 text-gray-600 hover:text-blue-500"
-                        style={{
-                            background: "#E0E5EC",
-                            boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                        }}
-                    >
-                        <ArrowLeft size={24} />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-700">Global Settings</h1>
-                        <p className="text-gray-500 font-medium">Configure AI & Data for all applications</p>
+                <div className="flex items-center justify-between animate-fade-in-down">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={onExit}
+                            className="p-3 rounded-full transition-all active:scale-95 text-gray-600 hover:text-blue-500"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            <ArrowLeft size={24} />
+                        </button>
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-700">Global Settings</h1>
+                            <p className="text-gray-500 font-medium">Configure AI & Data for all applications</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Account Actions Section (New) */}
+                <div
+                    className="p-8 rounded-[32px] animate-scale-in opacity-0"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                        animationDelay: '50ms'
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <div
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-red-500"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            <Key size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-700">Account</h2>
+                            <p className="text-sm text-gray-500 font-medium">Manage your session</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[#E0E5EC]"
+                        style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+
+                        {session ? (
+                            <>
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-gray-600">Logged in as</span>
+                                    <span className="text-sm text-blue-500 font-mono">{user?.email}</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (confirmLogout) {
+                                            signOut();
+                                            setConfirmLogout(false);
+                                        } else {
+                                            setConfirmLogout(true);
+                                            // Auto-reset after 3 seconds if not confirmed
+                                            setTimeout(() => setConfirmLogout(false), 3000);
+                                        }
+                                    }}
+                                    className={`px-6 py-3 rounded-xl font-bold text-sm text-white transition-all shadow-lg active:scale-95 flex items-center gap-2 ${confirmLogout ? 'bg-red-600 animate-pulse' : 'bg-red-500 hover:bg-red-600'}`}
+                                >
+                                    {confirmLogout ? "Confirm?" : "Log Out"}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-gray-600">Not Logged In</span>
+                                    <span className="text-sm text-gray-400">Sign in to sync your data</span>
+                                </div>
+                                <button
+                                    onClick={() => setShowAuthModal(true)}
+                                    className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-blue-500 hover:bg-blue-600 transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                                >
+                                    Sign In
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -471,6 +546,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 </div>
 
             </div>
+            <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
         </div>
     );
 };

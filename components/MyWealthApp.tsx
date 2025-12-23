@@ -6,7 +6,9 @@ import {
   CreditCard,
   TrendingUp,
   Triangle,
-  Grid // Icon for Home/Launcher
+  Grid,
+  Cloud,
+  CheckCircle2
 } from 'lucide-react';
 import Dashboard from './Dashboard';
 import Accounts from './Accounts';
@@ -16,6 +18,8 @@ import Investments from './Investments';
 import { Account, Expense, Loan, Stock, MonthlyData, Transaction } from '../types';
 import WealthAiAssistant from './WealthAiAssistant';
 import { aiService } from '../services/aiService';
+import { useAuth } from './AuthProvider'; // New
+import { supabase } from '../services/supabaseClient'; // New
 
 // Initial Data Defaults
 const INITIAL_ACCOUNTS_DEFAULT: Account[] = [];
@@ -31,7 +35,10 @@ interface MyWealthAppProps {
 }
 
 const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
+  const { session, user } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'accounts' | 'budget' | 'loans' | 'investments'>('dashboard');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
 
   // --- Theme State ---
   // Note: Theme is still handled locally for rendering, but storage is available to backup
@@ -57,32 +64,117 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   const [exchangeRate, setExchangeRate] = useState<number>(4.50);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // --- Load Data ---
+  // --- Load Data (Local then Cloud) ---
+  // --- Load Data (Local then Cloud) ---
   useEffect(() => {
-    setIsDataLoaded(false);
-    const savedJSON = localStorage.getItem(STORAGE_KEY);
-    if (savedJSON) {
-      try {
-        const data = JSON.parse(savedJSON);
-        setAccounts(data.accounts || []);
-        setMonthlyData(data.monthlyData || INITIAL_MONTHLY_DATA);
-        setFixedExpenses(data.fixedExpenses || []);
-        setLoans(data.loans || []);
-        setStocks(data.stocks || []);
-        setExchangeRate(data.exchangeRate || 4.5);
-      } catch (e) {
-        console.error("Failed to load data", e);
+    const loadData = async () => {
+      setIsDataLoaded(false);
+      // 1. Load Local
+      const savedJSON = localStorage.getItem(STORAGE_KEY);
+      let localData: any = null;
+      if (savedJSON) {
+        try {
+          localData = JSON.parse(savedJSON);
+          setAccounts(localData.accounts || []);
+          setMonthlyData(localData.monthlyData || INITIAL_MONTHLY_DATA);
+          setFixedExpenses(localData.fixedExpenses || []);
+          setLoans(localData.loans || []);
+          setStocks(localData.stocks || []);
+          setExchangeRate(localData.exchangeRate || 4.5);
+        } catch (e) {
+          console.error("Failed to load local data", e);
+        }
       }
-    }
-    setIsDataLoaded(true);
-  }, []);
 
-  // --- Save Data ---
+      // 2. Sync Cloud if Logged In
+      if (session && user) {
+        setIsSyncing(true);
+        try {
+          const { data, error } = await supabase
+            .from('user_data')
+            .select('data, updated_at')
+            .eq('user_id', user.id)
+            .single();
+
+          if (data && data.data) {
+            // Support both new scoped format and legacy root format
+            const cloudApp = data.data.mywealth || data.data;
+
+            const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
+            const localTime = localData?.lastUpdated ? new Date(localData.lastUpdated).getTime() : 0;
+
+            // If Cloud is newer or Local is empty, use Cloud
+            if (cloudTime > localTime || !localData) {
+              console.log("Sync: Cloud data is newer, applying...", cloudApp);
+              setAccounts(cloudApp.accounts || []);
+              setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
+              setFixedExpenses(cloudApp.fixedExpenses || []);
+              setLoans(cloudApp.loans || []);
+              setStocks(cloudApp.stocks || []);
+              setExchangeRate(cloudApp.exchangeRate || 4.5);
+            } else {
+              console.log("Sync: Local data is newer or same.");
+            }
+          }
+        } catch (err) {
+          console.error("Sync error:", err);
+        } finally {
+          setIsSyncing(false);
+        }
+      }
+      setIsDataLoaded(true);
+    };
+
+    loadData();
+  }, [session, user]); // Reload when session changes
+
+  // --- Save Data (Local & Cloud) ---
   useEffect(() => {
     if (!isDataLoaded) return;
+
     const dataToSave = { accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, lastUpdated: new Date().toISOString() };
+
+    // Save Local
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, isDataLoaded]);
+
+    // Save Cloud (Debounced 2s)
+    if (session && user) {
+      const pushToCloud = async () => {
+        setIsSyncing(true);
+        try {
+          // Fetch LATEST full data to avoid overwriting other apps
+          const { data: existing } = await supabase.from('user_data').select('id, data').eq('user_id', user.id).single();
+
+          let finalData = existing?.data || {};
+          // Merge MyWealth Data
+          finalData.mywealth = dataToSave;
+
+          if (existing?.id) {
+            await supabase.from('user_data').update({
+              data: finalData,
+              updated_at: new Date().toISOString()
+            }).eq('user_id', user.id);
+          } else {
+            // First time creation
+            await supabase.from('user_data').insert({
+              user_id: user.id,
+              data: finalData,
+              updated_at: new Date().toISOString()
+            });
+          }
+          setShowSyncSuccess(true);
+          setTimeout(() => setShowSyncSuccess(false), 2000);
+        } catch (err) {
+          console.error("Cloud save failed", err);
+        } finally {
+          setIsSyncing(false);
+        }
+      };
+      const timer = setTimeout(pushToCloud, 2000); // Debounce Cloud Save
+      return () => clearTimeout(timer);
+    }
+
+  }, [accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, isDataLoaded, session, user]);
 
   const navItems = [
     { id: 'dashboard' as const, label: 'Overview', icon: LayoutDashboard },
@@ -261,18 +353,38 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         {/* Added extra bottom padding (pb-40) to accommodate floating bar */}
         <div className="max-w-5xl mx-auto p-6 md:p-12 pb-40">
 
-          {/* Minimal Header Branding */}
-          <div className="flex items-center gap-2 mb-8 opacity-60 hover:opacity-100 transition-opacity w-fit select-none cursor-pointer group animate-fade-in-down" onClick={onExit}>
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-700 transition-transform active:scale-95 group-hover:scale-105"
-              style={{
-                background: "#E0E5EC",
-                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-              }}
-            >
-              <Triangle size={14} fill="currentColor" className="rotate-180" />
+
+          {/* Minimal Header Branding & Auth */}
+          <div className="flex items-center justify-between mb-8 animate-fade-in-down">
+            <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity w-fit select-none cursor-pointer group" onClick={onExit}>
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-700 transition-transform active:scale-95 group-hover:scale-105"
+                style={{
+                  background: "#E0E5EC",
+                  boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                }}
+              >
+                <Triangle size={14} fill="currentColor" className="rotate-180" />
+              </div>
+              <span className="font-bold text-lg tracking-tight text-gray-700">MyWealth</span>
             </div>
-            <span className="font-bold text-lg tracking-tight text-gray-700">MyWealth</span>
+
+            {/* Sync Status Only */}
+            <div className="flex items-center gap-4">
+              {/* Sync Status Indicator */}
+              {isSyncing && (
+                <div className="flex items-center gap-1 text-xs text-blue-500 font-medium animate-pulse">
+                  <Cloud size={14} />
+                  <span>Syncing...</span>
+                </div>
+              )}
+              {showSyncSuccess && !isSyncing && (
+                <div className="flex items-center gap-1 text-xs text-green-500 font-medium animate-fade-in">
+                  <CheckCircle2 size={14} />
+                  <span>Saved</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Component Render */}
@@ -287,6 +399,8 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
       </main>
 
       <WealthAiAssistant onProcessCommand={processAiCommand} />
+
+
 
       {/* FLOATING CLAY NAVIGATION DOCK */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] md:w-auto max-w-lg transition-all duration-300">
