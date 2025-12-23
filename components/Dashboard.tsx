@@ -161,21 +161,21 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
                         </div>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-gray-300 flex gap-4 overflow-x-auto no-scrollbar">
+                    <div className="mt-8 pt-6 border-t border-gray-300 grid grid-cols-3 gap-3">
                         {/* Mini details */}
-                        <div className="flex-1 p-4 rounded-2xl min-w-[120px]" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Liquid Ratio</p>
-                            <p className="text-2xl font-bold text-blue-600">{availableCashPercent.toFixed(0)}%</p>
+                        <div className="p-3 rounded-2xl flex flex-col items-center text-center" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                            <p className="text-[9px] text-gray-400 font-bold uppercase mb-1 whitespace-nowrap">Liquid %</p>
+                            <p className="text-xl font-bold text-blue-600">{availableCashPercent.toFixed(0)}%</p>
                         </div>
                         {totalReserved > 0 && (
-                            <div className="flex-1 p-4 rounded-2xl min-w-[120px]" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Reserved</p>
-                                <p className="text-2xl font-bold text-gray-500">{reservedCashPercent.toFixed(0)}%</p>
+                            <div className="p-3 rounded-2xl flex flex-col items-center text-center" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase mb-1 whitespace-nowrap">Reserved</p>
+                                <p className="text-xl font-bold text-gray-500">{reservedCashPercent.toFixed(0)}%</p>
                             </div>
                         )}
-                        <div className="flex-1 p-4 rounded-2xl min-w-[120px]" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Invested</p>
-                            <p className="text-2xl font-bold text-purple-600">{stockPercent.toFixed(0)}%</p>
+                        <div className="p-3 rounded-2xl flex flex-col items-center text-center" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                            <p className="text-[9px] text-gray-400 font-bold uppercase mb-1 whitespace-nowrap">Invested</p>
+                            <p className="text-xl font-bold text-purple-600">{stockPercent.toFixed(0)}%</p>
                         </div>
                     </div>
                 </div>
@@ -259,6 +259,9 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
 
             </div>
 
+            {/* MONTHLY HISTORY SECTION */}
+            <MonthlyHistory accounts={accounts} fixedExpenses={fixedExpenses} />
+
             {/* Optional: Liability Summary if debts exist */}
             {loans.length > 0 && (
                 <div
@@ -284,6 +287,114 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+// --- Monthly History Component ---
+const MonthlyHistory: React.FC<{ accounts: Account[], fixedExpenses: Expense[] }> = ({ accounts, fixedExpenses }) => {
+    const [showAll, setShowAll] = React.useState(false);
+
+    // Derive History Data
+    const historyData = useMemo(() => {
+        const monthlyStats: Record<string, { income: number, oneTime: number, recurring: number }> = {};
+        const fixedNames = new Set(fixedExpenses ? fixedExpenses.map(e => e.name.toLowerCase()) : []);
+
+        accounts.forEach(acc => {
+            acc.history.forEach(tx => {
+                const month = tx.date.slice(0, 7); // YYYY-MM
+                if (!monthlyStats[month]) monthlyStats[month] = { income: 0, oneTime: 0, recurring: 0 };
+
+                if (tx.type === 'IN') {
+                    monthlyStats[month].income += tx.amount;
+                } else {
+                    // Check if recurring
+                    if (fixedNames.has(tx.description.toLowerCase())) {
+                        monthlyStats[month].recurring += tx.amount;
+                    } else {
+                        monthlyStats[month].oneTime += tx.amount;
+                    }
+                }
+            });
+        });
+
+        return Object.entries(monthlyStats)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([month, stats]) => ({
+                month,
+                ...stats,
+                netFlow: stats.income - (stats.oneTime + stats.recurring)
+            }));
+    }, [accounts, fixedExpenses]);
+
+    const displayData = showAll ? historyData : historyData.slice(0, 6);
+
+    if (historyData.length === 0) return null;
+
+    return (
+        <div className="w-full flex flex-col gap-6 animate-fade-in-up pb-8 opacity-0" style={{ animationDelay: '500ms' }}>
+            <div className="flex items-center justify-between">
+                <h3 className="font-bold text-lg text-gray-700 flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg text-gray-500" style={{ background: "#E0E5EC", boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff" }}>
+                        <Activity size={16} />
+                    </div>
+                    Monthly History
+                </h3>
+            </div>
+
+            <div
+                className="rounded-[32px] overflow-hidden p-6"
+                style={{
+                    background: "#E0E5EC",
+                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                }}
+            >
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="text-[10px] text-gray-400 font-bold uppercase tracking-wider border-b border-gray-300">
+                                <th className="pb-3 pl-2 text-left">Month</th>
+                                <th className="pb-3 text-right">Income</th>
+                                <th className="pb-3 text-right">Recurring</th>
+                                <th className="pb-3 text-right">One-Time</th>
+                                <th className="pb-3 text-right pr-2">Net Flow</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {displayData.map((item) => (
+                                <tr key={item.month} className="group hover:bg-white/30 transition-colors text-sm font-medium text-gray-600">
+                                    <td className="py-3 pl-2 font-bold text-gray-700 text-left">
+                                        {new Date(item.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
+                                    </td>
+                                    <td className="py-3 text-right text-green-600">+ {item.income.toLocaleString()}</td>
+                                    <td className="py-3 text-right text-orange-500">- {item.recurring.toLocaleString()}</td>
+                                    <td className="py-3 text-right text-red-500">- {item.oneTime.toLocaleString()}</td>
+                                    <td className={`py-3 text-right pr-2 font-bold ${item.netFlow >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                        {item.netFlow >= 0 ? '+' : ''} {item.netFlow.toLocaleString()}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {historyData.length > 6 && (
+                    <div className="mt-6 flex justify-center">
+                        <button
+                            onClick={() => setShowAll(!showAll)}
+                            className="text-xs font-bold text-gray-500 px-6 py-2 rounded-xl active:scale-95 transition-all flex items-center gap-2"
+                            style={showAll ? {
+                                boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                            } : {
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            {showAll ? 'Show Less' : 'Read More'}
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
