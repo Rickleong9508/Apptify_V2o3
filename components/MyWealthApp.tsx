@@ -67,6 +67,10 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   // --- Load Data (Local then Cloud) ---
   // --- Load Data (Local then Cloud) ---
   // --- Load Data (Local then Cloud) ---
+  // --- Ref for Timestamp Protection ---
+  const lastLocalUpdateRef = React.useRef<number>(0);
+
+  // --- Load Data (Local then Cloud) ---
   const fetchData = async () => {
     // 1. Load Local
     const savedJSON = localStorage.getItem(STORAGE_KEY);
@@ -88,6 +92,10 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           setLoans(localData.loans || []);
           setStocks(localData.stocks || []);
           setExchangeRate(localData.exchangeRate || 4.5);
+          // Init the ref
+          if (localData.lastUpdated) {
+            lastLocalUpdateRef.current = new Date(localData.lastUpdated).getTime();
+          }
         }
       } catch (e) {
         console.error("Failed to load local data", e);
@@ -107,23 +115,23 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         if (data && data.data) {
           const cloudApp = data.data.mywealth || data.data;
           const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
-          const localTime = localData?.lastUpdated ? new Date(localData.lastUpdated).getTime() : 0;
+          // Use Ref for latest check because state might be stale in closures
+          const localTime = lastLocalUpdateRef.current;
 
-          // If Cloud is newer or Local is empty, user Cloud
-          // Or if we forced a sync (meaning we want to see what is on the server)
-          // For now, we stick to timestamp comparison to be safe against overwriting new local work
-          if (cloudTime > localTime || !localData) {
-            console.log("Sync: Cloud data is newer or local missing, applying...", cloudApp);
+          // Only overwrite if Cloud is STRICTLY newer than what we have locally
+          if (cloudTime > localTime) {
+            console.log(`Sync: Cloud (${cloudTime}) > Local (${localTime}). Applying update...`);
             setAccounts(cloudApp.accounts || []);
             setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
             setFixedExpenses(cloudApp.fixedExpenses || []);
             setLoans(cloudApp.loans || []);
             setStocks(cloudApp.stocks || []);
             setExchangeRate(cloudApp.exchangeRate || 4.5);
+            lastLocalUpdateRef.current = cloudTime; // Update ref to match new cloud state
             setShowSyncSuccess(true);
             setTimeout(() => setShowSyncSuccess(false), 2000);
           } else {
-            console.log("Sync: Local data is newer or same.");
+            console.log(`Sync: Cloud (${cloudTime}) <= Local (${localTime}). Ignoring.`);
           }
         }
       } catch (err) {
@@ -164,17 +172,23 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           const newData = payload.new as any;
           if (newData && newData.data) {
             const cloudApp = newData.data.mywealth || newData.data;
-            console.log("Realtime: Updating state from remote...", cloudApp);
+            const cloudTime = new Date(cloudApp.lastUpdated || newData.updated_at).getTime();
+            const localTime = lastLocalUpdateRef.current;
 
-            setAccounts(cloudApp.accounts || []);
-            setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
-            setFixedExpenses(cloudApp.fixedExpenses || []);
-            setLoans(cloudApp.loans || []);
-            setStocks(cloudApp.stocks || []);
-            setExchangeRate(cloudApp.exchangeRate || 4.5);
-
-            setIsSyncing(true);
-            setTimeout(() => setIsSyncing(false), 1000);
+            if (cloudTime > localTime) {
+              console.log(`Realtime: Cloud (${cloudTime}) > Local (${localTime}). Updating...`);
+              setAccounts(cloudApp.accounts || []);
+              setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
+              setFixedExpenses(cloudApp.fixedExpenses || []);
+              setLoans(cloudApp.loans || []);
+              setStocks(cloudApp.stocks || []);
+              setExchangeRate(cloudApp.exchangeRate || 4.5);
+              lastLocalUpdateRef.current = cloudTime;
+              setIsSyncing(true);
+              setTimeout(() => setIsSyncing(false), 1000);
+            } else {
+              console.log(`Realtime: Cloud (${cloudTime}) <= Local (${localTime}). Ignoring echo/stale.`);
+            }
           }
         }
       )
@@ -191,7 +205,11 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   useEffect(() => {
     if (!isDataLoaded) return;
 
-    const dataToSave = { accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, lastUpdated: new Date().toISOString() };
+    const now = new Date();
+    const dataToSave = { accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, lastUpdated: now.toISOString() };
+
+    // Update Ref immediately so pending cloud saves/realtime echoes don't overwrite us
+    lastLocalUpdateRef.current = now.getTime();
 
     // Save Local
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));

@@ -67,6 +67,9 @@ interface Note {
     type?: 'note' | 'qa' | 'image_analysis';
 }
 
+// Simple "Ding" Sound (Base64 MP3)
+const NOTIFICATION_SOUND = "data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAG84AA0EAAA0016wAAA44AAANYCrHdcaAAAYAAAAAS0YFdgAAAH4AAAB6bT7j7%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%AAAAAAAAAAAAAAAB//uQZAUAB1WI0PuguAAAAHOM/O7gAAEc1TPjWQAAAA44g3gQAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/7kGQbAAfRiDduJ2AAAADHjbeBAAAB52JNy4nQAAAAOOIN4EAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kGQugAAAAAAAA0gAAAB5IAAAAEAAJAJQAAABJEAAABIAAAAAAA//uQZDIABAAAAA0gAAAB5IAAAAEAAJAJQAAABJEAAABIAAAAAAAAAAAAAAAA";
+
 interface Attachment {
     id: string;
     type: 'image' | 'video' | 'pdf' | 'doc' | 'link' | 'audio';
@@ -403,6 +406,60 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         }
     }, [notes, todos, isDataLoaded, session, user]);
 
+    // --- Deadline Notifications ---
+    const notifiedTasksRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        // Request permission on mount
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        const checkDeadlines = () => {
+            const now = new Date();
+            const activeTodos = todos.filter(t => !t.completed && t.deadline);
+
+            activeTodos.forEach(t => {
+                if (!t.deadline) return;
+                const due = new Date(t.deadline);
+                const diff = now.getTime() - due.getTime();
+
+                // If it's due (diff >= 0) and we haven't notified
+                if (diff >= 0 && !notifiedTasksRef.current.has(t.id)) {
+                    // Only notify if it became due recently (e.g. within last minute) 
+                    // OR if the user just wants to know what's due. 
+                    // Let's restrict to recent (60s) to be safe for now.
+                    if (diff < 60000) {
+                        // Trigger Alert
+                        try {
+                            const audio = new Audio(NOTIFICATION_SOUND);
+                            audio.play().catch(e => console.warn("Audio play failed", e));
+                        } catch (e) { console.error("Audio error", e); }
+
+                        if (Notification.permission === 'granted') {
+                            new Notification(`Task Due: ${t.title}`, {
+                                body: `Priority: ${t.priority}`,
+                                icon: '/favicon.ico' // fallback
+                            });
+                        } else {
+                            console.warn("Notification permission NOT granted:", Notification.permission);
+                        }
+
+                        notifiedTasksRef.current.add(t.id);
+                    } else {
+                        // Mark as notified if it's too old so we don't re-eval it
+                        notifiedTasksRef.current.add(t.id);
+                    }
+                }
+            });
+        };
+
+        const interval = setInterval(checkDeadlines, 10000); // Check every 10s
+        checkDeadlines(); // Initial check
+
+        return () => clearInterval(interval);
+    }, [todos]);
+
     const processResource = async (res: Resource): Promise<string> => {
         if (res.type === 'image') return ''; // Images handled natively if supported
 
@@ -647,7 +704,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                             <div className="w-6 h-6 rounded-full flex items-center justify-center text-gray-600 shadow-inner group-hover:scale-110 transition-transform">
                                 <Triangle size={10} fill="currentColor" className="rotate-180" />
                             </div>
-                            <span className="font-semibold text-sm tracking-tight text-gray-700">Apptify OS</span>
+                            <span className="font-semibold text-sm tracking-tight text-gray-700">GetNote</span>
                         </div>
 
                         {/* Sync Status */}
@@ -1797,7 +1854,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                         <div key={task.id} className="relative pl-12 group animate-slide-in-right opacity-0" style={{ animationDelay: `${idx * 100}ms` }}>
                                             {/* Timeline Node */}
                                             <div
-                                                className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full z-10 transition-transform group-hover:scale-125 border border-white/20"
+                                                className="absolute left-[5px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full z-10 transition-transform group-hover:scale-125 border border-white/20"
                                                 style={{
                                                     background: "#E0E5EC",
                                                     boxShadow: "2px 2px 4px #b8b9be, -2px -2px 4px #ffffff"
