@@ -66,67 +66,90 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
   // --- Load Data (Local then Cloud) ---
   // --- Load Data (Local then Cloud) ---
-  useEffect(() => {
-    const loadData = async () => {
-      setIsDataLoaded(false);
-      // 1. Load Local
-      const savedJSON = localStorage.getItem(STORAGE_KEY);
-      let localData: any = null;
-      if (savedJSON) {
-        try {
-          localData = JSON.parse(savedJSON);
+  // --- Load Data (Local then Cloud) ---
+  const fetchData = async () => {
+    // 1. Load Local
+    const savedJSON = localStorage.getItem(STORAGE_KEY);
+    let localData: any = null;
+    if (savedJSON) {
+      try {
+        localData = JSON.parse(savedJSON);
+        // Only set state if we haven't loaded yet to avoid flickering, 
+        // OR if needed. Ideally we want to merge or prioritize cloud.
+        // For simple init, we set specific states if they are currently defaults.
+        // But here we are "re-fetching", so we might want to be careful not to overwrite 
+        // unsaved user input if we were just typing. 
+        // However, this is a full sync, usually triggered on load or manually.
+
+        if (!isDataLoaded) {
           setAccounts(localData.accounts || []);
           setMonthlyData(localData.monthlyData || INITIAL_MONTHLY_DATA);
           setFixedExpenses(localData.fixedExpenses || []);
           setLoans(localData.loans || []);
           setStocks(localData.stocks || []);
           setExchangeRate(localData.exchangeRate || 4.5);
-        } catch (e) {
-          console.error("Failed to load local data", e);
         }
+      } catch (e) {
+        console.error("Failed to load local data", e);
       }
+    }
 
-      // 2. Sync Cloud if Logged In
-      if (session && user) {
-        setIsSyncing(true);
-        try {
-          const { data, error } = await supabase
-            .from('user_data')
-            .select('data, updated_at')
-            .eq('user_id', user.id)
-            .single();
+    // 2. Sync Cloud if Logged In
+    if (session && user) {
+      setIsSyncing(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_data')
+          .select('data, updated_at')
+          .eq('user_id', user.id)
+          .single();
 
-          if (data && data.data) {
-            // Support both new scoped format and legacy root format
-            const cloudApp = data.data.mywealth || data.data;
+        if (data && data.data) {
+          const cloudApp = data.data.mywealth || data.data;
+          const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
+          const localTime = localData?.lastUpdated ? new Date(localData.lastUpdated).getTime() : 0;
 
-            const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
-            const localTime = localData?.lastUpdated ? new Date(localData.lastUpdated).getTime() : 0;
-
-            // If Cloud is newer or Local is empty, use Cloud
-            if (cloudTime > localTime || !localData) {
-              console.log("Sync: Cloud data is newer, applying...", cloudApp);
-              setAccounts(cloudApp.accounts || []);
-              setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
-              setFixedExpenses(cloudApp.fixedExpenses || []);
-              setLoans(cloudApp.loans || []);
-              setStocks(cloudApp.stocks || []);
-              setExchangeRate(cloudApp.exchangeRate || 4.5);
-            } else {
-              console.log("Sync: Local data is newer or same.");
-            }
+          // If Cloud is newer or Local is empty, user Cloud
+          // Or if we forced a sync (meaning we want to see what is on the server)
+          // For now, we stick to timestamp comparison to be safe against overwriting new local work
+          if (cloudTime > localTime || !localData) {
+            console.log("Sync: Cloud data is newer or local missing, applying...", cloudApp);
+            setAccounts(cloudApp.accounts || []);
+            setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
+            setFixedExpenses(cloudApp.fixedExpenses || []);
+            setLoans(cloudApp.loans || []);
+            setStocks(cloudApp.stocks || []);
+            setExchangeRate(cloudApp.exchangeRate || 4.5);
+            setShowSyncSuccess(true);
+            setTimeout(() => setShowSyncSuccess(false), 2000);
+          } else {
+            console.log("Sync: Local data is newer or same.");
           }
-        } catch (err) {
-          console.error("Sync error:", err);
-        } finally {
-          setIsSyncing(false);
         }
+      } catch (err) {
+        console.error("Sync error:", err);
+      } finally {
+        setIsSyncing(false);
       }
-      setIsDataLoaded(true);
-    };
+    }
+    setIsDataLoaded(true);
+  };
 
-    loadData();
-  }, [session, user]); // Reload when session changes
+  useEffect(() => {
+    fetchData();
+  }, [session, user]);
+
+  // --- Auto-Sync on Window Focus ---
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        console.log("App foregrounded: Triggering sync...");
+        fetchData();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [user]);
 
   // --- Realtime Sync Subscription ---
   useEffect(() => {
@@ -137,12 +160,11 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'user_data', filter: `user_id=eq.${user.id}` },
         (payload) => {
+          console.log("Realtime event received:", payload);
           const newData = payload.new as any;
           if (newData && newData.data) {
-            const cloudApp = newData.data.mywealth || newData.data; // Support legacy
-            // Check if it's actually different/newer? 
-            // For now, strict sync to ensure data propagation
-            console.log("Realtime: Remote update received", cloudApp);
+            const cloudApp = newData.data.mywealth || newData.data;
+            console.log("Realtime: Updating state from remote...", cloudApp);
 
             setAccounts(cloudApp.accounts || []);
             setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
@@ -151,13 +173,14 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             setStocks(cloudApp.stocks || []);
             setExchangeRate(cloudApp.exchangeRate || 4.5);
 
-            // Visual feedback
             setIsSyncing(true);
             setTimeout(() => setIsSyncing(false), 1000);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Realtime subscription status: ${status}`);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -408,12 +431,23 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             {/* Sync Status Only */}
             <div className="flex items-center gap-4">
               {/* Sync Status Indicator */}
-              {isSyncing && (
-                <div className="flex items-center gap-1 text-xs text-blue-500 font-medium animate-pulse">
-                  <Cloud size={14} />
-                  <span>Syncing...</span>
-                </div>
-              )}
+              <div
+                className="flex items-center gap-1 text-xs font-medium cursor-pointer hover:bg-black/5 rounded px-2 py-1 transition-colors"
+                onClick={fetchData}
+                title="Click to force sync"
+              >
+                {isSyncing ? (
+                  <div className="flex items-center gap-1 text-blue-500 animate-pulse">
+                    <Cloud size={14} />
+                    <span>Syncing...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-gray-400 hover:text-blue-500 transition-colors">
+                    <Cloud size={14} />
+                    <span>Cloud</span>
+                  </div>
+                )}
+              </div>
               {showSyncSuccess && !isSyncing && (
                 <div className="flex items-center gap-1 text-xs text-green-500 font-medium animate-fade-in">
                   <CheckCircle2 size={14} />
