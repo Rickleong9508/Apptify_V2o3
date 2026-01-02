@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { MonthlyData, Expense, ExpenseCategory } from '../types';
+import { MonthlyData, Expense, ExpenseCategory, BudgetHistoryItem } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { Plus, X, Calculator, ArrowRight, Repeat, Clock, TrendingUp, Wallet, ArrowDown, ArrowUp } from 'lucide-react';
+import { Plus, X, Calculator, ArrowRight, Repeat, Clock, TrendingUp, Wallet, ArrowDown, ArrowUp, History, Archive } from 'lucide-react';
 
 interface BudgetProps {
     monthlyData: MonthlyData;
     setMonthlyData: React.Dispatch<React.SetStateAction<MonthlyData>>;
     fixedExpenses: Expense[];
     setFixedExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
+    budgetHistory: BudgetHistoryItem[];
+    onArchiveMonth: () => void;
 }
 
 // Gradient Definitions Configuration (Used for Category Accents)
@@ -79,7 +81,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ item, isFixedList, onRemove }
     </div>
 );
 
-const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpenses, setFixedExpenses }) => {
+const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpenses, setFixedExpenses, budgetHistory, onArchiveMonth }) => {
     const [incomeInput, setIncomeInput] = useState(monthlyData.income.toString());
 
     // Form State
@@ -227,6 +229,15 @@ const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpen
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Remaining</p>
                         <p className={`text-lg font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>RM {balance.toLocaleString(undefined, { minimumFractionDigits: 0 })}</p>
                     </div>
+
+                    {/* Reset / End Month Button */}
+                    <button
+                        onClick={onArchiveMonth}
+                        className="px-5 py-3 flex flex-col justify-center items-center gap-1 min-w-[100px] text-red-500 hover:bg-red-500/10 transition-colors border-l border-gray-200"
+                    >
+                        <Archive size={16} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">End Month</span>
+                    </button>
                 </div>
             </div>
 
@@ -545,6 +556,50 @@ const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpen
                             </div>
                         )}
                     </div>
+                </div>
+            </div>
+
+            {/* 6. Monthly History - New Section */}
+            <div
+                className="p-6 rounded-[32px] flex flex-col animate-fade-in-up opacity-0"
+                style={{
+                    background: "#E0E5EC",
+                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                    animationDelay: '500ms'
+                }}
+            >
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="p-2 text-purple-600 rounded-xl" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                        <History size={14} />
+                    </div>
+                    <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Monthly History</h3>
+                </div>
+
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {budgetHistory.length > 0 ? (
+                        budgetHistory.map(item => (
+                            <div key={item.id} className="p-4 rounded-2xl flex items-center justify-between group hover:bg-white/40 transition-colors" style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                                <div>
+                                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">{item.month}</p>
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                        <span>In: RM{item.income.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                        <span>•</span>
+                                        <span className="text-red-500">Out: RM{item.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`font-bold text-sm ${item.savings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {item.savings >= 0 ? '+' : ''}RM {item.savings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Saved</p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center py-6 text-gray-400 text-xs italic">
+                            No history yet. Click "End Month" to save current stats.
+                        </div>
+                    )}
                 </div>
             </div>
         </div >

@@ -1133,8 +1133,13 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
     const [newThreadInput, setNewThreadInput] = useState('');
     const [isAiThinking, setIsAiThinking] = useState(false);
 
-    // UI State
+    // --- UI State ---
     const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+    const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
+
+    // Modal Form State
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalAttachments, setModalAttachments] = useState<Attachment[]>([]);
 
     // --- Review Mode State ---
     const [reviewingItem, setReviewingItem] = useState<Note | null>(null);
@@ -1310,18 +1315,85 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
     };
 
     const addToThread = () => {
-        if (!newThreadInput.trim()) return;
+        if (!newThreadInput.trim() && modalAttachments.length === 0 && !modalTitle.trim()) return;
 
         const newEntry: Note = {
             id: Date.now().toString(),
-            title: 'Note',
+            title: modalTitle || 'Note',
             content: newThreadInput,
             date: new Date().toISOString(),
             role: 'user',
-            type: 'note'
+            type: 'note',
+            attachments: modalAttachments.length > 0 ? modalAttachments : undefined
         };
         setCurrentThread(prev => [...prev, newEntry]);
+
+        // Reset
         setNewThreadInput('');
+        setModalTitle('');
+        setModalAttachments([]);
+    };
+
+    // Helper to add note from modal
+    const handleAddFromModal = () => {
+        if (!newThreadInput.trim() && modalAttachments.length === 0 && !modalTitle.trim()) return;
+        addToThread();
+        setIsAddNoteModalOpen(false);
+    };
+
+    const handleModalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert("File too large (Max 2MB).");
+            return;
+        }
+
+        let type: Attachment['type'] = 'doc';
+        let content = '';
+
+        try {
+            if (file.type.startsWith('image/')) {
+                type = 'image';
+                content = await compressImage(file);
+            } else {
+                content = await fileToBase64(file);
+                if (file.type.startsWith('video/')) type = 'video';
+                else if (file.type === 'application/pdf') type = 'pdf';
+            }
+
+            const newAttachment: Attachment = {
+                id: Date.now().toString(),
+                type,
+                content,
+                name: file.name,
+                size: (file.size / 1024).toFixed(1) + 'KB'
+            };
+
+            setModalAttachments(prev => [...prev, newAttachment]);
+
+        } catch (err) {
+            alert("Failed to read file.");
+        }
+    };
+
+    const handleModalAddLink = async () => {
+        const url = prompt("Enter URL:");
+        if (!url) return;
+
+        // Optional: simple scrape or just add as link
+        const newAttachment: Attachment = {
+            id: Date.now().toString(),
+            type: 'link',
+            content: url,
+            name: url
+        };
+        setModalAttachments(prev => [...prev, newAttachment]);
+    };
+
+    const removeModalAttachment = (id: string) => {
+        setModalAttachments(prev => prev.filter(p => p.id !== id));
     };
 
     // --- Review Handlers ---
@@ -1404,14 +1476,14 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                             type="text"
                             value={editForm.title || ''}
                             onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Title"
+                            placeholder="Topic Title"
                             className="w-full text-4xl font-bold mb-6 outline-none placeholder-gray-400 bg-transparent text-gray-700"
                             readOnly={interactionMode === 'VIEW'}
                         />
                         <textarea
                             value={editForm.content || ''}
                             onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
-                            placeholder="Start typing..."
+                            placeholder="Topic Description (Optional)..."
                             className="w-full h-40 text-lg leading-relaxed text-gray-700 outline-none resize-none placeholder-gray-400 bg-transparent"
                             readOnly={interactionMode === 'VIEW'}
                         />
@@ -1419,7 +1491,7 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
 
                     {/* Data / Reference Stream */}
                     <div className="mb-32">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-4">Knowledge Stream</h3>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-4">Notes in this Topic</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {currentThread.map((entry) => (
                                 <div
@@ -1448,48 +1520,134 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                     </div>
                 </div>
 
-                {/* Input Bar */}
+                {/* Input Bar (Trigger Modal) - Keep same look */}
                 <div
                     className="p-4 backdrop-blur-md sticky bottom-0 z-20 pb-8 safe-area-bottom"
                     style={{ background: "rgba(224, 229, 236, 0.9)" }}
                 >
                     <div
-                        className="max-w-4xl mx-auto flex items-center gap-3 p-2 rounded-[28px] pr-2 transition-all"
+                        className="max-w-4xl mx-auto flex items-center gap-3 p-2 rounded-[28px] pr-2 transition-all cursor-pointer"
                         style={{
                             background: "#E0E5EC",
                             boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
                         }}
+                        onClick={() => setIsAddNoteModalOpen(true)}
                     >
-                        <label className="p-3 text-gray-500 hover:text-blue-600 rounded-full cursor-pointer transition-colors hover:bg-gray-200">
-                            <Plus size={20} />
-                            <input type="file" onChange={handleFileUpload} className="hidden" multiple />
-                        </label>
-                        <button onClick={handleAddLink} className="p-3 text-gray-500 hover:text-blue-600 rounded-full cursor-pointer transition-colors hover:bg-gray-200">
-                            <LinkIcon size={20} />
-                        </button>
-                        <input
-                            value={newThreadInput}
-                            onChange={e => setNewThreadInput(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') addToThread(); }}
-                            placeholder="Add a quick note, image, or link..."
-                            className="flex-1 bg-transparent outline-none text-base text-gray-700 placeholder-gray-400 px-2"
-                        />
                         <button
-                            onClick={addToThread}
-                            disabled={!newThreadInput.trim()}
-                            className="text-white rounded-full p-2 w-10 h-10 flex items-center justify-center disabled:opacity-30 transition-all active:scale-95"
-                            style={{
-                                background: newThreadInput.trim() ? '#4F46E5' : '#E0E5EC',
-                                boxShadow: newThreadInput.trim() ? "3px 3px 6px rgba(79, 70, 229, 0.4)" : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff",
-                                color: newThreadInput.trim() ? 'white' : '#9CA3AF'
-                            }}
+                            className="p-3 text-gray-500 hover:text-blue-600 rounded-full cursor-pointer transition-colors hover:bg-gray-200"
+                            onClick={(e) => { e.stopPropagation(); /* Keep file input native action */ }}
                         >
-                            <ArrowLeft size={20} className="rotate-90 md:rotate-0" />
+                            <div className="cursor-pointer flex items-center justify-center">
+                                <Plus size={20} />
+                                {/* Hidden input if they click strictly on plus, but main flow is modal */}
+                            </div>
                         </button>
+
+                        <div className="flex-1 bg-transparent text-base text-gray-400 px-2 select-none">
+                            Add a quick note...
+                        </div>
+
+                        <button className="text-white rounded-full p-2 w-10 h-10 flex items-center justify-center transition-all opacity-30" style={{ background: '#E0E5EC', color: '#9CA3AF', boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}> <ArrowLeft size={20} className="rotate-90 md:rotate-0" /> </button>
                     </div>
                 </div>
 
-                {/* REVIEW MODAL - CLAY STYLE */}
+                {/* ENHANCED ADD NOTE MODAL */}
+                {isAddNoteModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setIsAddNoteModalOpen(false)}>
+                        <div
+                            className="rounded-[32px] w-full max-w-lg overflow-hidden animate-scale-in flex flex-col max-h-[90vh]"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="p-6 border-b border-gray-200/50 flex justify-between items-center">
+                                <h3 className="font-bold text-gray-700 text-lg">Add Note</h3>
+                                <button onClick={() => setIsAddNoteModalOpen(false)} className="text-gray-400 hover:text-red-500 transition-colors">
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto">
+                                {/* Title Input */}
+                                <input
+                                    type="text"
+                                    value={modalTitle}
+                                    onChange={e => setModalTitle(e.target.value)}
+                                    placeholder="Title (Optional)"
+                                    className="w-full text-2xl font-bold mb-4 outline-none placeholder-gray-400 bg-transparent text-gray-700"
+                                />
+
+                                {/* Content Input */}
+                                <textarea
+                                    value={newThreadInput}
+                                    onChange={e => setNewThreadInput(e.target.value)}
+                                    placeholder="Write your note here..."
+                                    className="w-full h-40 rounded-xl p-4 outline-none resize-none bg-[#E0E5EC] text-gray-700 text-lg placeholder-gray-400 mb-6 focus:shadow-inner transition-shadow"
+                                    style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
+                                    autoFocus
+                                />
+
+                                {/* Attachment Previews */}
+                                {modalAttachments.length > 0 && (
+                                    <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
+                                        {modalAttachments.map(att => (
+                                            <div key={att.id} className="relative group shrink-0 w-20 h-20 rounded-xl overflow-hidden shadow-md">
+                                                {att.type === 'image' ? (
+                                                    <img src={att.content} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                                                        {att.type === 'video' ? <VideoIcon size={24} /> : <LinkIcon size={24} />}
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => removeModalAttachment(att.id)}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Media Toolbar */}
+                                <div className="flex gap-4 mb-6">
+                                    <label className="p-3 rounded-xl text-gray-500 hover:text-blue-600 cursor-pointer transition-all active:scale-95 hover:bg-gray-200/50 flex flex-col items-center gap-1">
+                                        <ImageIcon size={24} />
+                                        <span className="text-[10px] font-bold">Image</span>
+                                        <input type="file" accept="image/*" onChange={handleModalFileUpload} className="hidden" />
+                                    </label>
+                                    <label className="p-3 rounded-xl text-gray-500 hover:text-purple-600 cursor-pointer transition-all active:scale-95 hover:bg-gray-200/50 flex flex-col items-center gap-1">
+                                        <VideoIcon size={24} />
+                                        <span className="text-[10px] font-bold">Video</span>
+                                        <input type="file" accept="video/*" onChange={handleModalFileUpload} className="hidden" />
+                                    </label>
+                                    <button onClick={handleModalAddLink} className="p-3 rounded-xl text-gray-500 hover:text-green-600 cursor-pointer transition-all active:scale-95 hover:bg-gray-200/50 flex flex-col items-center gap-1">
+                                        <LinkIcon size={24} />
+                                        <span className="text-[10px] font-bold">Link</span>
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={handleAddFromModal}
+                                    disabled={!newThreadInput.trim() && !modalTitle.trim() && modalAttachments.length === 0}
+                                    className="w-full py-4 rounded-xl font-bold text-lg text-white transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:active:scale-100"
+                                    style={{
+                                        background: (newThreadInput.trim() || modalTitle.trim() || modalAttachments.length > 0) ? '#4F46E5' : '#ccc',
+                                        boxShadow: (newThreadInput.trim() || modalTitle.trim() || modalAttachments.length > 0) ? "5px 5px 10px #a5a6aa, -5px -5px 10px #ffffff" : "none"
+                                    }}
+                                >
+                                    <Check size={20} />
+                                    Add Note
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* REVIEW MODAL - CLAY STYLE (Existing) */}
                 {reviewingItem && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
                         <div
@@ -1635,7 +1793,7 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                     >
                         <Plus size={32} className="group-hover:scale-110 transition-transform" />
                     </div>
-                    <span className="font-bold text-gray-500 group-hover:text-blue-600">Create New Note</span>
+                    <span className="font-bold text-gray-500 group-hover:text-blue-600">Create New Topic</span>
                 </div>
             </div>
         </div>

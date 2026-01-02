@@ -15,7 +15,7 @@ import Accounts from './Accounts';
 import Budget from './Budget';
 import Loans from './Loans';
 import Investments from './Investments';
-import { Account, Expense, Loan, Stock, MonthlyData, Transaction } from '../types';
+import { Account, Expense, Loan, Stock, MonthlyData, Transaction, BudgetHistoryItem, ExpenseCategory } from '../types';
 import WealthAiAssistant from './WealthAiAssistant';
 import { aiService } from '../services/aiService';
 import { useAuth } from './AuthProvider'; // New
@@ -58,6 +58,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   // --- Data State ---
   const [accounts, setAccounts] = useState<Account[]>(INITIAL_ACCOUNTS_DEFAULT);
   const [monthlyData, setMonthlyData] = useState<MonthlyData>(INITIAL_MONTHLY_DATA);
+  const [budgetHistory, setBudgetHistory] = useState<BudgetHistoryItem[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<Expense[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
@@ -88,6 +89,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         if (!isDataLoaded) {
           setAccounts(localData.accounts || []);
           setMonthlyData(localData.monthlyData || INITIAL_MONTHLY_DATA);
+          setBudgetHistory(localData.budgetHistory || []);
           setFixedExpenses(localData.fixedExpenses || []);
           setLoans(localData.loans || []);
           setStocks(localData.stocks || []);
@@ -123,6 +125,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             console.log(`Sync: Cloud (${cloudTime}) > Local (${localTime}). Applying update...`);
             setAccounts(cloudApp.accounts || []);
             setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
+            setBudgetHistory(cloudApp.budgetHistory || []);
             setFixedExpenses(cloudApp.fixedExpenses || []);
             setLoans(cloudApp.loans || []);
             setStocks(cloudApp.stocks || []);
@@ -179,6 +182,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
               console.log(`Realtime: Cloud (${cloudTime}) > Local (${localTime}). Updating...`);
               setAccounts(cloudApp.accounts || []);
               setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
+              setBudgetHistory(cloudApp.budgetHistory || []);
               setFixedExpenses(cloudApp.fixedExpenses || []);
               setLoans(cloudApp.loans || []);
               setStocks(cloudApp.stocks || []);
@@ -206,7 +210,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     if (!isDataLoaded) return;
 
     const now = new Date();
-    const dataToSave = { accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, lastUpdated: now.toISOString() };
+    const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, exchangeRate, lastUpdated: now.toISOString() };
 
     // Update Ref immediately so pending cloud saves/realtime echoes don't overwrite us
     lastLocalUpdateRef.current = now.getTime();
@@ -251,7 +255,53 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
       return () => clearTimeout(timer);
     }
 
-  }, [accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, isDataLoaded, session, user]);
+  }, [accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, exchangeRate, isDataLoaded, session, user]);
+
+  const handleArchiveMonth = () => {
+    // 1. Calculate Totals
+    const currentVariableExpenses = monthlyData.expenses;
+    const allExpenses = [...fixedExpenses, ...currentVariableExpenses];
+    const totalExpenses = allExpenses.reduce((sum, item) => sum + item.amount, 0);
+    const savings = monthlyData.income - totalExpenses;
+
+    // 2. Breakdown
+    const breakdown: { category: string; amount: number }[] = [];
+    const categories = Object.values(ExpenseCategory);
+    categories.forEach(cat => {
+      const catTotal = allExpenses.filter(e => e.category === cat).reduce((sum, e) => sum + e.amount, 0);
+      if (catTotal > 0) breakdown.push({ category: cat, amount: catTotal });
+    });
+    // Catch 'Other' or uncategorized that might not be in the enum iterators if any custom strings exist (though types prevent this mostly)
+
+    // 3. Create History Item
+    const newItem: BudgetHistoryItem = {
+      id: Date.now().toString(),
+      month: monthlyData.targetDate, // e.g. "2023-10"
+      income: monthlyData.income,
+      totalExpenses,
+      savings,
+      expenseBreakdown: breakdown
+    };
+
+    // 4. Update State
+    setBudgetHistory(prev => [newItem, ...prev]);
+
+    // 5. Reset Current Month
+    // - Keep Fixed Expenses (handled by separate state, so just don't touch them)
+    // - Clear Variable Expenses
+    // - Reset targetDate to next month? Or just keep current real time?
+    //   Usually resetting implies starting "now" or "next month". 
+    //   Let's set targetDate to current real month in case it was old.
+    const newDate = new Date().toISOString().slice(0, 7);
+
+    setMonthlyData({
+      ...monthlyData,
+      expenses: [], // Clear variables
+      targetDate: newDate
+    });
+
+    alert("Month Ended! Summary saved to history.");
+  };
 
   const navItems = [
     { id: 'dashboard' as const, label: 'Overview', icon: LayoutDashboard },
@@ -479,7 +529,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           <div key={activeTab} className="animate-fade-in-up">
             {activeTab === 'dashboard' && <Dashboard accounts={accounts} monthlyData={monthlyData} fixedExpenses={fixedExpenses} loans={loans} stocks={stocks} exchangeRate={exchangeRate} />}
             {activeTab === 'accounts' && <Accounts accounts={accounts} setAccounts={setAccounts} />}
-            {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} />}
+            {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} budgetHistory={budgetHistory} onArchiveMonth={handleArchiveMonth} />}
             {activeTab === 'loans' && <Loans loans={loans} setLoans={setLoans} />}
             {activeTab === 'investments' && <Investments stocks={stocks} setStocks={setStocks} exchangeRate={exchangeRate} setExchangeRate={setExchangeRate} />}
           </div>

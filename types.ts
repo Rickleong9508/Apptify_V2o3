@@ -37,6 +37,15 @@ export interface Expense {
   isFixed: boolean;
 }
 
+export interface BudgetHistoryItem {
+  id: string;
+  month: string; // "YYYY-MM"
+  income: number;
+  totalExpenses: number;
+  savings: number;
+  expenseBreakdown: { category: string; amount: number }[];
+}
+
 export interface MonthlyData {
   targetDate: string; // YYYY-MM
   income: number;
