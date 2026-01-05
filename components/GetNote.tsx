@@ -41,7 +41,8 @@ import {
     Send,
     Search,
     MoreHorizontal,
-    Languages
+    Languages,
+    ExternalLink
 } from 'lucide-react';
 import { aiService, AIProvider } from '../services/aiService';
 import { useAuth } from './AuthProvider'; // New
@@ -203,6 +204,9 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     const [isAiThinking, setIsAiThinking] = useState(false);
     const [globalResources, setGlobalResources] = useState<Resource[]>([]);
     const [isProcessingResource, setIsProcessingResource] = useState(false);
+
+    // Deep Linking State
+    const [targetNoteId, setTargetNoteId] = useState<string | null>(null);
 
     // --- Voice Input State ---
     const [isListening, setIsListening] = useState(false);
@@ -625,6 +629,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         let context = "You are the 'GetNote' Manager. Your scope is to manage the user's Notes, Tasks, and analyzed Resources provided below.\n";
         context += "IMPORTANT: If the user provides a link or URL, I have already analyzed it for you in the 'ATTACHED RESOURCES' section. Your task is to READ that analyzed content and answer the user's questions about it, or summarize it if asked. Do NOT say you cannot access the internet; instead, use the analyzed text provided to you.\n";
         context += "Your primary mission is to help the user manage and retrieve their data. When asked to find, show, or retrieve a specific note or piece of data, you MUST provide the FULL and ORIGINAL content of that note. Do NOT summarize, sanitize, paraphrase, or modify the content of the retrieved note. Just copy it for the user exactly as it exists in the database.\n";
+        context += "CRITICAL: When you find a relevant note, you MUST include its ID in your response using the format `[ID: <note_id>]` (e.g., `[ID: 1767337253282]`). This triggers a unique UI card for the user. Place this tag prominently before or after the note title.\n";
         context += "ANTI-HALLUCINATION RULE: If you cannot find a note that matches the user's query in the 'USER NOTES (DATABASE)' section below, you MUST state that the note was not found. Do NOT invent, assume, or write any content that is not explicitly present in the database data provided below. Accuracy is paramount.\n";
         context += "Do NOT answer general knowledge questions using external info not provided here, unless the user explicitly provided a link for you to read. If asked about something unrelated to notes/tasks/links, politely decline.\n";
         context += "You can analyze attached images and video links (metadata) to help the user manage their knowledge base.\n\n";
@@ -739,7 +744,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
 
                     {/* View Renderer */}
                     <div className="animate-slide-up">
-                        {activeTab === 'notes' && <NotesView notes={notes} setNotes={setNotes} openGlobalChat={() => setIsGlobalChatOpen(true)} />}
+                        {activeTab === 'notes' && <NotesView notes={notes} setNotes={setNotes} openGlobalChat={() => setIsGlobalChatOpen(true)} targetNoteId={targetNoteId} setTargetNoteId={setTargetNoteId} />}
                         {activeTab === 'todo' && <TodoView todos={todos} setTodos={setTodos} />}
                         {activeTab === 'focus' && (
                             <FocusView
@@ -839,7 +844,68 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                             boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
                                         }}
                                     >
-                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        {msg.role === 'user' ? (
+                                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                {msg.content.split(/(\[ID:\s*[^\]]+\])/g).map((part, idx) => {
+                                                    const match = part.match(/\[ID:\s*([^\]]+)\]/);
+                                                    if (match) {
+                                                        const noteId = match[1];
+                                                        const note = notes.find(n => n.id === noteId);
+                                                        if (note) {
+                                                            return (
+                                                                <div
+                                                                    key={idx}
+                                                                    onClick={() => {
+                                                                        setIsGlobalChatOpen(false);
+                                                                        setTargetNoteId(note.id);
+                                                                        setActiveTab('notes');
+                                                                    }}
+                                                                    className="mt-2 mb-2 p-3 rounded-xl bg-gray-50 border border-white cursor-pointer hover:bg-blue-50 transition-colors group relative overflow-hidden"
+                                                                    style={{ boxShadow: "5px 5px 10px #d1d1d1, -5px -5px 10px #ffffff" }}
+                                                                >
+                                                                    <div className="flex justify-between items-start mb-2">
+                                                                        <h4 className="font-bold text-blue-600 truncate pr-4">{note.title || "Untitled Note"}</h4>
+                                                                        <ExternalLink size={14} className="text-gray-400 group-hover:text-blue-500" />
+                                                                    </div>
+
+                                                                    {/* Media Preview */}
+                                                                    {note.attachments && note.attachments.length > 0 && (
+                                                                        <div className="flex gap-2 overflow-x-auto pb-2 mb-2 custom-scrollbar">
+                                                                            {note.attachments.map(att => (
+                                                                                <div key={att.id} className="shrink-0 relative">
+                                                                                    {att.type === 'image' && <img src={att.content} className="h-16 w-16 object-cover rounded-lg shadow-sm" />}
+                                                                                    {att.type === 'video' && (
+                                                                                        <div className="h-16 w-16 bg-gray-800 rounded-lg flex items-center justify-center text-white shadow-sm">
+                                                                                            <VideoIcon size={20} />
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {att.type === 'link' && (
+                                                                                        <div className="h-16 w-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-500 shadow-sm border border-blue-200">
+                                                                                            <LinkIcon size={20} />
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+
+                                                                    <p className="text-xs text-gray-600 line-clamp-3 bg-white/50 p-2 rounded-lg">
+                                                                        {note.content || "No text content..."}
+                                                                    </p>
+                                                                    <div className="mt-2 text-[10px] text-gray-400 text-right">
+                                                                        ID: {note.id}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return <span key={idx} className="text-gray-500 italic text-xs">[Note ID: {noteId} not found]</span>;
+                                                    }
+                                                    return <span key={idx} className="whitespace-pre-wrap">{part}</span>;
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -1113,11 +1179,70 @@ const CalendarStrip = ({ selectedDate, setSelectedDate, todos }: { selectedDate:
                 })}
             </div>
         </div>
-    )
-}
+    );
+};
+
+// --- SHARED COMPONENTS ---
+const ConfirmModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+}> = ({ isOpen, onClose, onConfirm, title, message }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div
+                className="rounded-[24px] w-full max-w-sm overflow-hidden animate-scale-in p-6"
+                style={{
+                    background: "#E0E5EC",
+                    boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                }}
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 rounded-full bg-red-100 text-red-500 flex items-center justify-center mb-4 shadow-inner">
+                        <Trash2 size={32} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-700 mb-2">{title}</h3>
+                    <p className="text-gray-500 mb-6">{message}</p>
+                    <div className="flex gap-4 w-full">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => { onConfirm(); onClose(); }}
+                            className="flex-1 py-3 rounded-xl font-bold text-red-500 hover:text-red-600 transition-colors"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // 1. NOTES VIEW
-const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => void }> = ({ notes, setNotes, openGlobalChat }) => {
+const NotesView: React.FC<{
+    notes: Note[],
+    setNotes: any,
+    openGlobalChat: () => void,
+    targetNoteId: string | null,
+    setTargetNoteId: (id: string | null) => void
+}> = ({ notes, setNotes, openGlobalChat, targetNoteId, setTargetNoteId }) => {
     // Shared state like global settings
     const [aiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
     const [apiKey] = useState(() => localStorage.getItem('app_global_api_key') || '');
@@ -1137,6 +1262,9 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
     const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
     const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
 
+    // Lightbox State
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
     // Modal Form State
     const [modalTitle, setModalTitle] = useState('');
     const [modalAttachments, setModalAttachments] = useState<Attachment[]>([]);
@@ -1144,7 +1272,16 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
     // --- Review Mode State ---
     const [reviewingItem, setReviewingItem] = useState<Note | null>(null);
     const [reviewEditMode, setReviewEditMode] = useState(false);
-    const [reviewForm, setReviewForm] = useState<{ content: string; attachments: Attachment[] }>({ content: '', attachments: [] });
+    const [reviewForm, setReviewForm] = useState<{ title: string; content: string; attachments: Attachment[] }>({ title: '', content: '', attachments: [] });
+
+    // --- Confirmation State ---
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; action: () => void }>({ title: '', message: '', action: () => { } });
+
+    const openConfirm = (title: string, message: string, action: () => void) => {
+        setConfirmConfig({ title, message, action });
+        setConfirmOpen(true);
+    };
 
     const handleCreate = () => {
         setEditForm({ id: Date.now().toString(), title: '', content: '', date: new Date().toISOString(), isThread: false, thread: [] });
@@ -1159,6 +1296,17 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
         setInteractionMode('VIEW');
         setIsEditing(true);
     };
+
+    // Handle Deep Linking
+    useEffect(() => {
+        if (targetNoteId) {
+            const note = notes.find(n => n.id === targetNoteId);
+            if (note) {
+                handleEdit(note);
+            }
+            setTargetNoteId(null);
+        }
+    }, [targetNoteId, notes]);
 
     const handleSave = () => {
         if (!editForm.title && !editForm.content && currentThread.length === 0) { setIsEditing(false); return; }
@@ -1184,9 +1332,11 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
 
     const handleDelete = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        // Native confirm might be blocked or failing in some views. 
-        // Direct delete for now to ensure functionality.
-        setNotes((prev: Note[]) => prev.filter(n => n.id !== id));
+        openConfirm(
+            "Delete Topic",
+            "Are you sure you want to delete this topic? This cannot be undone.",
+            () => setNotes((prev: Note[]) => prev.filter(n => n.id !== id))
+        );
     };
 
     const analyzeImage = async (base64Image: string) => {
@@ -1397,15 +1547,25 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
     };
 
     // --- Review Handlers ---
+    // --- Review Handlers ---
     const handleOpenReview = (item: Note) => {
         setReviewingItem(item);
         setReviewEditMode(false);
-        setReviewForm({ content: item.content, attachments: item.attachments || [] });
+        setReviewForm({
+            title: item.title || '',
+            content: item.content,
+            attachments: item.attachments || []
+        });
     };
 
     const handleSaveReview = () => {
         if (!reviewingItem) return;
-        const updatedItem = { ...reviewingItem, content: reviewForm.content, attachments: reviewForm.attachments };
+        const updatedItem = {
+            ...reviewingItem,
+            title: reviewForm.title,
+            content: reviewForm.content,
+            attachments: reviewForm.attachments
+        };
         const newThread = currentThread.map(item => item.id === reviewingItem.id ? updatedItem : item);
         setCurrentThread(newThread);
 
@@ -1418,17 +1578,38 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
         setReviewEditMode(false);
     };
 
+    const handleReviewFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const b64 = await compressImage(file);
+            const newAtt: Attachment = { id: Date.now().toString(), type: 'image', content: b64, name: file.name };
+            setReviewForm(prev => ({ ...prev, attachments: [...(prev.attachments || []), newAtt] }));
+        }
+    };
+
+    const removeReviewAttachment = (id: string) => {
+        openConfirm(
+            "Remove Attachment",
+            "Are you sure you want to remove this attachment?",
+            () => setReviewForm(prev => ({ ...prev, attachments: (prev.attachments || []).filter(a => a.id !== id) }))
+        );
+    };
+
     const handleDeleteReviewItem = () => {
         if (!reviewingItem) return;
-        const newThread = currentThread.filter(item => item.id !== reviewingItem.id);
-        setCurrentThread(newThread);
-
-        // IMMEDIATE SAVE FIX
-        setNotes((prev: Note[]) => {
-            return prev.map(n => n.id === editForm.id ? { ...n, thread: newThread } : n);
-        });
-
-        setReviewingItem(null);
+        openConfirm(
+            "Delete Note",
+            "Are you sure you want to delete this note?",
+            () => {
+                const newThread = currentThread.filter(item => item.id !== reviewingItem.id);
+                setCurrentThread(newThread);
+                // IMMEDIATE SAVE FIX
+                setNotes((prev: Note[]) => {
+                    return prev.map(n => n.id === editForm.id ? { ...n, thread: newThread } : n);
+                });
+                setReviewingItem(null);
+            }
+        );
     };
 
     const handleReviewRemoveAttachment = (id: string) => {
@@ -1506,7 +1687,14 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                                     {/* Simple rendering for stream items */}
                                     {entry.image && <img src={entry.image} className="w-full h-32 object-cover rounded-xl mb-3" />}
                                     {entry.attachments?.map(att => att.type === 'image' && <img key={att.id} src={att.content} className="w-full h-32 object-cover rounded-xl mb-3" />)}
-                                    <p className="line-clamp-3 text-sm text-gray-700 font-medium">{entry.content || entry.title}</p>
+                                    {/* Content Rendering */}
+                                    <h4 className="font-bold text-gray-800 mb-2 truncate">{entry.title || "Untitled Note"}</h4>
+                                    <p className="line-clamp-3 text-sm text-gray-600 font-medium">
+                                        {entry.content
+                                            ? (entry.content.split(/\s+/).slice(0, 50).join(' ') + (entry.content.split(/\s+/).length > 50 ? '...' : ''))
+                                            : "No textual content..."
+                                        }
+                                    </p>
                                     <div className="mt-3 flex justify-between items-center">
                                         <span className="text-[10px] font-bold text-gray-400 uppercase">{entry.type}</span>
                                         <span className="text-[10px] text-gray-300">{new Date(entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -1649,13 +1837,14 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
 
                 {/* REVIEW MODAL - CLAY STYLE (Existing) */}
                 {reviewingItem && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setReviewingItem(null)}>
                         <div
                             className="rounded-[32px] w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
                             style={{
                                 background: "#E0E5EC",
                                 boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
                             }}
+                            onClick={e => e.stopPropagation()}
                         >
                             <div className="p-4 flex justify-between items-center" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
                                 <h3 className="font-bold text-gray-500 uppercase tracking-wider text-xs">Review Item</h3>
@@ -1671,15 +1860,52 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                             <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
                                 {reviewEditMode ? (
                                     <div className="space-y-4">
+                                        <input
+                                            type="text"
+                                            value={reviewForm.title}
+                                            onChange={e => setReviewForm(prev => ({ ...prev, title: e.target.value }))}
+                                            placeholder="Title"
+                                            className="w-full text-xl font-bold p-2 bg-transparent text-gray-800 outline-none border-b border-gray-300 focus:border-blue-500 transition-colors placeholder-gray-400"
+                                        />
                                         <textarea
                                             value={reviewForm.content}
                                             onChange={e => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
                                             className="w-full h-40 rounded-xl p-4 outline-none resize-none bg-[#E0E5EC] text-gray-700"
                                             style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
+                                            placeholder="Content..."
                                         />
+
+                                        {/* Image Management in Edit Mode */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Images</span>
+                                                <label className="p-2 bg-gray-200 rounded-full cursor-pointer hover:bg-gray-300 transition-colors text-gray-600">
+                                                    <Plus size={16} />
+                                                    <input type="file" accept="image/*" onChange={handleReviewFileUpload} className="hidden" />
+                                                </label>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {reviewForm.attachments?.map(att => (
+                                                    <div key={att.id} className="relative group aspect-square rounded-xl overflow-hidden shadow-sm border border-white">
+                                                        {att.type === 'image' ? (
+                                                            <img src={att.content} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400"><LinkIcon /></div>
+                                                        )}
+                                                        <button
+                                                            onClick={() => removeReviewAttachment(att.id)}
+                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-100 shadow-md hover:scale-110 transition-transform"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <button
                                             onClick={handleSaveReview}
-                                            className="w-full py-3 rounded-xl font-bold transition-transform active:scale-95 text-blue-600"
+                                            className="w-full py-3 rounded-xl font-bold transition-transform active:scale-95 text-blue-600 mt-4"
                                             style={{
                                                 background: "#E0E5EC",
                                                 boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
@@ -1690,9 +1916,46 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                                     </div>
                                 ) : (
                                     <div className="space-y-4 text-gray-700">
-                                        {reviewingItem.image && <img src={reviewingItem.image} className="w-full rounded-2xl" />}
-                                        {reviewingItem.attachments?.map(att => att.type === 'image' && <img key={att.id} src={att.content} className="w-full rounded-2xl" />)}
-                                        <p className="text-lg leading-relaxed whitespace-pre-wrap">{reviewingItem.content}</p>
+                                        {/* 1. Title Display */}
+                                        <h3 className="text-xl font-bold text-gray-800 leading-tight">
+                                            {reviewingItem.title || "Untitled Note"}
+                                        </h3>
+
+                                        {/* 2. Content Display */}
+                                        <p className="text-lg leading-relaxed whitespace-pre-wrap text-gray-600">
+                                            {reviewingItem.content || "No textual content."}
+                                        </p>
+
+                                        {/* 3. Thumbnail Grid for Images & Attachments */}
+                                        {(reviewingItem.image || (reviewingItem.attachments && reviewingItem.attachments.length > 0)) && (
+                                            <div className="grid grid-cols-3 gap-3 pt-2">
+                                                {reviewingItem.image && (
+                                                    <div
+                                                        onClick={() => setLightboxImage(reviewingItem.image!)}
+                                                        className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border-2 border-white shadow-sm"
+                                                    >
+                                                        <img src={reviewingItem.image} className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+                                                {reviewingItem.attachments?.map(att => (
+                                                    <div key={att.id} className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center">
+                                                        {att.type === 'image' ? (
+                                                            <img
+                                                                src={att.content}
+                                                                className="w-full h-full object-cover"
+                                                                onClick={() => setLightboxImage(att.content)}
+                                                            />
+                                                        ) : (
+                                                            <div className="text-gray-400 flex flex-col items-center p-2 text-center">
+                                                                {att.type === 'video' ? <VideoIcon size={24} /> : <LinkIcon size={24} />}
+                                                                <span className="text-[9px] font-bold mt-1 line-clamp-1 break-all">{att.name || att.type}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         {reviewingItem.type === 'qa' && reviewingItem.role === 'ai' && (
                                             <div className="mt-4 p-4 bg-purple-50 rounded-2xl text-purple-800 text-sm">
                                                 <Sparkles size={16} className="mb-2" />
@@ -1706,6 +1969,15 @@ const NotesView: React.FC<{ notes: Note[], setNotes: any, openGlobalChat: () => 
                     </div>
                 )}
 
+                {/* LIGHTBOX FOR NOTES VIEW */}
+                {lightboxImage && (
+                    <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex flex-col animate-fade-in" onClick={() => setLightboxImage(null)}>
+                        <button className="absolute top-6 right-6 text-white p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors z-10"><X size={32} /></button>
+                        <div className="flex-1 flex items-center justify-center p-4">
+                            <img src={lightboxImage} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -1817,6 +2089,15 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
     const [newPriority, setNewPriority] = useState<PriorityLevel>('T3');
     const [newAttachments, setNewAttachments] = useState<string[]>([]);
 
+    // --- Confirmation State ---
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; action: () => void }>({ title: '', message: '', action: () => { } });
+
+    const openConfirm = (title: string, message: string, action: () => void) => {
+        setConfirmConfig({ title, message, action });
+        setConfirmOpen(true);
+    };
+
     useEffect(() => {
         setNewDeadline(selectedDate.toLocaleDateString('en-CA'));
     }, [selectedDate]);
@@ -1892,9 +2173,24 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
         ));
     };
 
-    const deleteTask = (id: string) => {
-        setTodos((prev: Todo[]) => prev.filter(t => t.id !== id));
-        if (previewTask?.id === id) setPreviewTask(null);
+    const deleteTask = (id: string, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        openConfirm(
+            "Delete Task",
+            "Are you sure you want to delete this task?",
+            () => {
+                setTodos((prev: Todo[]) => prev.filter(t => t.id !== id));
+                if (previewTask?.id === id) setPreviewTask(null);
+            }
+        );
+    };
+
+    const handleRemoveAttachment = (index: number) => {
+        openConfirm(
+            "Remove Attachment",
+            "Remove this attachment?",
+            () => setNewAttachments(prev => prev.filter((_, i) => i !== index))
+        );
     };
 
     const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2326,13 +2622,22 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
 
             {/* LIGHTBOX */}
             {viewingAttachment && (
-                <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-fade-in" onClick={() => setViewingAttachment(null)}>
-                    <button className="absolute top-6 right-6 text-white p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors z-10"><X size={32} /></button>
-                    <div className="flex-1 flex items-center justify-center p-4">
-                        {viewingAttachment.startsWith('data:image') ? <img src={viewingAttachment} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} /> : <div className="text-white text-center" onClick={(e) => e.stopPropagation()}><FileText size={64} className="mx-auto mb-4 opacity-70" /><h3 className="text-2xl font-bold">{viewingAttachment.replace('FILE:', '')}</h3><p className="mt-4 text-gray-400">Preview not available for this file type.</p></div>}
-                    </div>
+                <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center animate-fade-in p-4" onClick={() => setViewingAttachment(null)}>
+                    <img src={viewingAttachment} className="max-w-full max-h-full rounded-lg shadow-2xl animate-scale-in" />
+                    <button className="absolute top-4 right-4 text-white hover:text-red-500 transition-colors">
+                        <X size={32} />
+                    </button>
                 </div>
             )}
+
+            {/* Confirmation Modal */}
+            <ConfirmModal
+                isOpen={confirmOpen}
+                onClose={() => setConfirmOpen(false)}
+                onConfirm={confirmConfig.action}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+            />
 
             {/* FORM MODAL (Unchanged) */}
             {isFormOpen && (
@@ -2449,7 +2754,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                         }}
                                     >
                                         {att.startsWith('data:image') ? <img src={att} className="w-full h-full object-cover opacity-80" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-500 font-bold p-1 text-center break-all">{att.substring(0, 10)}...</div>}
-                                        <button onClick={() => setNewAttachments(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-gray-500/50 text-white rounded-full p-0.5 hover:bg-red-500"><X size={10} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleRemoveAttachment(idx); }} className="absolute top-1 right-1 bg-gray-500/50 text-white rounded-full p-0.5 hover:bg-red-500"><X size={10} /></button>
                                     </div>
                                 ))}
                             </div>
@@ -2466,8 +2771,9 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                         </button>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 // 4. FOCUS VIEW (Unchanged)
