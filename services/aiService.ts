@@ -131,40 +131,62 @@ export const aiService = {
         symbol: string,
         stockData: any
     ): Promise<any> => {
+        const financials = stockData.valuationFields || {};
+        const revenue = financials.revenueTtm ? (financials.revenueTtm / 1e9).toFixed(2) + 'B' : 'N/A';
+        const netIncome = financials.netIncomeTtm ? (financials.netIncomeTtm / 1e9).toFixed(2) + 'B' : 'N/A';
+        const fcf = financials.obsFreeCashFlowTtm ? (financials.obsFreeCashFlowTtm / 1e9).toFixed(2) + 'B' : 'N/A';
+        const cash = financials.cashAndEquivalents ? (financials.cashAndEquivalents / 1e9).toFixed(2) + 'B' : 'N/A';
+        const debt = financials.totalDebt ? (financials.totalDebt / 1e9).toFixed(2) + 'B' : 'N/A';
+        const marketCap = stockData.marketCap ? (stockData.marketCap / 1e9).toFixed(2) + 'B' : 'N/A';
+
         const prompt = `
       You are a Senior Equity Research Analyst. Perform a deep valuation analysis for ${symbol}.
       
-      Financial Data:
+      MARKET DATA:
       - Price: ${stockData.price}
-      - PE Ratio: ${stockData.peRatio}
-      - PEG Ratio: ${stockData.pegRatio}
-      - EPS: ${stockData.eps}
-      - Growth Rate: ${stockData.financeGrowth ? (stockData.financeGrowth * 100).toFixed(2) + '%' : 'N/A'}
-      - Dividend Yield: ${stockData.dividendRate ? (stockData.dividendRate / stockData.price * 100).toFixed(2) + '%' : '0%'}
-      - Book Value: ${stockData.bookValue}
-      - Sector: ${stockData.description ? 'Derived from description' : 'Unknown'}
+      - Market Cap: ${marketCap}
+      - PE Ratio: ${stockData.peRatio || 'N/A'}
+      - PEG Ratio: ${stockData.pegRatio || 'N/A'}
+      - EPS: ${stockData.eps || 'N/A'}
+      
+      FINANCIAL FUNDAMENTALS (TTM):
+      - Revenue: $${revenue}
+      - Net Income: $${netIncome}
+      - Free Cash Flow (FCF): $${fcf} (CRITICAL FOR VALUATION)
+      - Cash & Equivalents: $${cash}
+      - Total Debt: $${debt}
+      - Shares Outstanding: ${financials.sharesOutstanding ? (financials.sharesOutstanding / 1e9).toFixed(2) + 'B' : 'N/A'}
 
-      Task:
-      ACT AS A SENIOR EQUITY RESEARCH ANALYST. Perform a rigorous valuation analysis for ${symbol}.
+      GROWTH & HEALTH:
+      - Revenue Growth: ${stockData.financeGrowth ? (stockData.financeGrowth * 100).toFixed(2) + '%' : 'N/A'}
+      - Dividend Yield: ${stockData.dividendRate ? (stockData.dividendRate / stockData.price * 100).toFixed(2) + '%' : '0%'}
+      - Book Value/Share: ${stockData.bookValue || 'N/A'}
+      - Sector: ${stockData.description ? 'Derived from context' : 'Unknown'}
+
+      TASK:
+      ACT AS A SENIOR ANALYST. Calculate the *Intrinsic Value* of ${symbol} using professional methodologies.
+      
+      KEY INSTRUCTIONS:
+      1. **Enterprise Value (EV)**: Consider the Net Cash/Debt position ($${cash} Cash vs $${debt} Debt).
+      2. **DCF Emphasis**: If FCF ($${fcf}) is positive, prioritize a Discounted Cash Flow (DCF) approach for the 'Base Case'.
+      3. **Metric Triangulation**: Combine DCF with relative valuation (PE, PEG, EV/EBITDA).
       
       You MUST provide a SCENARIO ANALYSIS with 3 distinct cases:
-      1. BEAR CASE: Conservative assumptions (lower growth/margins).
-      2. BASE CASE: Most likely outcome based on consensus and current trajectory.
-      3. BULL CASE: Optimistic assumptions (execution success, macro tailwinds).
-
-      Select the most appropriate valuation methodology (DCF, PEG, Multiples) and apply it consistently across scenarios.
+      1. BEAR CASE: Conservative growth/margin compression.
+      2. BASE CASE: Realistic trajectory based on provided financials.
+      3. BULL CASE: Optimistic execution & macro tailwinds.
 
       Output strictly valid JSON (no markdown formatting):
       {
         "fairValueLow": number,
         "fairValueHigh": number,
         "rating": "Buy" | "Hold" | "Sell",
-        "methodology": "Method used (e.g. 'DCF (5yr) & EV/EBITDA')",
-        "reasoning": "Concise executive summary of the investment thesis.",
+        "methodology": "Method used (e.g. 'DCF (WACC 9%) & PE 25x')",
+        "reasoning": "Concise executive summary of the investment thesis, explicitly citing the FCF and Debt figures provided.",
         "scenarios": {
-            "bear": { "price": number, "logic": "Brief assumption (e.g. 'Growth slows to 2%')" },
-            "base": { "price": number, "logic": "Brief assumption (e.g. 'Consensus estimates met')" },
-            "bull": { "price": number, "logic": "Brief assumption (e.g. 'Margins expand 200bps')" }
+            "bear": { "price": number, "logic": "Brief assumption" },
+            "base": { "price": number, "logic": "Brief assumption" },
+            "bull": { "price": number, "logic": "Brief assumption" }
         }
       }
     `;
