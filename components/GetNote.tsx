@@ -214,6 +214,15 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const recognitionRef = useRef<any>(null);
 
+    // --- Confirmation State ---
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; action: () => void }>({ title: '', message: '', action: () => { } });
+
+    const openConfirm = (title: string, message: string, action: () => void) => {
+        setConfirmConfig({ title, message, action });
+        setConfirmOpen(true);
+    };
+
     // Adjust textarea height
     useEffect(() => {
         if (textareaRef.current) {
@@ -626,17 +635,19 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         setGlobalMessages(prev => [...prev, qNote]);
 
         // Build Context from ALL notes
-        let context = "You are the 'GetNote' Manager. Your scope is to manage the user's Notes, Tasks, and analyzed Resources provided below.\n";
-        context += "IMPORTANT: If the user provides a link or URL, I have already analyzed it for you in the 'ATTACHED RESOURCES' section. Your task is to READ that analyzed content and answer the user's questions about it, or summarize it if asked. Do NOT say you cannot access the internet; instead, use the analyzed text provided to you.\n";
-        context += "Your primary mission is to help the user manage and retrieve their data. When asked to find, show, or retrieve a specific note or piece of data, you MUST provide the FULL and ORIGINAL content of that note. Do NOT summarize, sanitize, paraphrase, or modify the content of the retrieved note. Just copy it for the user exactly as it exists in the database.\n";
-        context += "CRITICAL: When you find a relevant note, you MUST include its ID in your response using the format `[ID: <note_id>]` (e.g., `[ID: 1767337253282]`). This triggers a unique UI card for the user. Place this tag prominently before or after the note title.\n";
-        context += "ANTI-HALLUCINATION RULE: If you cannot find a note that matches the user's query in the 'USER NOTES (DATABASE)' section below, you MUST state that the note was not found. Do NOT invent, assume, or write any content that is not explicitly present in the database data provided below. Accuracy is paramount.\n";
-        context += "Do NOT answer general knowledge questions using external info not provided here, unless the user explicitly provided a link for you to read. If asked about something unrelated to notes/tasks/links, politely decline.\n";
-        context += "You can analyze attached images and video links (metadata) to help the user manage their knowledge base.\n\n";
+        let context = "You are the 'GetNote' Intelligent Assistant. Your goal is to help the user manage their knowledge base by connecting dots, finding information, and providing deep insights.\n";
+        context += "CORE INSTRUCTIONS:\n";
+        context += "1. **Analyze Intent**: When the user asks a question, first think about what they *really* mean. If they say 'vacation', they might be looking for 'holiday', 'trip', 'flight', or 'hotel' notes. Use synonyms and concept matching.\n";
+        context += "2. **Deep Search**: Look through the 'USER NOTES' provided below. Do not just look for exact title matches. Read the *content* of the notes to find answers.\n";
+        context += "3. **Provide Direct Access**: When you find a relevant note (even if it's a partial match), you MUST include its ID tag `[ID: <note_id>]` immediately before or after the note's title in your response. This allows the user to click and view it.\n";
+        context += "4. **Be Helpful**: If you can't find an exact match, say 'I couldn't find a note exactly confirming that, but here are some related notes:' and list the closest matches.\n";
+        context += "5. **External Links**: If the 'ATTACHED RESOURCES' section below contains analyzed text from URLs the user provided, use that information to answer their questions.\n";
+        context += "6. **Reasoning**: Don't just act as a database. If the user asks 'How much did I spend on food?', look for notes containing numbers and food items and try to sum them up or summarize them.\n\n";
 
         if (resourceContext) {
             context += "--- ATTACHED RESOURCES (High Priority) ---\n" + resourceContext + "\n----------------------------------------\n\n";
         }
+
 
         context += "--- USER NOTES (DATABASE) ---\n";
         notes.forEach(n => {
@@ -645,7 +656,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                 if (n.thread && n.thread.length > 0) {
                     context += "Nested Thread/Conversation Content:\n";
                     n.thread.forEach(t => {
-                        context += `- [${t.role || 'User'}]: ${t.content}\n`;
+                        context += `- [ID: ${t.id}] [${t.role || 'User'}]: ${t.content}\n`;
                     });
                 }
                 context += "--------------------\n\n";
@@ -852,7 +863,23 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                                     const match = part.match(/\[ID:\s*([^\]]+)\]/);
                                                     if (match) {
                                                         const noteId = match[1];
-                                                        const note = notes.find(n => n.id === noteId);
+
+                                                        // 1. Try find top-level
+                                                        let note = notes.find(n => n.id === noteId);
+
+                                                        // 2. If not found, look for sub-note
+                                                        if (!note) {
+                                                            for (const n of notes) {
+                                                                if (n.thread) {
+                                                                    const sub = n.thread.find(t => t.id === noteId);
+                                                                    if (sub) {
+                                                                        note = sub;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
                                                         if (note) {
                                                             return (
                                                                 <div
@@ -1300,9 +1327,33 @@ const NotesView: React.FC<{
     // Handle Deep Linking
     useEffect(() => {
         if (targetNoteId) {
-            const note = notes.find(n => n.id === targetNoteId);
-            if (note) {
-                handleEdit(note);
+            // Updated Deep Linking Logic: Check Top Level AND Sub-notes
+            const topLevelNote = notes.find(n => n.id === targetNoteId);
+            if (topLevelNote) {
+                handleEdit(topLevelNote);
+            } else {
+                // Check if it matches a sub-note (item inside a thread)
+                let parent: Note | undefined;
+                let child: Note | undefined;
+
+                for (const note of notes) {
+                    if (note.thread) {
+                        const found = note.thread.find(t => t.id === targetNoteId);
+                        if (found) {
+                            parent = note;
+                            child = found;
+                            break;
+                        }
+                    }
+                }
+
+                if (parent && child) {
+                    handleEdit(parent);
+                    // Slight delay to ensure parent modal state is set before opening child
+                    setTimeout(() => {
+                        handleOpenReview(child!);
+                    }, 100);
+                }
             }
             setTargetNoteId(null);
         }
@@ -1333,9 +1384,12 @@ const NotesView: React.FC<{
     const handleDelete = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         openConfirm(
-            "Delete Topic",
-            "Are you sure you want to delete this topic? This cannot be undone.",
-            () => setNotes((prev: Note[]) => prev.filter(n => n.id !== id))
+            "Delete Note",
+            "Are you sure you want to delete this note?",
+            () => {
+                const updated = notes.filter(n => n.id !== id);
+                setNotes(updated);
+            }
         );
     };
 
@@ -1978,6 +2032,38 @@ const NotesView: React.FC<{
                         </div>
                     </div>
                 )}
+
+                {/* CONFIRMATION DIALOG */}
+                {confirmOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-fade-in">
+                        <div
+                            className="bg-[#E0E5EC] rounded-[24px] p-6 w-full max-w-sm m-4 shadow-2xl animate-scale-in"
+                            style={{
+                                boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                            }}
+                        >
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">{confirmConfig.title}</h3>
+                            <p className="text-gray-600 mb-6">{confirmConfig.message}</p>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setConfirmOpen(false)}
+                                    className="px-4 py-2 text-gray-500 font-bold hover:bg-gray-200 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        confirmConfig.action();
+                                        setConfirmOpen(false);
+                                    }}
+                                    className="px-4 py-2 bg-red-500 text-white font-bold rounded-xl shadow-lg hover:bg-red-600 transition-colors"
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -2068,6 +2154,38 @@ const NotesView: React.FC<{
                     <span className="font-bold text-gray-500 group-hover:text-blue-600">Create New Topic</span>
                 </div>
             </div>
+
+            {/* CONFIRMATION DIALOG (GRID MODE) */}
+            {confirmOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-fade-in">
+                    <div
+                        className="bg-[#E0E5EC] rounded-[24px] p-6 w-full max-w-sm m-4 shadow-2xl animate-scale-in"
+                        style={{
+                            boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                        }}
+                    >
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">{confirmConfig.title}</h3>
+                        <p className="text-gray-600 mb-6">{confirmConfig.message}</p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setConfirmOpen(false)}
+                                className="px-4 py-2 text-gray-500 font-bold hover:bg-gray-200 rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    confirmConfig.action();
+                                    setConfirmOpen(false);
+                                }}
+                                className="px-4 py-2 bg-red-500 text-white font-bold rounded-xl shadow-lg hover:bg-red-600 transition-colors"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
