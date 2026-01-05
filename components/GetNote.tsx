@@ -42,7 +42,8 @@ import {
     Search,
     MoreHorizontal,
     Languages,
-    ExternalLink
+    ExternalLink,
+    RefreshCw
 } from 'lucide-react';
 import { aiService, AIProvider } from '../services/aiService';
 import { useAuth } from './AuthProvider'; // New
@@ -289,53 +290,66 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     // --- Load Data (Local then Cloud) ---
-    useEffect(() => {
-        const loadData = async () => {
-            setIsDataLoaded(false);
-            // 1. Load Local
-            const savedNotes = localStorage.getItem('gn_notes');
-            const savedTodos = localStorage.getItem('gn_todos');
-            let localTime = 0;
+    // --- Load Data (Local then Cloud) ---
+    const fetchData = async () => {
+        setIsDataLoaded(false);
+        // 1. Load Local
+        const savedNotes = localStorage.getItem('gn_notes');
+        const savedTodos = localStorage.getItem('gn_todos');
+        let localTime = 0;
 
-            if (savedNotes) setNotes(JSON.parse(savedNotes));
-            if (savedTodos) setTodos(JSON.parse(savedTodos));
+        if (savedNotes) setNotes(JSON.parse(savedNotes));
+        if (savedTodos) setTodos(JSON.parse(savedTodos));
 
-            // Try to find local timestamp if we stored it (we didn't before, so 0 is fine, but let's check meta)
-            const savedMeta = localStorage.getItem('gn_meta');
-            if (savedMeta) {
-                localTime = new Date(JSON.parse(savedMeta).lastUpdated).getTime();
-            }
+        // Try to find local timestamp if we stored it
+        const savedMeta = localStorage.getItem('gn_meta');
+        if (savedMeta) {
+            localTime = new Date(JSON.parse(savedMeta).lastUpdated).getTime();
+        }
 
-            // 2. Sync Cloud if Logged In
-            if (session && user) {
-                setIsSyncing(true);
-                try {
-                    const { data, error } = await supabase
-                        .from('user_data')
-                        .select('data, updated_at')
-                        .eq('user_id', user.id)
-                        .single();
+        // 2. Sync Cloud if Logged In
+        if (session && user) {
+            setIsSyncing(true);
+            try {
+                const { data, error } = await supabase
+                    .from('user_data')
+                    .select('data, updated_at')
+                    .eq('user_id', user.id)
+                    .single();
 
-                    if (data && data.data && data.data.getnote) {
-                        const cloudApp = data.data.getnote;
-                        const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
+                if (data && data.data && data.data.getnote) {
+                    const cloudApp = data.data.getnote;
+                    const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
 
-                        if (cloudTime > localTime) {
-                            console.log("Sync: Cloud (GetNote) is newer, applying...");
-                            setNotes(cloudApp.notes || []);
-                            setTodos(cloudApp.todos || []);
-                        }
+                    console.log(`Sync Check - Local: ${localTime}, Cloud: ${cloudTime}`);
+
+                    if (cloudTime > localTime) {
+                        console.log("Sync: Cloud (GetNote) is newer, applying...");
+                        setNotes(cloudApp.notes || []);
+                        setTodos(cloudApp.todos || []);
+
+                        // Update local storage to match cloud state immediately
+                        localStorage.setItem('gn_notes', JSON.stringify(cloudApp.notes || []));
+                        localStorage.setItem('gn_todos', JSON.stringify(cloudApp.todos || []));
+                        localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date(cloudTime).toISOString() }));
                     }
-                } catch (err) {
-                    console.error("Sync error:", err);
-                } finally {
-                    setIsSyncing(false);
                 }
+            } catch (err) {
+                console.error("Sync error:", err);
+            } finally {
+                setIsSyncing(false);
             }
-            setIsDataLoaded(true);
-        };
-        loadData();
+        }
+        setIsDataLoaded(true);
+    };
+
+    useEffect(() => {
+        fetchData();
     }, [session, user]);
+
+    const handleManualSync = () => {
+        fetchData();
+    };
 
     // --- Realtime Sync Subscription ---
     useEffect(() => {
@@ -723,14 +737,18 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                             <span className="font-semibold text-sm tracking-tight text-gray-700">GetNote</span>
                         </div>
 
-                        {/* Sync Status */}
+                        {/* Sync Status & Manual Trigger */}
                         <div className="flex items-center gap-4 mr-auto ml-4">
-                            {isSyncing && (
-                                <div className="flex items-center gap-1 text-xs text-blue-500 font-medium animate-pulse">
-                                    <Clock size={12} />
-                                    <span>Syncing...</span>
-                                </div>
-                            )}
+                            <button
+                                onClick={handleManualSync}
+                                disabled={isSyncing}
+                                className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-white/50 transition-all border border-transparent hover:border-blue-100"
+                                title="Force Cloud Sync"
+                            >
+                                <RefreshCw size={12} className={isSyncing ? "animate-spin text-blue-500" : ""} />
+                                {isSyncing ? "Syncing..." : "Cloud Sync"}
+                            </button>
+
                             {showSyncSuccess && !isSyncing && (
                                 <div className="flex items-center gap-1 text-xs text-green-500 font-medium animate-fade-in">
                                     <CheckCircle2 size={12} />
