@@ -124,10 +124,10 @@ const StockItem: React.FC<StockItemProps> = ({ stock, exchangeRate, onUpdateStoc
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-bold shadow-sm ${isUSD ? 'text-blue-600' : 'text-yellow-700'}`}
                     style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
                 >
-                    {stock.symbol.substring(0, 2)}
+                    {(stock.symbol || '??').substring(0, 2)}
                 </div>
                 <div>
-                    <div className="font-bold text-gray-700 text-lg">{stock.symbol}</div>
+                    <div className="font-bold text-gray-700 text-lg">{stock.symbol || 'Unknown'}</div>
                     <div className="text-xs text-gray-500 font-medium">{stock.name}</div>
                 </div>
             </div>
@@ -386,8 +386,12 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRa
         let totalCostMYR = 0;
 
         stocks.forEach(s => {
+            // Defensive ensure
+            if (!s || !s.buyPrice || !s.quantity) return;
+
             const rate = s.currency === 'USD' ? exchangeRate : 1;
-            const currentValueMYR = s.currentPrice * s.quantity * rate;
+            const currentPrice = s.currentPrice || 0;
+            const currentValueMYR = currentPrice * s.quantity * rate;
             const costBasisMYR = s.buyPrice * s.quantity * rate;
             totalValueMYR += currentValueMYR;
             totalCostMYR += costBasisMYR;
@@ -398,6 +402,9 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRa
 
         return { totalValueMYR, totalCostMYR, profit, profitPercent };
     }, [stocks, exchangeRate]);
+
+    // Safety: Filter out completely broken stocks before rendering list
+    const validStocks = stocks.filter(s => s && s.id);
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
@@ -631,7 +638,7 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRa
                 )}
 
                 <div className="flex-1">
-                    {stocks.length === 0 && !showAdd && (
+                    {validStocks.length === 0 && !showAdd && (
                         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                             <div className="p-6 rounded-full mb-4" style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
                                 <Search size={32} className="opacity-50" />
@@ -641,7 +648,7 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRa
                         </div>
                     )}
 
-                    {stocks.map(stock => (
+                    {validStocks.map(stock => (
                         <StockItem
                             key={stock.id}
                             stock={stock}
