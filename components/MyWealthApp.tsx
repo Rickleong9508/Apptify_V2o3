@@ -116,7 +116,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             date: new Date().toISOString(), // Record transaction at "now" or "nextDate"? Using now for visibility at top of list
             type: 'IN',
             amount: interestAmount,
-            description: `Interest (${acc.interestFrequency}) - ${acc.interestRate}%`
+            description: `Interest Add : RM ${interestAmount.toFixed(2)}`
           });
           changed = true;
         }
