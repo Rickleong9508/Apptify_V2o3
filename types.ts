@@ -19,6 +19,10 @@ export interface Account {
   balance: number;
   reservations: Reservation[]; // Updated from single 'reserved' number
   history: Transaction[];
+  // Interest Feature
+  interestRate?: number; // Annual Rate (%)
+  interestFrequency?: 'DAILY' | 'MONTHLY' | 'YEARLY' | 'NONE';
+  nextInterestDate?: string; // ISO String
 }
 
 export enum ExpenseCategory {

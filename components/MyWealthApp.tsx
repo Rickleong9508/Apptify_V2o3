@@ -71,6 +71,73 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   // --- Ref for Timestamp Protection ---
   const lastLocalUpdateRef = React.useRef<number>(0);
 
+
+
+  // --- Interest Calculation Helper ---
+  const checkAndApplyInterest = (accs: Account[]): Account[] => {
+    let hasChanges = false;
+    const now = new Date();
+
+    const updatedAccounts = accs.map(acc => {
+      if (!acc.interestRate || acc.interestFrequency === 'NONE' || !acc.nextInterestDate) return acc;
+
+      let nextDate = new Date(acc.nextInterestDate);
+      // If the date is invalid, skip
+      if (isNaN(nextDate.getTime())) return acc;
+
+      // If next interest date is in the future, do nothing
+      if (nextDate > now) return acc;
+
+      let newBalance = acc.balance;
+      let newHistory = [...acc.history];
+      let changed = false;
+      let loops = 0;
+      const MAX_LOOPS = 365; // Prevent inf loop if date is very old
+
+      while (nextDate <= now && loops < MAX_LOOPS) {
+        const rate = acc.interestRate / 100;
+        let interestAmount = 0;
+
+        if (acc.interestFrequency === 'DAILY') {
+          interestAmount = newBalance * (rate / 365);
+          nextDate.setDate(nextDate.getDate() + 1);
+        } else if (acc.interestFrequency === 'MONTHLY') {
+          interestAmount = newBalance * (rate / 12);
+          nextDate.setMonth(nextDate.getMonth() + 1);
+        } else if (acc.interestFrequency === 'YEARLY') {
+          interestAmount = newBalance * rate;
+          nextDate.setFullYear(nextDate.getFullYear() + 1);
+        }
+
+        if (interestAmount > 0) {
+          newBalance += interestAmount;
+          newHistory.unshift({
+            id: `int-${Date.now()}-${loops}`,
+            date: new Date().toISOString(), // Record transaction at "now" or "nextDate"? Using now for visibility at top of list
+            type: 'IN',
+            amount: interestAmount,
+            description: `Interest (${acc.interestFrequency}) - ${acc.interestRate}%`
+          });
+          changed = true;
+        }
+        loops++;
+      }
+
+      if (changed) {
+        hasChanges = true;
+        return {
+          ...acc,
+          balance: newBalance,
+          history: newHistory,
+          nextInterestDate: nextDate.toISOString()
+        };
+      }
+      return acc;
+    });
+
+    return hasChanges ? updatedAccounts : accs;
+  };
+
   // --- Load Data (Local then Cloud) ---
   const fetchData = async () => {
     // 1. Load Local
@@ -87,7 +154,8 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         // However, this is a full sync, usually triggered on load or manually.
 
         if (!isDataLoaded) {
-          setAccounts(localData.accounts || []);
+          const processedAccounts = checkAndApplyInterest(localData.accounts || []);
+          setAccounts(processedAccounts);
           setMonthlyData(localData.monthlyData || INITIAL_MONTHLY_DATA);
           setBudgetHistory(localData.budgetHistory || []);
           setFixedExpenses(localData.fixedExpenses || []);
@@ -123,7 +191,8 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           // Only overwrite if Cloud is STRICTLY newer than what we have locally
           if (cloudTime > localTime) {
             console.log(`Sync: Cloud (${cloudTime}) > Local (${localTime}). Applying update...`);
-            setAccounts(cloudApp.accounts || []);
+            const processedAccounts = checkAndApplyInterest(cloudApp.accounts || []);
+            setAccounts(processedAccounts);
             setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
             setBudgetHistory(cloudApp.budgetHistory || []);
             setFixedExpenses(cloudApp.fixedExpenses || []);
@@ -180,7 +249,8 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
             if (cloudTime > localTime) {
               console.log(`Realtime: Cloud (${cloudTime}) > Local (${localTime}). Updating...`);
-              setAccounts(cloudApp.accounts || []);
+              const processedAccounts = checkAndApplyInterest(cloudApp.accounts || []);
+              setAccounts(processedAccounts);
               setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
               setBudgetHistory(cloudApp.budgetHistory || []);
               setFixedExpenses(cloudApp.fixedExpenses || []);

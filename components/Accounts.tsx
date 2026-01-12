@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Account, Transaction, Reservation } from '../types';
-import { Plus, ArrowUpRight, ArrowDownLeft, History, Wallet, Trash2, Pencil, Check, X, AlertCircle, Lock, Unlock, List } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownLeft, History, Wallet, Trash2, Pencil, Check, X, AlertCircle, Lock, Unlock, List, TrendingUp } from 'lucide-react';
 
 interface AccountsProps {
     accounts: Account[];
@@ -30,11 +30,15 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
 
     // Add Account State
     const [newAccountName, setNewAccountName] = useState('');
+    const [newInterestRate, setNewInterestRate] = useState('');
+    const [newInterestFreq, setNewInterestFreq] = useState<'DAILY' | 'MONTHLY' | 'YEARLY' | 'NONE'>('NONE');
     const [isAddingAccount, setIsAddingAccount] = useState(false);
 
     // Edit Account State
     const [isEditingName, setIsEditingName] = useState(false);
     const [editNameValue, setEditNameValue] = useState('');
+    const [editInterestRate, setEditInterestRate] = useState('');
+    const [editInterestFreq, setEditInterestFreq] = useState<'DAILY' | 'MONTHLY' | 'YEARLY' | 'NONE'>('NONE');
 
     // Delete Confirmation State (For Modal Only)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -43,6 +47,8 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
     useEffect(() => {
         if (selectedAccount) {
             setEditNameValue(selectedAccount.name);
+            setEditInterestRate(selectedAccount.interestRate ? selectedAccount.interestRate.toString() : '');
+            setEditInterestFreq(selectedAccount.interestFrequency || 'NONE');
             setIsEditingName(false);
             setShowDeleteConfirm(false);
             setAmount('');
@@ -147,10 +153,15 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             name: newAccountName,
             balance: 0,
             reservations: [],
-            history: []
+            history: [],
+            interestRate: newInterestRate ? parseFloat(newInterestRate) : undefined,
+            interestFrequency: newInterestFreq,
+            nextInterestDate: newInterestFreq !== 'NONE' ? new Date(Date.now() + 86400000).toISOString() : undefined // Default to tomorrow for simplicity
         };
         setAccounts(prev => [...prev, newAcc]);
         setNewAccountName('');
+        setNewInterestRate('');
+        setNewInterestFreq('NONE');
         setIsAddingAccount(false);
     };
 
@@ -159,12 +170,25 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
 
         setAccounts(prev => prev.map(acc => {
             if (acc.id === selectedAccount.id) {
-                return { ...acc, name: editNameValue };
+                return {
+                    ...acc,
+                    name: editNameValue,
+                    interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
+                    interestFrequency: editInterestFreq,
+                    nextInterestDate: (editInterestFreq !== 'NONE' && acc.interestFrequency !== editInterestFreq)
+                        ? new Date(Date.now() + 86400000).toISOString() // Reset date if frequency changes
+                        : acc.nextInterestDate
+                };
             }
             return acc;
         }));
 
-        setSelectedAccount(prev => prev ? { ...prev, name: editNameValue } : null);
+        setSelectedAccount(prev => prev ? {
+            ...prev,
+            name: editNameValue,
+            interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
+            interestFrequency: editInterestFreq
+        } : null);
         setIsEditingName(false);
     };
 
@@ -206,16 +230,36 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                     <div className="w-12 h-12 rounded-full flex items-center justify-center text-gray-500" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
                         <Wallet size={20} />
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Bank Name (e.g. Chase)"
-                        className="flex-1 bg-transparent text-lg font-medium placeholder-gray-400 border-none focus:ring-0 px-2 text-gray-700"
-                        value={newAccountName}
-                        onChange={(e) => setNewAccountName(e.target.value)}
-                        autoFocus
-                        onKeyDown={(e) => e.key === 'Enter' && addAccount()}
-                    />
-                    <button onClick={addAccount} className="bg-blue-600 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg active:scale-95">Add</button>
+                    <div className="flex-1 flex flex-col gap-2">
+                        <input
+                            type="text"
+                            placeholder="Bank Name (e.g. Chase)"
+                            className="bg-transparent text-lg font-medium placeholder-gray-400 border-none focus:ring-0 px-2 text-gray-700 w-full"
+                            value={newAccountName}
+                            onChange={(e) => setNewAccountName(e.target.value)}
+                            autoFocus
+                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                placeholder="Interest %"
+                                className="w-24 bg-white/50 rounded-lg px-2 py-1 text-sm border-none focus:ring-0 text-gray-700 placeholder-gray-400"
+                                value={newInterestRate}
+                                onChange={(e) => setNewInterestRate(e.target.value)}
+                            />
+                            <select
+                                className="bg-white/50 rounded-lg px-2 py-1 text-sm border-none focus:ring-0 text-gray-600 outline-none cursor-pointer"
+                                value={newInterestFreq}
+                                onChange={(e) => setNewInterestFreq(e.target.value as any)}
+                            >
+                                <option value="NONE">No Interest</option>
+                                <option value="DAILY">Daily</option>
+                                <option value="MONTHLY">Monthly</option>
+                                <option value="YEARLY">Yearly</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onClick={addAccount} className="bg-blue-600 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg active:scale-95 h-fit self-center">Add</button>
                 </div>
             )}
 
@@ -273,6 +317,13 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                                         <p className="text-3xl font-bold tracking-tight text-gray-800">RM {acc.balance.toLocaleString()}</p>
                                     </div>
                                 )}
+
+                                {acc.interestRate && acc.interestFrequency !== 'NONE' && (
+                                    <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-green-600 uppercase tracking-wider bg-green-100/50 px-2 py-1 rounded-lg w-fit">
+                                        <TrendingUp size={10} />
+                                        {acc.interestRate}% {acc.interestFrequency}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-end">
@@ -286,292 +337,324 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             </div>
 
             {/* Glass Modal */}
-            {selectedAccount && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity" onClick={() => setSelectedAccount(null)} />
+            {
+                selectedAccount && createPortal(
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity" onClick={() => setSelectedAccount(null)} />
 
-                    <div
-                        className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] relative z-10 animate-scale-in origin-center my-auto"
-                        style={{ boxShadow: "10px 10px 30px rgba(0,0,0,0.1), -10px -10px 30px rgba(255,255,255,0.7)" }}
-                    >
+                        <div
+                            className="bg-[#E0E5EC] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] relative z-10 animate-scale-in origin-center my-auto"
+                            style={{ boxShadow: "10px 10px 30px rgba(0,0,0,0.1), -10px -10px 30px rgba(255,255,255,0.7)" }}
+                        >
 
-                        <div className="px-6 pt-6 pb-2">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="flex-1 mr-4">
-                                    {/* Editable Title */}
-                                    {isEditingName ? (
-                                        <div className="flex items-center space-x-3 mb-2">
+                            <div className="px-6 pt-6 pb-2">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex-1 mr-4">
+                                        {/* Editable Title & Settings */}
+                                        {isEditingName ? (
+                                            <div className="flex flex-col gap-2 mb-2 w-full bg-white/40 p-2 rounded-xl">
+                                                <div className="flex items-center space-x-3">
+                                                    <input
+                                                        type="text"
+                                                        value={editNameValue}
+                                                        onChange={(e) => setEditNameValue(e.target.value)}
+                                                        className="bg-white/60 rounded-lg px-2 py-1 text-sm font-semibold uppercase tracking-wider w-full focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700 border border-gray-300"
+                                                        autoFocus
+                                                    />
+                                                    <button onClick={saveAccountName} className="p-1.5 bg-green-500 text-white rounded-lg shadow hover:opacity-90"><Check size={14} /></button>
+                                                    <button onClick={() => setIsEditingName(false)} className="p-1.5 bg-gray-400 text-white rounded-lg shadow hover:opacity-90"><X size={14} /></button>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold text-gray-400 uppercase">Interest:</span>
+                                                    <input
+                                                        type="number"
+                                                        value={editInterestRate}
+                                                        onChange={(e) => setEditInterestRate(e.target.value)}
+                                                        placeholder="%"
+                                                        className="w-16 bg-white/60 rounded-md px-1 py-0.5 text-xs font-medium border border-gray-300"
+                                                    />
+                                                    <span className="text-xs text-gray-500">%</span>
+                                                    <select
+                                                        value={editInterestFreq}
+                                                        onChange={(e) => setEditInterestFreq(e.target.value as any)}
+                                                        className="bg-white/60 rounded-md px-1 py-0.5 text-xs font-medium border border-gray-300 outline-none"
+                                                    >
+                                                        <option value="NONE">None</option>
+                                                        <option value="DAILY">Daily</option>
+                                                        <option value="MONTHLY">Monthly</option>
+                                                        <option value="YEARLY">Yearly</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="group flex flex-col items-start gap-1 mb-1 cursor-pointer w-fit" onClick={() => setIsEditingName(true)}>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider hover:text-blue-600 transition-colors">{selectedAccount.name}</h3>
+                                                    <Pencil size={12} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                                {(selectedAccount.interestRate && selectedAccount.interestFrequency !== 'NONE') && (
+                                                    <span className="text-[10px] font-bold text-green-600 flex items-center gap-1">
+                                                        <TrendingUp size={10} /> {selectedAccount.interestRate}% {selectedAccount.interestFrequency}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Header Balances */}
+                                        <div className="flex items-baseline gap-2">
+                                            <h2 className="text-3xl font-bold text-gray-800 tracking-tight leading-none">
+                                                RM {(selectedAccount.balance - getTotalReserved(selectedAccount)).toLocaleString()}
+                                            </h2>
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Available</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 mt-1 text-[10px] font-semibold text-gray-500">
+                                            <span>TOTAL: <b>RM {selectedAccount.balance.toLocaleString()}</b></span>
+                                            <span className="flex items-center gap-1 text-yellow-700">
+                                                <Lock size={10} />
+                                                RESERVED: <b>RM {getTotalReserved(selectedAccount).toLocaleString()}</b>
+                                            </span>
+                                        </div>
+
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedAccount(null)}
+                                        className="p-3 rounded-full text-gray-500 hover:text-red-500 transition-colors active:scale-95"
+                                        style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                    >
+                                        <Plus size={20} className="rotate-45" />
+                                    </button>
+                                </div>
+
+                                {/* TABS */}
+                                <div className="flex p-1.5 rounded-xl mb-3" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                                    <button
+                                        onClick={() => setModalTab('transactions')}
+                                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${modalTab === 'transactions' ? 'text-blue-600 bg-[#E0E5EC] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                        style={modalTab === 'transactions' ? { boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" } : {}}
+                                    >
+                                        Transactions
+                                    </button>
+                                    <button
+                                        onClick={() => setModalTab('reserves')}
+                                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${modalTab === 'reserves' ? 'text-blue-600 bg-[#E0E5EC] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                        style={modalTab === 'reserves' ? { boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" } : {}}
+                                    >
+                                        <Lock size={12} />
+                                        Reserves
+                                    </button>
+                                </div>
+
+                                {/* ACTION AREA - Changes based on Tab */}
+                                {modalTab === 'transactions' ? (
+                                    <>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1 p-1 rounded-xl flex items-center transition-all bg-[#E0E5EC]" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                                                    <span className="pl-4 text-gray-400 font-bold text-sm">RM</span>
+                                                    <input
+                                                        type="number"
+                                                        value={amount}
+                                                        onChange={e => setAmount(e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="w-full p-2 bg-transparent border-none focus:ring-0 text-xl font-bold text-gray-700 placeholder-gray-300 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+
                                             <input
                                                 type="text"
-                                                value={editNameValue}
-                                                onChange={(e) => setEditNameValue(e.target.value)}
-                                                className="bg-transparent rounded-lg px-2 py-1 text-sm font-semibold uppercase tracking-wider w-full focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700 border border-gray-300"
-                                                autoFocus
+                                                value={description}
+                                                onChange={e => setDescription(e.target.value)}
+                                                placeholder="Description (e.g. Salary)"
+                                                className="w-full p-3 rounded-xl border-none focus:ring-0 text-sm font-medium transition-all text-gray-700 placeholder-gray-400 bg-[#E0E5EC] outline-none"
+                                                style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
                                             />
-                                            <button onClick={saveAccountName} className="p-1.5 bg-green-500 text-white rounded-lg shadow hover:opacity-90"><Check size={14} /></button>
-                                            <button onClick={() => setIsEditingName(false)} className="p-1.5 bg-gray-400 text-white rounded-lg shadow hover:opacity-90"><X size={14} /></button>
+
+                                            <div className="grid grid-cols-2 gap-3 pt-1">
+                                                <button
+                                                    onClick={() => handleTransaction('IN')}
+                                                    className="py-3 rounded-xl flex items-center justify-center space-x-2 text-green-600 transition-all active:scale-95 group font-bold bg-[#E0E5EC]"
+                                                    style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                                >
+                                                    <ArrowDownLeft size={18} className="group-hover:scale-110 transition-transform" />
+                                                    <span>Deposit</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleTransaction('OUT')}
+                                                    className="py-3 rounded-xl flex items-center justify-center space-x-2 text-gray-600 transition-all active:scale-95 group font-bold bg-[#E0E5EC]"
+                                                    style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                                >
+                                                    <ArrowUpRight size={18} className="group-hover:scale-110 transition-transform" />
+                                                    <span>Withdraw</span>
+                                                </button>
+                                            </div>
                                         </div>
-                                    ) : (
-                                        <div className="group flex items-center gap-2 mb-1 cursor-pointer w-fit" onClick={() => setIsEditingName(true)}>
-                                            <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider hover:text-blue-600 transition-colors">{selectedAccount.name}</h3>
-                                            <Pencil size={12} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="p-3 rounded-2xl mb-3 bg-[#E0E5EC]" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2 px-1">
+                                                <Plus size={12} strokeWidth={3} />
+                                                Add New Reserve
+                                            </h4>
+                                            <div className="flex gap-3 mb-3">
+                                                <div className="flex-1 rounded-xl flex items-center px-3 bg-[#E0E5EC]" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
+                                                    <span className="text-gray-400 font-bold text-xs">RM</span>
+                                                    <input
+                                                        type="number"
+                                                        value={resAmount}
+                                                        onChange={e => setResAmount(e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="w-full p-2 bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 placeholder-gray-300 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={resReason}
+                                                onChange={e => setResReason(e.target.value)}
+                                                placeholder="Reason (e.g. Vacation)"
+                                                className="w-full p-3 rounded-xl border-none text-xs font-medium text-gray-700 placeholder-gray-400 mb-3 bg-[#E0E5EC] outline-none"
+                                                style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}
+                                            />
+                                            <button
+                                                onClick={addReservation}
+                                                className="w-full py-2.5 rounded-xl font-bold text-xs text-blue-600 transition-all hover:scale-[1.02] active:scale-95 bg-[#E0E5EC]"
+                                                style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                            >
+                                                Lock Cash
+                                            </button>
                                         </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="flex-1 overflow-auto p-0 min-h-[140px] bg-[#E0E5EC]">
+                                <div className="px-8 py-2 bg-[#E0E5EC]/80 border-b border-gray-100 sticky top-0 backdrop-blur-md z-10 flex justify-between items-center">
+                                    <h4 className="font-bold text-gray-400 text-[10px] uppercase tracking-[0.15em]">
+                                        {modalTab === 'transactions' ? 'Recent Activity' : 'Active Reserves'}
+                                    </h4>
+                                    <List size={12} className="text-gray-300" />
+                                </div>
+
+                                <div className="divide-y divide-gray-200">
+                                    {/* TRANSACTIONS LIST */}
+                                    {modalTab === 'transactions' && (
+                                        <>
+                                            {selectedAccount.history.length === 0 && (
+                                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                                    <History size={32} className="mb-2 opacity-30" />
+                                                    <p className="text-sm">No transactions yet</p>
+                                                </div>
+                                            )}
+                                            {selectedAccount.history.map(tx => (
+                                                <div key={tx.id} className="flex justify-between items-center px-8 py-4 hover:bg-white/40 transition-colors">
+                                                    <div className="flex items-center space-x-4">
+                                                        <div
+                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.type === 'IN' ? 'text-green-600' : 'text-gray-500'}`}
+                                                            style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                                        >
+                                                            {tx.type === 'IN' ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-gray-700 text-[15px]">{tx.description}</p>
+                                                            <p className="text-xs text-gray-400">{new Date(tx.date).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className={`font-bold text-[15px] ${tx.type === 'IN' ? 'text-green-600' : 'text-gray-800'}`}>
+                                                        {tx.type === 'IN' ? '+' : '-'} RM {tx.amount.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </>
                                     )}
 
-                                    {/* Header Balances */}
-                                    <div className="flex items-baseline gap-2">
-                                        <h2 className="text-3xl font-bold text-gray-800 tracking-tight leading-none">
-                                            RM {(selectedAccount.balance - getTotalReserved(selectedAccount)).toLocaleString()}
-                                        </h2>
-                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Available</span>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 mt-1 text-[10px] font-semibold text-gray-500">
-                                        <span>TOTAL: <b>RM {selectedAccount.balance.toLocaleString()}</b></span>
-                                        <span className="flex items-center gap-1 text-yellow-700">
-                                            <Lock size={10} />
-                                            RESERVED: <b>RM {getTotalReserved(selectedAccount).toLocaleString()}</b>
-                                        </span>
-                                    </div>
-
+                                    {/* RESERVATIONS LIST */}
+                                    {modalTab === 'reserves' && (
+                                        <>
+                                            {(!selectedAccount.reservations || selectedAccount.reservations.length === 0) && (
+                                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                                    <Lock size={32} className="mb-2 opacity-30" />
+                                                    <p className="text-sm">No cash reserves set</p>
+                                                </div>
+                                            )}
+                                            {selectedAccount.reservations?.map(res => (
+                                                <div key={res.id} className="flex justify-between items-center px-8 py-4 hover:bg-white/40 transition-colors group">
+                                                    <div className="flex items-center space-x-4">
+                                                        <div
+                                                            className="w-10 h-10 rounded-xl text-blue-500 flex items-center justify-center"
+                                                            style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                                        >
+                                                            <Lock size={16} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-gray-700 text-[15px]">{res.reason}</p>
+                                                            <p className="text-xs text-gray-400">Created {new Date(res.createdAt).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="font-bold text-[15px] text-gray-800">
+                                                            RM {res.amount.toLocaleString()}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => deleteReservation(res.id)}
+                                                            className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
                                 </div>
-                                <button
-                                    onClick={() => setSelectedAccount(null)}
-                                    className="p-3 rounded-full text-gray-500 hover:text-red-500 transition-colors active:scale-95"
-                                    style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                                >
-                                    <Plus size={20} className="rotate-45" />
-                                </button>
                             </div>
 
-                            {/* TABS */}
-                            <div className="flex p-1.5 rounded-xl mb-3" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
-                                <button
-                                    onClick={() => setModalTab('transactions')}
-                                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${modalTab === 'transactions' ? 'text-blue-600 bg-[#E0E5EC] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                                    style={modalTab === 'transactions' ? { boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" } : {}}
-                                >
-                                    Transactions
-                                </button>
-                                <button
-                                    onClick={() => setModalTab('reserves')}
-                                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${modalTab === 'reserves' ? 'text-blue-600 bg-[#E0E5EC] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                                    style={modalTab === 'reserves' ? { boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" } : {}}
-                                >
-                                    <Lock size={12} />
-                                    Reserves
-                                </button>
-                            </div>
-
-                            {/* ACTION AREA - Changes based on Tab */}
-                            {modalTab === 'transactions' ? (
-                                <>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex-1 p-1 rounded-xl flex items-center transition-all bg-[#E0E5EC]" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
-                                                <span className="pl-4 text-gray-400 font-bold text-sm">RM</span>
-                                                <input
-                                                    type="number"
-                                                    value={amount}
-                                                    onChange={e => setAmount(e.target.value)}
-                                                    placeholder="0.00"
-                                                    className="w-full p-2 bg-transparent border-none focus:ring-0 text-xl font-bold text-gray-700 placeholder-gray-300 outline-none"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <input
-                                            type="text"
-                                            value={description}
-                                            onChange={e => setDescription(e.target.value)}
-                                            placeholder="Description (e.g. Salary)"
-                                            className="w-full p-3 rounded-xl border-none focus:ring-0 text-sm font-medium transition-all text-gray-700 placeholder-gray-400 bg-[#E0E5EC] outline-none"
-                                            style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
-                                        />
-
-                                        <div className="grid grid-cols-2 gap-3 pt-1">
-                                            <button
-                                                onClick={() => handleTransaction('IN')}
-                                                className="py-3 rounded-xl flex items-center justify-center space-x-2 text-green-600 transition-all active:scale-95 group font-bold bg-[#E0E5EC]"
-                                                style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                                            >
-                                                <ArrowDownLeft size={18} className="group-hover:scale-110 transition-transform" />
-                                                <span>Deposit</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleTransaction('OUT')}
-                                                className="py-3 rounded-xl flex items-center justify-center space-x-2 text-gray-600 transition-all active:scale-95 group font-bold bg-[#E0E5EC]"
-                                                style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                                            >
-                                                <ArrowUpRight size={18} className="group-hover:scale-110 transition-transform" />
-                                                <span>Withdraw</span>
-                                            </button>
-                                        </div>
+                            {/* Delete Account Footer with Confirmation UI */}
+                            {showDeleteConfirm ? (
+                                <div className="p-4 bg-red-50 border-t border-red-100 flex flex-col items-center animate-fade-in">
+                                    <div className="flex items-center gap-2 mb-3 text-red-600">
+                                        <AlertCircle size={18} />
+                                        <p className="font-bold text-sm">Are you sure? This cannot be undone.</p>
                                     </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="p-3 rounded-2xl mb-3 bg-[#E0E5EC]" style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2 px-1">
-                                            <Plus size={12} strokeWidth={3} />
-                                            Add New Reserve
-                                        </h4>
-                                        <div className="flex gap-3 mb-3">
-                                            <div className="flex-1 rounded-xl flex items-center px-3 bg-[#E0E5EC]" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
-                                                <span className="text-gray-400 font-bold text-xs">RM</span>
-                                                <input
-                                                    type="number"
-                                                    value={resAmount}
-                                                    onChange={e => setResAmount(e.target.value)}
-                                                    placeholder="0.00"
-                                                    className="w-full p-2 bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 placeholder-gray-300 outline-none"
-                                                />
-                                            </div>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            value={resReason}
-                                            onChange={e => setResReason(e.target.value)}
-                                            placeholder="Reason (e.g. Vacation)"
-                                            className="w-full p-3 rounded-xl border-none text-xs font-medium text-gray-700 placeholder-gray-400 mb-3 bg-[#E0E5EC] outline-none"
-                                            style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}
-                                        />
+                                    <div className="flex w-full gap-4">
                                         <button
-                                            onClick={addReservation}
-                                            className="w-full py-2.5 rounded-xl font-bold text-xs text-blue-600 transition-all hover:scale-[1.02] active:scale-95 bg-[#E0E5EC]"
-                                            style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                            type="button"
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            className="flex-1 py-3 rounded-xl text-gray-600 font-semibold text-sm hover:bg-white transition-colors"
                                         >
-                                            Lock Cash
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleDeleteFromModal}
+                                            className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm shadow-lg shadow-red-500/30 hover:bg-red-600 active:scale-[0.98] transition-all"
+                                        >
+                                            Confirm Delete
                                         </button>
                                     </div>
-                                </>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-[#E0E5EC] border-t border-gray-200">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="w-full py-3 rounded-xl text-red-500 font-semibold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] bg-[#E0E5EC]"
+                                        style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete Wallet
+                                    </button>
+                                </div>
                             )}
+
                         </div>
-
-                        <div className="flex-1 overflow-auto p-0 min-h-[140px] bg-[#E0E5EC]">
-                            <div className="px-8 py-2 bg-[#E0E5EC]/80 border-b border-gray-100 sticky top-0 backdrop-blur-md z-10 flex justify-between items-center">
-                                <h4 className="font-bold text-gray-400 text-[10px] uppercase tracking-[0.15em]">
-                                    {modalTab === 'transactions' ? 'Recent Activity' : 'Active Reserves'}
-                                </h4>
-                                <List size={12} className="text-gray-300" />
-                            </div>
-
-                            <div className="divide-y divide-gray-200">
-                                {/* TRANSACTIONS LIST */}
-                                {modalTab === 'transactions' && (
-                                    <>
-                                        {selectedAccount.history.length === 0 && (
-                                            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                                                <History size={32} className="mb-2 opacity-30" />
-                                                <p className="text-sm">No transactions yet</p>
-                                            </div>
-                                        )}
-                                        {selectedAccount.history.map(tx => (
-                                            <div key={tx.id} className="flex justify-between items-center px-8 py-4 hover:bg-white/40 transition-colors">
-                                                <div className="flex items-center space-x-4">
-                                                    <div
-                                                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${tx.type === 'IN' ? 'text-green-600' : 'text-gray-500'}`}
-                                                        style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                                                    >
-                                                        {tx.type === 'IN' ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-700 text-[15px]">{tx.description}</p>
-                                                        <p className="text-xs text-gray-400">{new Date(tx.date).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <span className={`font-bold text-[15px] ${tx.type === 'IN' ? 'text-green-600' : 'text-gray-800'}`}>
-                                                    {tx.type === 'IN' ? '+' : '-'} RM {tx.amount.toLocaleString()}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </>
-                                )}
-
-                                {/* RESERVATIONS LIST */}
-                                {modalTab === 'reserves' && (
-                                    <>
-                                        {(!selectedAccount.reservations || selectedAccount.reservations.length === 0) && (
-                                            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                                                <Lock size={32} className="mb-2 opacity-30" />
-                                                <p className="text-sm">No cash reserves set</p>
-                                            </div>
-                                        )}
-                                        {selectedAccount.reservations?.map(res => (
-                                            <div key={res.id} className="flex justify-between items-center px-8 py-4 hover:bg-white/40 transition-colors group">
-                                                <div className="flex items-center space-x-4">
-                                                    <div
-                                                        className="w-10 h-10 rounded-xl text-blue-500 flex items-center justify-center"
-                                                        style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                                                    >
-                                                        <Lock size={16} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-700 text-[15px]">{res.reason}</p>
-                                                        <p className="text-xs text-gray-400">Created {new Date(res.createdAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <span className="font-bold text-[15px] text-gray-800">
-                                                        RM {res.amount.toLocaleString()}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => deleteReservation(res.id)}
-                                                        className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Delete Account Footer with Confirmation UI */}
-                        {showDeleteConfirm ? (
-                            <div className="p-4 bg-red-50 border-t border-red-100 flex flex-col items-center animate-fade-in">
-                                <div className="flex items-center gap-2 mb-3 text-red-600">
-                                    <AlertCircle size={18} />
-                                    <p className="font-bold text-sm">Are you sure? This cannot be undone.</p>
-                                </div>
-                                <div className="flex w-full gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowDeleteConfirm(false)}
-                                        className="flex-1 py-3 rounded-xl text-gray-600 font-semibold text-sm hover:bg-white transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleDeleteFromModal}
-                                        className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm shadow-lg shadow-red-500/30 hover:bg-red-600 active:scale-[0.98] transition-all"
-                                    >
-                                        Confirm Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="p-4 bg-[#E0E5EC] border-t border-gray-200">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowDeleteConfirm(true)}
-                                    className="w-full py-3 rounded-xl text-red-500 font-semibold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] bg-[#E0E5EC]"
-                                    style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                                >
-                                    <Trash2 size={16} />
-                                    Delete Wallet
-                                </button>
-                            </div>
-                        )}
-
-                    </div>
-                </div>,
-                document.body
-            )}
-        </div>
+                    </div>,
+                    document.body
+                )
+            }
+        </div >
     );
 };
 
