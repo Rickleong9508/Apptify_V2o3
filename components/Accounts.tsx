@@ -36,6 +36,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
 
     // Edit Account State
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isEditingInterest, setIsEditingInterest] = useState(false); // New
     const [editNameValue, setEditNameValue] = useState('');
     const [editInterestRate, setEditInterestRate] = useState('');
     const [editInterestFreq, setEditInterestFreq] = useState<'DAILY' | 'MONTHLY' | 'YEARLY' | 'NONE'>('NONE');
@@ -50,6 +51,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             setEditInterestRate(selectedAccount.interestRate ? selectedAccount.interestRate.toString() : '');
             setEditInterestFreq(selectedAccount.interestFrequency || 'NONE');
             setIsEditingName(false);
+            setIsEditingInterest(false); // New
             setShowDeleteConfirm(false);
             setAmount('');
             setDescription('');
@@ -172,12 +174,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             if (acc.id === selectedAccount.id) {
                 return {
                     ...acc,
-                    name: editNameValue,
-                    interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
-                    interestFrequency: editInterestFreq,
-                    nextInterestDate: (editInterestFreq !== 'NONE' && acc.interestFrequency !== editInterestFreq)
-                        ? new Date(Date.now() + 86400000).toISOString() // Reset date if frequency changes
-                        : acc.nextInterestDate
+                    name: editNameValue
                 };
             }
             return acc;
@@ -185,11 +182,37 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
 
         setSelectedAccount(prev => prev ? {
             ...prev,
-            name: editNameValue,
-            interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
-            interestFrequency: editInterestFreq
+            name: editNameValue
         } : null);
         setIsEditingName(false);
+    };
+
+    const saveInterestSettings = () => {
+        if (!selectedAccount) return;
+
+        setAccounts(prev => prev.map(acc => {
+            if (acc.id === selectedAccount.id) {
+                return {
+                    ...acc,
+                    interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
+                    interestFrequency: editInterestFreq,
+                    nextInterestDate: (editInterestFreq !== 'NONE' && acc.interestFrequency !== editInterestFreq)
+                        ? new Date(Date.now() + 86400000).toISOString()
+                        : (editInterestFreq === 'NONE' ? undefined : acc.nextInterestDate)
+                };
+            }
+            return acc;
+        }));
+
+        setSelectedAccount(prev => prev ? {
+            ...prev,
+            interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
+            interestFrequency: editInterestFreq,
+            nextInterestDate: (editInterestFreq !== 'NONE' && prev.interestFrequency !== editInterestFreq)
+                ? new Date(Date.now() + 86400000).toISOString()
+                : (editInterestFreq === 'NONE' ? undefined : prev.nextInterestDate)
+        } : null);
+        setIsEditingInterest(false);
     };
 
     const handleDeleteFromModal = () => {
@@ -364,38 +387,77 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                                                     <button onClick={saveAccountName} className="p-1.5 bg-green-500 text-white rounded-lg shadow hover:opacity-90"><Check size={14} /></button>
                                                     <button onClick={() => setIsEditingName(false)} className="p-1.5 bg-gray-400 text-white rounded-lg shadow hover:opacity-90"><X size={14} /></button>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold text-gray-400 uppercase">Interest:</span>
-                                                    <input
-                                                        type="number"
-                                                        value={editInterestRate}
-                                                        onChange={(e) => setEditInterestRate(e.target.value)}
-                                                        placeholder="%"
-                                                        className="w-16 bg-white/60 rounded-md px-1 py-0.5 text-xs font-medium border border-gray-300"
-                                                    />
-                                                    <span className="text-xs text-gray-500">%</span>
-                                                    <select
-                                                        value={editInterestFreq}
-                                                        onChange={(e) => setEditInterestFreq(e.target.value as any)}
-                                                        className="bg-white/60 rounded-md px-1 py-0.5 text-xs font-medium border border-gray-300 outline-none"
-                                                    >
-                                                        <option value="NONE">None</option>
-                                                        <option value="DAILY">Daily</option>
-                                                        <option value="MONTHLY">Monthly</option>
-                                                        <option value="YEARLY">Yearly</option>
-                                                    </select>
-                                                </div>
                                             </div>
                                         ) : (
-                                            <div className="group flex flex-col items-start gap-1 mb-1 cursor-pointer w-fit" onClick={() => setIsEditingName(true)}>
-                                                <div className="flex items-center gap-2">
+                                            <div className="group flex flex-col items-start gap-1 mb-1 w-fit">
+                                                <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsEditingName(true)}>
                                                     <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider hover:text-blue-600 transition-colors">{selectedAccount.name}</h3>
                                                     <Pencil size={12} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </div>
-                                                {(selectedAccount.interestRate && selectedAccount.interestFrequency !== 'NONE') && (
-                                                    <span className="text-[10px] font-bold text-green-600 flex items-center gap-1">
-                                                        <TrendingUp size={10} /> {selectedAccount.interestRate}% {selectedAccount.interestFrequency}
-                                                    </span>
+
+                                                {/* INTEREST SECTION */}
+                                                {isEditingInterest ? (
+                                                    <div className="flex items-center gap-2 mt-1 animate-fade-in relative z-20">
+                                                        <input
+                                                            type="number"
+                                                            value={editInterestRate}
+                                                            onChange={(e) => setEditInterestRate(e.target.value)}
+                                                            placeholder="%"
+                                                            className="w-16 bg-white rounded-md px-1 py-0.5 text-xs font-medium border border-gray-300 focus:ring-2 focus:ring-blue-400 outline-none"
+                                                            autoFocus
+                                                        />
+                                                        <span className="text-xs text-gray-500">%</span>
+                                                        <select
+                                                            value={editInterestFreq}
+                                                            onChange={(e) => setEditInterestFreq(e.target.value as any)}
+                                                            className="bg-white rounded-md px-1 py-0.5 text-xs font-medium border border-gray-300 outline-none cursor-pointer"
+                                                        >
+                                                            <option value="DAILY">Daily</option>
+                                                            <option value="MONTHLY">Monthly</option>
+                                                            <option value="YEARLY">Yearly</option>
+                                                        </select>
+                                                        <button onClick={saveInterestSettings} className="p-1 bg-green-500 text-white rounded hover:opacity-90 transition-opacity"><Check size={12} /></button>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditInterestFreq('NONE');
+                                                                setEditInterestRate('');
+                                                                // We need to trigger save manually or assume next save captures it. 
+                                                                // Since we are in a sub-edit, let's just commit the removal.
+                                                                // But saveInterestSettings uses the *state* variables. 
+                                                                // So we must update state then call save? React state updates are async.
+                                                                // Workaround: Call setAccounts directly here for removal or use a separate function.
+                                                                // I'll assume users click the Red Trash button -> it updates state to NONE -> then they click Save? 
+                                                                // No, the Trash button should just do it. 
+                                                                // Let's implement immediate removal logic here inline or refactor.
+                                                                // For now, I will make the trash button clear the inputs, user still has to click check? 
+                                                                // No, that's confusing.
+                                                                // I'll make the trash button immediately remove interest.
+                                                                const updatedAcc = { ...selectedAccount, interestRate: undefined, interestFrequency: 'NONE' as const, nextInterestDate: undefined };
+                                                                setAccounts(prev => prev.map(a => a.id === selectedAccount.id ? updatedAcc : a));
+                                                                setSelectedAccount(updatedAcc);
+                                                                setIsEditingInterest(false);
+                                                            }}
+                                                            className="p-1 bg-red-400 text-white rounded hover:opacity-90 ml-1"
+                                                            title="Disable Interest"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                        <button onClick={() => setIsEditingInterest(false)} className="p-1 bg-gray-300 text-gray-600 rounded hover:opacity-90 ml-1"><X size={12} /></button>
+                                                    </div>
+                                                ) : (
+                                                    <div onClick={() => setIsEditingInterest(true)} className="mt-1 cursor-pointer w-fit">
+                                                        {(selectedAccount.interestRate && selectedAccount.interestFrequency !== 'NONE') ? (
+                                                            <span className="text-[10px] font-bold text-green-600 flex items-center gap-1 bg-green-100/50 px-2 py-0.5 rounded-md hover:bg-green-100 transition-colors border border-transparent hover:border-green-200">
+                                                                <TrendingUp size={10} /> {selectedAccount.interestRate}% {selectedAccount.interestFrequency}
+                                                                <Pencil size={8} className="ml-1 opacity-50" />
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-bold text-blue-400 flex items-center gap-1 hover:text-blue-600 transition-colors border border-dashed border-blue-300 px-2 py-0.5 rounded-md hover:bg-blue-50">
+                                                                <Plus size={10} /> Add Interest
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
