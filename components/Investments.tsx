@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Stock } from '../types';
-import { Plus, TrendingUp, TrendingDown, Trash2, Globe, Pencil, X, Calculator, ArrowRight, Settings, Search, AlertCircle, Check, RefreshCcw, Loader2 } from 'lucide-react';
+import { Stock, CashHolding } from '../types';
+import { Plus, TrendingUp, TrendingDown, Trash2, Globe, Pencil, X, Calculator, ArrowRight, Settings, Search, AlertCircle, Check, RefreshCcw, Loader2, Coins } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 interface InvestmentsProps {
     stocks: Stock[];
     setStocks: React.Dispatch<React.SetStateAction<Stock[]>>;
+    cash: CashHolding;
+    setCash: React.Dispatch<React.SetStateAction<CashHolding>>;
     exchangeRate: number;
     setExchangeRate: (rate: number) => void;
 }
@@ -187,7 +189,7 @@ const StockItem: React.FC<StockItemProps> = ({ stock, exchangeRate, onUpdateStoc
     );
 }
 
-const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRate, setExchangeRate }) => {
+const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setCash, exchangeRate, setExchangeRate }) => {
     const [showAdd, setShowAdd] = useState(false);
     const [newStock, setNewStock] = useState<any>({ currency: 'MYR' });
 
@@ -385,6 +387,7 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRa
         let totalValueMYR = 0;
         let totalCostMYR = 0;
 
+        // Stocks
         stocks.forEach(s => {
             // Defensive ensure
             if (!s || !s.buyPrice || !s.quantity) return;
@@ -397,11 +400,16 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRa
             totalCostMYR += costBasisMYR;
         });
 
-        const profit = totalValueMYR - totalCostMYR;
-        const profitPercent = totalCostMYR > 0 ? (profit / totalCostMYR) * 100 : 0;
+        // Cash
+        const hkdRate = cash.hkdRate || 0.58; // Default to 0.58 if not set
+        const cashMYR = (cash.myr || 0) + ((cash.usd || 0) * exchangeRate) + ((cash.hkd || 0) * hkdRate);
+        totalValueMYR += cashMYR;
+        totalCostMYR += cashMYR;
 
-        return { totalValueMYR, totalCostMYR, profit, profitPercent };
-    }, [stocks, exchangeRate]);
+        const profit = totalValueMYR - totalCostMYR;
+
+        return { totalValueMYR, totalCostMYR, profit, profitPercent: totalCostMYR > 0 ? (profit / totalCostMYR) * 100 : 0 };
+    }, [stocks, cash, exchangeRate]);
 
     // Safety: Filter out completely broken stocks before rendering list
     const validStocks = stocks.filter(s => s && s.id);
@@ -506,6 +514,81 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, exchangeRa
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-300 text-xs text-gray-500 flex items-center gap-1">
                         <Settings size={12} /> Auto-converts USD assets
+                    </div>
+                </div>
+
+                {/* Cash Holdings Card */}
+                <div
+                    className="p-6 rounded-[32px] flex flex-col relative overflow-hidden group animate-fade-in-up opacity-0"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                        animationDelay: '450ms'
+                    }}
+                >
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 text-green-600 rounded-2xl" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                            <Coins size={24} />
+                        </div>
+                        <span className="text-xs font-bold text-gray-500 uppercase px-2 py-1 rounded" style={{ background: "#E0E5EC", boxShadow: "inset 2px 2px 4px #b8b9be, inset -2px -2px 4px #ffffff" }}>Liquid Assets</span>
+                    </div>
+
+                    <div className="space-y-3">
+                        {/* MYR */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-gray-400 w-12">MYR</span>
+                            <div className="flex-1 ml-2 relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">RM</span>
+                                <input
+                                    type="number"
+                                    value={cash.myr || ''}
+                                    onChange={e => setCash({ ...cash, myr: parseFloat(e.target.value) || 0 })}
+                                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border-none text-right font-bold text-gray-700 bg-[#E0E5EC] shadow-inner focus:ring-0 text-sm outline-none"
+                                    style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}
+                                    placeholder="0"
+                                />
+                            </div>
+                        </div>
+                        {/* USD */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-gray-400 w-12">USD</span>
+                            <div className="flex-1 ml-2 relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">$</span>
+                                <input
+                                    type="number"
+                                    value={cash.usd || ''}
+                                    onChange={e => setCash({ ...cash, usd: parseFloat(e.target.value) || 0 })}
+                                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border-none text-right font-bold text-gray-700 bg-[#E0E5EC] shadow-inner focus:ring-0 text-sm outline-none"
+                                    style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}
+                                    placeholder="0"
+                                />
+                            </div>
+                        </div>
+                        {/* HKD */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-gray-400 w-12">HKD</span>
+                            <div className="flex-1 ml-2 relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">HK$</span>
+                                <input
+                                    type="number"
+                                    value={cash.hkd || ''}
+                                    onChange={e => setCash({ ...cash, hkd: parseFloat(e.target.value) || 0 })}
+                                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border-none text-right font-bold text-gray-700 bg-[#E0E5EC] shadow-inner focus:ring-0 text-sm outline-none"
+                                    style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}
+                                    placeholder="0"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-300/50 flex justify-between items-center">
+                            <span className="text-[10px] text-gray-400 font-bold">HKD Rate:</span>
+                            <input
+                                type="number"
+                                value={cash.hkdRate || 0.58}
+                                onChange={e => setCash({ ...cash, hkdRate: parseFloat(e.target.value) || 0 })}
+                                className="w-16 bg-transparent text-right text-[10px] font-bold text-gray-500 border-none p-0 focus:ring-0 outline-none"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

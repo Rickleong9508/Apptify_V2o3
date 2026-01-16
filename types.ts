@@ -75,6 +75,13 @@ export interface Stock {
   currency: 'MYR' | 'USD';
 }
 
+export interface CashHolding {
+  myr: number;
+  usd: number;
+  hkd: number;
+  hkdRate?: number;
+}
+
 export interface ScenarioAssumptions {
   revenueCagr: number;
   operatingMargin: number;

@@ -15,7 +15,7 @@ import Accounts from './Accounts';
 import Budget from './Budget';
 import Loans from './Loans';
 import Investments from './Investments';
-import { Account, Expense, Loan, Stock, MonthlyData, Transaction, BudgetHistoryItem, ExpenseCategory } from '../types';
+import { Account, Expense, Loan, Stock, MonthlyData, Transaction, BudgetHistoryItem, ExpenseCategory, CashHolding } from '../types';
 import WealthAiAssistant from './WealthAiAssistant';
 import { aiService } from '../services/aiService';
 import { useAuth } from './AuthProvider'; // New
@@ -62,6 +62,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   const [fixedExpenses, setFixedExpenses] = useState<Expense[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
+  const [cash, setCash] = useState<CashHolding>({ myr: 0, usd: 0, hkd: 0 });
   const [exchangeRate, setExchangeRate] = useState<number>(4.50);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
@@ -97,6 +98,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
       while (nextDate <= now && loops < MAX_LOOPS) {
         const rate = acc.interestRate / 100;
         let interestAmount = 0;
+        const transactionDate = nextDate.toISOString(); // Capture scheduled time
 
         if (acc.interestFrequency === 'DAILY') {
           interestAmount = newBalance * (rate / 365);
@@ -113,10 +115,10 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           newBalance += interestAmount;
           newHistory.unshift({
             id: `int-${Date.now()}-${loops}`,
-            date: new Date().toISOString(), // Record transaction at "now" or "nextDate"? Using now for visibility at top of list
+            date: transactionDate,
             type: 'IN',
             amount: interestAmount,
-            description: `Interest Add : RM ${interestAmount.toFixed(2)}`
+            description: `Interest Paid`
           });
           changed = true;
         }
@@ -161,6 +163,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           setFixedExpenses(localData.fixedExpenses || []);
           setLoans(localData.loans || []);
           setStocks(localData.stocks || []);
+          setCash(localData.cash || { myr: 0, usd: 0, hkd: 0 });
           setExchangeRate(localData.exchangeRate || 4.5);
           // Init the ref
           if (localData.lastUpdated) {
@@ -198,6 +201,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             setFixedExpenses(cloudApp.fixedExpenses || []);
             setLoans(cloudApp.loans || []);
             setStocks(cloudApp.stocks || []);
+            setCash(cloudApp.cash || { myr: 0, usd: 0, hkd: 0 });
             setExchangeRate(cloudApp.exchangeRate || 4.5);
             lastLocalUpdateRef.current = cloudTime; // Update ref to match new cloud state
             setShowSyncSuccess(true);
@@ -256,6 +260,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
               setFixedExpenses(cloudApp.fixedExpenses || []);
               setLoans(cloudApp.loans || []);
               setStocks(cloudApp.stocks || []);
+              setCash(cloudApp.cash || { myr: 0, usd: 0, hkd: 0 });
               setExchangeRate(cloudApp.exchangeRate || 4.5);
               lastLocalUpdateRef.current = cloudTime;
               setIsSyncing(true);
@@ -280,7 +285,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     if (!isDataLoaded) return;
 
     const now = new Date();
-    const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, exchangeRate, lastUpdated: now.toISOString() };
+    const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: now.toISOString() };
 
     // Update Ref immediately so pending cloud saves/realtime echoes don't overwrite us
     lastLocalUpdateRef.current = now.getTime();
@@ -325,7 +330,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
       return () => clearTimeout(timer);
     }
 
-  }, [accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, exchangeRate, isDataLoaded, session, user]);
+  }, [accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, isDataLoaded, session, user]);
 
   const handleArchiveMonth = () => {
     // 1. Calculate Totals
@@ -601,7 +606,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             {activeTab === 'accounts' && <Accounts accounts={accounts} setAccounts={setAccounts} />}
             {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} budgetHistory={budgetHistory} onArchiveMonth={handleArchiveMonth} />}
             {activeTab === 'loans' && <Loans loans={loans} setLoans={setLoans} />}
-            {activeTab === 'investments' && <Investments stocks={stocks} setStocks={setStocks} exchangeRate={exchangeRate} setExchangeRate={setExchangeRate} />}
+            {activeTab === 'investments' && <Investments stocks={stocks} setStocks={setStocks} cash={cash} setCash={setCash} exchangeRate={exchangeRate} setExchangeRate={setExchangeRate} />}
           </div>
         </div>
       </main>

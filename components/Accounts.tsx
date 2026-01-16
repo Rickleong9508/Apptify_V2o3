@@ -148,6 +148,22 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
         });
     };
 
+    const getNextInterestDate = (freq: string) => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0); // Reset to start of today
+
+        if (freq === 'DAILY') {
+            d.setDate(d.getDate() + 1); // Tomorrow
+        } else if (freq === 'MONTHLY') {
+            d.setDate(1); // 1st of current month
+            d.setMonth(d.getMonth() + 1); // 1st of next month
+        } else if (freq === 'YEARLY') {
+            d.setMonth(0, 1); // Jan 1st of current year
+            d.setFullYear(d.getFullYear() + 1); // Jan 1st of next year
+        }
+        return d.toISOString();
+    };
+
     const addAccount = () => {
         if (!newAccountName.trim()) return;
         const newAcc: Account = {
@@ -158,7 +174,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             history: [],
             interestRate: newInterestRate ? parseFloat(newInterestRate) : undefined,
             interestFrequency: newInterestFreq,
-            nextInterestDate: newInterestFreq !== 'NONE' ? new Date(Date.now() + 86400000).toISOString() : undefined // Default to tomorrow for simplicity
+            nextInterestDate: newInterestFreq !== 'NONE' ? getNextInterestDate(newInterestFreq) : undefined
         };
         setAccounts(prev => [...prev, newAcc]);
         setNewAccountName('');
@@ -187,31 +203,40 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
         setIsEditingName(false);
     };
 
+
+
     const saveInterestSettings = () => {
         if (!selectedAccount) return;
 
         setAccounts(prev => prev.map(acc => {
             if (acc.id === selectedAccount.id) {
+                // Determine if we need to reset the timer
+                const needsReset = (editInterestFreq !== 'NONE' && acc.interestFrequency !== editInterestFreq);
+
                 return {
                     ...acc,
                     interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
                     interestFrequency: editInterestFreq,
-                    nextInterestDate: (editInterestFreq !== 'NONE' && acc.interestFrequency !== editInterestFreq)
-                        ? new Date(Date.now() + 86400000).toISOString()
+                    nextInterestDate: needsReset
+                        ? getNextInterestDate(editInterestFreq)
                         : (editInterestFreq === 'NONE' ? undefined : acc.nextInterestDate)
                 };
             }
             return acc;
         }));
 
-        setSelectedAccount(prev => prev ? {
-            ...prev,
-            interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
-            interestFrequency: editInterestFreq,
-            nextInterestDate: (editInterestFreq !== 'NONE' && prev.interestFrequency !== editInterestFreq)
-                ? new Date(Date.now() + 86400000).toISOString()
-                : (editInterestFreq === 'NONE' ? undefined : prev.nextInterestDate)
-        } : null);
+        setSelectedAccount(prev => {
+            if (!prev) return null;
+            const needsReset = (editInterestFreq !== 'NONE' && prev.interestFrequency !== editInterestFreq);
+            return {
+                ...prev,
+                interestRate: editInterestRate ? parseFloat(editInterestRate) : undefined,
+                interestFrequency: editInterestFreq,
+                nextInterestDate: needsReset
+                    ? getNextInterestDate(editInterestFreq)
+                    : (editInterestFreq === 'NONE' ? undefined : prev.nextInterestDate)
+            };
+        });
         setIsEditingInterest(false);
     };
 
