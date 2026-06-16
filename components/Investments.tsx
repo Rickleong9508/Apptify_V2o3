@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Stock, CashHolding } from '../types';
-import { Plus, TrendingUp, TrendingDown, Trash2, Globe, Pencil, X, Calculator, ArrowRight, Settings, Search, AlertCircle, Check, RefreshCcw, Loader2, Coins } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Trash2, Globe, Pencil, X, Calculator, ArrowRight, Settings, Search, AlertCircle, Check, RefreshCcw, Loader2, Coins, GripVertical } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 interface InvestmentsProps {
@@ -77,9 +77,27 @@ interface StockItemProps {
     onUpdateStock: (id: string, newPrice: number) => void;
     onManage: (stock: Stock) => void;
     onDelete: (id: string, e: React.MouseEvent) => void;
+    draggable?: boolean;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragEnter?: (e: React.DragEvent) => void;
+    onDragEnd?: () => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    isDragging?: boolean;
 }
 
-const StockItem: React.FC<StockItemProps> = ({ stock, exchangeRate, onUpdateStock, onManage, onDelete }) => {
+const StockItem: React.FC<StockItemProps> = ({
+    stock,
+    exchangeRate,
+    onUpdateStock,
+    onManage,
+    onDelete,
+    draggable,
+    onDragStart,
+    onDragEnter,
+    onDragEnd,
+    onDragOver,
+    isDragging
+}) => {
     const [priceInput, setPriceInput] = useState(stock.currentPrice.toString());
     const [isEditing, setIsEditing] = useState(false);
 
@@ -119,9 +137,20 @@ const StockItem: React.FC<StockItemProps> = ({ stock, exchangeRate, onUpdateStoc
     const plPercent = costNative > 0 ? (plNative / costNative) * 100 : 0;
 
     return (
-        <div className="p-6 transition-colors group flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4 border-b border-gray-300/50 last:border-none hover:bg-white/40">
-            {/* Left: Identity */}
+        <div
+            draggable={draggable && !isEditing}
+            onDragStart={onDragStart}
+            onDragEnter={onDragEnter}
+            onDragEnd={onDragEnd}
+            onDragOver={onDragOver}
+            className={`p-6 transition-all duration-300 group flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4 border-b border-gray-300/50 last:border-none hover:bg-white/40 ${isDragging ? 'opacity-30 scale-[0.99] border-dashed border-2 border-blue-400/50 bg-blue-50/10' : ''}`}
+        >
+            {/* Left: Identity & Grip Handle */}
             <div className="flex items-center gap-4 w-full md:w-1/3">
+                {/* Grip Handle */}
+                <div className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing p-1 flex items-center justify-center transition-colors">
+                    <GripVertical size={16} />
+                </div>
                 <div
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-bold shadow-sm ${isUSD ? 'text-blue-600' : 'text-yellow-700'}`}
                     style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
@@ -192,6 +221,35 @@ const StockItem: React.FC<StockItemProps> = ({ stock, exchangeRate, onUpdateStoc
 const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setCash, exchangeRate, setExchangeRate }) => {
     const [showAdd, setShowAdd] = useState(false);
     const [newStock, setNewStock] = useState<any>({ currency: 'MYR' });
+
+    // --- Drag and Drop State ---
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', index.toString());
+        setDraggedIndex(index);
+    };
+
+    const handleDragEnter = (e: React.DragEvent, index: number) => {
+        if (draggedIndex === null || draggedIndex === index) return;
+
+        const newStocks = [...stocks.filter(s => s && s.id)];
+        const draggedItem = newStocks[draggedIndex];
+        newStocks.splice(draggedIndex, 1);
+        newStocks.splice(index, 0, draggedItem);
+
+        setStocks(newStocks);
+        setDraggedIndex(index);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
 
     // --- Edit/Manage Modal State ---
     const [editingStock, setEditingStock] = useState<Stock | null>(null);
@@ -731,7 +789,7 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                         </div>
                     )}
 
-                    {validStocks.map(stock => (
+                    {validStocks.map((stock, index) => (
                         <StockItem
                             key={stock.id}
                             stock={stock}
@@ -739,6 +797,12 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                             onUpdateStock={updateStockPrice}
                             onManage={openManageModal}
                             onDelete={requestDelete}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragEnter={(e) => handleDragEnter(e, index)}
+                            onDragEnd={handleDragEnd}
+                            onDragOver={handleDragOver}
+                            isDragging={draggedIndex === index}
                         />
                     ))}
                 </div>

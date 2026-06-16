@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Account, Transaction, Reservation } from '../types';
-import { Plus, ArrowUpRight, ArrowDownLeft, History, Wallet, Trash2, Pencil, Check, X, AlertCircle, Lock, Unlock, List, TrendingUp } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownLeft, History, Wallet, Trash2, Pencil, Check, X, AlertCircle, Lock, Unlock, List, TrendingUp, Calculator } from 'lucide-react';
 
 interface AccountsProps {
     accounts: Account[];
@@ -16,6 +16,18 @@ const GRADIENTS = [
     'bg-gradient-to-br from-[#434343] to-[#000000]', // Black
 ];
 
+const safeEvaluate = (str: string): number => {
+    if (!str) return 0;
+    // Allow only numbers, +, -, *, /, ., and spaces
+    const clean = str.replace(/[^0-9+\-*/. ]/g, '');
+    try {
+        const result = new Function(`return (${clean})`)();
+        return typeof result === 'number' && isFinite(result) ? result : 0;
+    } catch (e) {
+        return 0;
+    }
+};
+
 const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
     const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
     const [modalTab, setModalTab] = useState<'transactions' | 'reserves'>('transactions');
@@ -23,6 +35,8 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
     // Transaction Form
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
+    const [showCalc, setShowCalc] = useState(false);
+    const [calcDisplay, setCalcDisplay] = useState('');
 
     // Reservation Form
     const [resAmount, setResAmount] = useState('');
@@ -58,6 +72,8 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             setResAmount('');
             setResReason('');
             setModalTab('transactions');
+            setShowCalc(false);
+            setCalcDisplay('');
         }
     }, [selectedAccount]);
 
@@ -546,8 +562,123 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                                                         placeholder="0.00"
                                                         className="w-full p-2 bg-transparent border-none focus:ring-0 text-xl font-bold text-gray-700 placeholder-gray-300 outline-none"
                                                     />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setCalcDisplay(amount || '');
+                                                            setShowCalc(!showCalc);
+                                                        }}
+                                                        className="p-2.5 mr-2 text-gray-500 hover:text-blue-500 rounded-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+                                                        style={{ background: "#E0E5EC", boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" }}
+                                                        title="Open Calculator"
+                                                    >
+                                                        <Calculator size={18} />
+                                                    </button>
                                                 </div>
                                             </div>
+
+                                            {showCalc && (
+                                                <div 
+                                                    className="p-4 rounded-2xl animate-scale-in" 
+                                                    style={{ 
+                                                        background: "#E0E5EC", 
+                                                        boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff",
+                                                        border: "1px solid rgba(255,255,255,0.4)"
+                                                    }}
+                                                >
+                                                    {/* Calculator Display */}
+                                                    <div 
+                                                        className="w-full p-3 rounded-xl mb-4 text-right font-mono text-lg font-bold text-gray-700 overflow-x-auto no-scrollbar"
+                                                        style={{ 
+                                                            background: "#E0E5EC", 
+                                                            boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" 
+                                                        }}
+                                                    >
+                                                        {calcDisplay || '0'}
+                                                    </div>
+
+                                                    {/* Buttons Grid */}
+                                                    <div className="grid grid-cols-4 gap-2 mb-3">
+                                                        {[
+                                                            '7', '8', '9', '/',
+                                                            '4', '5', '6', '*',
+                                                            '1', '2', '3', '-',
+                                                            'C', '0', '=', '+'
+                                                        ].map(key => {
+                                                            const isOperator = ['/', '*', '-', '+', '='].includes(key);
+                                                            const isClear = key === 'C';
+                                                            
+                                                            return (
+                                                                <button
+                                                                    key={key}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (isClear) {
+                                                                            setCalcDisplay('');
+                                                                        } else if (key === '=') {
+                                                                            try {
+                                                                                const res = safeEvaluate(calcDisplay);
+                                                                                const formatted = Number(res.toFixed(6));
+                                                                                setCalcDisplay(formatted.toString());
+                                                                            } catch (e) {
+                                                                                setCalcDisplay('Error');
+                                                                            }
+                                                                        } else {
+                                                                            setCalcDisplay(prev => {
+                                                                                if (prev === 'Error') return key;
+                                                                                return prev + key;
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                    className={`p-3 rounded-xl font-bold text-sm transition-all active:scale-90 hover:scale-105 cursor-pointer
+                                                                        ${isOperator ? 'text-blue-600' : isClear ? 'text-red-500' : 'text-gray-700'}
+                                                                    `}
+                                                                    style={{
+                                                                        background: "#E0E5EC",
+                                                                        boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                                    }}
+                                                                >
+                                                                    {key}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Apply & Cancel Actions */}
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                try {
+                                                                    const res = safeEvaluate(calcDisplay);
+                                                                    if (!isNaN(res) && res > 0) {
+                                                                        setAmount(Number(res.toFixed(2)).toString());
+                                                                    }
+                                                                } catch (e) {}
+                                                                setShowCalc(false);
+                                                            }}
+                                                            className="flex-1 py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                                                            style={{ 
+                                                                background: "linear-gradient(145deg, #0071e3, #4facfe)", 
+                                                                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" 
+                                                            }}
+                                                        >
+                                                            Confirm & Apply
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowCalc(false)}
+                                                            className="px-4 py-2.5 rounded-xl text-gray-500 font-bold text-xs active:scale-95 transition-all cursor-pointer"
+                                                            style={{ 
+                                                                background: "#E0E5EC",
+                                                                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" 
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             <input
                                                 type="text"

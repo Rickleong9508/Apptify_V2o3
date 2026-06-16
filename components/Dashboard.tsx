@@ -82,16 +82,22 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
                         {netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </h1>
 
-                    <div className="grid grid-cols-2 gap-8 border-t border-gray-300 pt-6">
+                    <div className="grid grid-cols-3 gap-4 md:gap-8 border-t border-gray-300 pt-6">
                         <div>
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Cash</p>
-                            <p className="text-xl font-bold text-green-500">
+                            <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Cash</p>
+                            <p className="text-base md:text-xl font-bold text-green-500">
                                 + RM {totalCash.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </p>
                         </div>
                         <div>
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Liabilities</p>
-                            <p className="text-xl font-bold text-red-500">
+                            <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Investments</p>
+                            <p className="text-base md:text-xl font-bold text-purple-500">
+                                + RM {totalStockValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Total Liabilities</p>
+                            <p className="text-base md:text-xl font-bold text-red-500">
                                 - RM {totalLiabilities.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </p>
                         </div>
