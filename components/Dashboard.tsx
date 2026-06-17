@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Account, MonthlyData, Loan, Stock, Expense } from '../types';
+import { Account, MonthlyData, Loan, Stock, Expense, CashHolding } from '../types';
 import { Wallet, TrendingUp, TrendingDown, DollarSign, Activity, ArrowUpRight, ArrowDownLeft, PieChart, Lock, Unlock } from 'lucide-react';
 
 interface DashboardProps {
@@ -9,9 +9,10 @@ interface DashboardProps {
     loans: Loan[];
     stocks: Stock[];
     exchangeRate: number;
+    cash: CashHolding;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate }) => {
+const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, cash }) => {
 
     // 1. Calculate Total Assets (Cash + Stock Value)
     const totalCash = useMemo(() => accounts.reduce((sum, acc) => sum + acc.balance, 0), [accounts]);
@@ -23,13 +24,18 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
 
     const availableCash = totalCash - totalReserved;
 
-    // Calculate Stock Value
+    // Calculate Stock Value + Free Cash in Investments
     const totalStockValue = useMemo(() => {
-        return stocks.reduce((sum, s) => {
+        const stocksValue = stocks.reduce((sum, s) => {
             const rate = s.currency === 'USD' ? exchangeRate : 1;
             return sum + (s.currentPrice * s.quantity * rate);
         }, 0);
-    }, [stocks, exchangeRate]);
+
+        const hkdRate = cash.hkdRate || 0.58;
+        const cashValue = (cash.myr || 0) + ((cash.usd || 0) * exchangeRate) + ((cash.hkd || 0) * hkdRate);
+
+        return stocksValue + cashValue;
+    }, [stocks, exchangeRate, cash]);
 
     const totalAssets = totalCash + totalStockValue;
 
