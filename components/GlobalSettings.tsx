@@ -379,34 +379,32 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                             {/* DeepSeek Options */}
                             {aiProvider === 'deepseek' && (
-                                <>
-                                    <div
-                                        onClick={() => setAiModel('deepseek-chat')}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'deepseek-chat' ? 'text-purple-600' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "#E0E5EC",
-                                            boxShadow: aiModel === 'deepseek-chat'
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">DeepSeek V3 (Chat)</span>{aiModel === 'deepseek-chat' && <CheckCircle2 size={16} />}</div>
-                                        <div className="text-xs text-gray-400">Standard high-performance model</div>
-                                    </div>
-                                    <div
-                                        onClick={() => setAiModel('deepseek-reasoner')}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'deepseek-reasoner' ? 'text-purple-600' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "#E0E5EC",
-                                            boxShadow: aiModel === 'deepseek-reasoner'
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">DeepSeek R1 (Reasoner)</span>{aiModel === 'deepseek-reasoner' && <CheckCircle2 size={16} />}</div>
-                                        <div className="text-xs text-gray-400">Specialized in logic & reasoning</div>
-                                    </div>
-                                </>
+                                <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {[
+                                        { id: 'deepseek-v4-flash', name: 'DeepSeek v4 Flash', desc: 'Next-gen ultra-fast inference' },
+                                        { id: 'deepseek-v4-pro', name: 'DeepSeek v4 Pro', desc: 'Next-gen flagship pro capabilities' },
+                                        { id: 'deepseek-chat', name: 'DeepSeek V3 (Chat)', desc: 'Standard high-performance model' },
+                                        { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner)', desc: 'Specialized in logic & reasoning' }
+                                    ].map((m) => (
+                                        <div
+                                            key={m.id}
+                                            onClick={() => setAiModel(m.id)}
+                                            className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600' : 'text-gray-600'}`}
+                                            style={{
+                                                background: "#E0E5EC",
+                                                boxShadow: aiModel === m.id
+                                                    ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                    : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                            }}
+                                        >
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="font-bold text-sm">{m.name}</span>
+                                                {aiModel === m.id && <CheckCircle2 size={16} />}
+                                            </div>
+                                            <div className="text-xs text-gray-400">{m.desc}</div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
 
                             {/* OpenRouter Options */}
@@ -414,6 +412,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 <div className="col-span-full space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {[
+                                            { id: 'deepseek/deepseek-v4-pro', name: 'DeepSeek v4 Pro', provider: 'DeepSeek' },
+                                            { id: 'deepseek/deepseek-v4-flash', name: 'DeepSeek v4 Flash', provider: 'DeepSeek' },
                                             { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic' },
                                             { id: 'anthropic/claude-3.7-sonnet:thinking', name: 'Claude 3.7 Sonnet (Thinking)', provider: 'Anthropic' },
                                             { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
