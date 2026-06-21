@@ -51,12 +51,12 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
         const defaults: Record<string, string> = {
             'google': 'gemini-2.5-flash',
             'deepseek': 'deepseek-chat',
-            'openrouter': 'anthropic/claude-3.5-sonnet'
+            'openrouter': 'anthropic/claude-3.7-sonnet'
         };
         // Only reset if the current model clearly doesn't belong to the new provider
-        if (aiProvider === 'google' && !aiModel.includes('gemini')) setAiModel(defaults['google']);
-        if (aiProvider === 'deepseek' && !aiModel.includes('deepseek')) setAiModel(defaults['deepseek']);
-        if (aiProvider === 'openrouter' && (aiModel.includes('gemini') || aiModel.includes('deepseek-chat'))) setAiModel(defaults['openrouter']);
+        if (aiProvider === 'google' && !aiModel.startsWith('gemini-')) setAiModel(defaults['google']);
+        if (aiProvider === 'deepseek' && !aiModel.startsWith('deepseek-')) setAiModel(defaults['deepseek']);
+        if (aiProvider === 'openrouter' && !aiModel.includes('/')) setAiModel(defaults['openrouter']);
     }, [aiProvider]);
 
     // --- Helpers ---
@@ -345,34 +345,36 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                             {/* Google Options */}
                             {aiProvider === 'google' && (
-                                <>
-                                    <div
-                                        onClick={() => setAiModel('gemini-2.5-flash')}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'gemini-2.5-flash' ? 'text-purple-600' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "#E0E5EC",
-                                            boxShadow: aiModel === 'gemini-2.5-flash'
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">Gemini 2.5 Flash</span>{aiModel === 'gemini-2.5-flash' && <CheckCircle2 size={16} />}</div>
-                                        <div className="text-xs text-gray-400 flex items-center gap-1"><Zap size={10} className="text-yellow-500" /> Fast & Efficient</div>
-                                    </div>
-                                    <div
-                                        onClick={() => setAiModel('gemini-3-pro-preview')}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === 'gemini-3-pro-preview' ? 'text-purple-600' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "#E0E5EC",
-                                            boxShadow: aiModel === 'gemini-3-pro-preview'
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-sm">Gemini 3 Pro</span>{aiModel === 'gemini-3-pro-preview' && <CheckCircle2 size={16} />}</div>
-                                        <div className="text-xs text-gray-400 flex items-center gap-1"><BrainCircuit size={10} className="text-blue-500" /> High Intelligence</div>
-                                    </div>
-                                </>
+                                <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {[
+                                        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Recommended: Default fast & efficient', icon: Zap, color: 'text-yellow-500' },
+                                        { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', desc: 'Best for complex analysis & coding', icon: BrainCircuit, color: 'text-purple-500' },
+                                        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Next-gen low latency speed', icon: Zap, color: 'text-orange-500' },
+                                        { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Flash Thinking', desc: 'Thinking model for step-by-step analysis', icon: BrainCircuit, color: 'text-blue-500' },
+                                        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Legacy production model', icon: BrainCircuit, color: 'text-gray-500' },
+                                        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Legacy lightweight model', icon: Zap, color: 'text-gray-400' }
+                                    ].map((m) => (
+                                        <div
+                                            key={m.id}
+                                            onClick={() => setAiModel(m.id)}
+                                            className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600' : 'text-gray-600'}`}
+                                            style={{
+                                                background: "#E0E5EC",
+                                                boxShadow: aiModel === m.id
+                                                    ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                    : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                            }}
+                                        >
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="font-bold text-sm">{m.name}</span>
+                                                {aiModel === m.id && <CheckCircle2 size={16} />}
+                                            </div>
+                                            <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                <m.icon size={10} className={m.color} /> {m.desc}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
 
                             {/* DeepSeek Options */}
@@ -412,15 +414,19 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 <div className="col-span-full space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {[
+                                            { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic' },
+                                            { id: 'anthropic/claude-3.7-sonnet:thinking', name: 'Claude 3.7 Sonnet (Thinking)', provider: 'Anthropic' },
+                                            { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
                                             { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek' },
                                             { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Free)', provider: 'DeepSeek' },
-                                            { id: 'deepseek/deepseek-r1-distill-llama-70b', name: 'R1 Distill Llama 70B', provider: 'DeepSeek' },
                                             { id: 'deepseek/deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek' },
                                             { id: 'deepseek/deepseek-v3:free', name: 'DeepSeek V3 (Free)', provider: 'DeepSeek' },
-                                            { id: 'deepseek/deepseek-coder', name: 'DeepSeek Coder V2', provider: 'DeepSeek' },
-                                            { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
-                                            { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', provider: 'Meta' },
-                                            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' }
+                                            { id: 'openai/o3-mini', name: 'OpenAI o3-mini', provider: 'OpenAI' },
+                                            { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
+                                            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
+                                            { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B', provider: 'Meta' },
+                                            { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google' },
+                                            { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' }
                                         ].map(m => (
                                             <div
                                                 key={m.id}
