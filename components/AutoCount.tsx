@@ -362,11 +362,26 @@ Please run the framework and output the research report with the Signal Block at
 </html>
 `;
 
-            const savedPath = await investSkillService.saveReport(fileName, htmlContent);
-            alert(`Report saved to workspace!\nPath: ${savedPath}`);
+            try {
+                const savedPath = await investSkillService.saveReport(fileName, htmlContent);
+                alert(`Report saved to workspace!\nPath: ${savedPath}`);
+            } catch (apiError: any) {
+                console.warn("Workspace save failed, falling back to browser download:", apiError);
+                
+                // Browser direct download fallback (works on mobile & deployed environments)
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', fileName);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
         } catch (e: any) {
-            console.error(e);
-            alert(`Save failed: ${e.message}`);
+            console.error("Failed to export report:", e);
+            alert(`Export failed: ${e.message}`);
         }
     };
 

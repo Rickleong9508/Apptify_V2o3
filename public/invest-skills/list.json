@@ -1,0 +1,117 @@
+[
+  {
+    "id": "catalyst-calendar",
+    "title": "Catalyst Calendar",
+    "fileName": "catalyst-calendar.md"
+  },
+  {
+    "id": "chart-master",
+    "title": "Chart Master",
+    "fileName": "chart-master.md"
+  },
+  {
+    "id": "competitor-analysis",
+    "title": "Competitor Analysis",
+    "fileName": "competitor-analysis.md"
+  },
+  {
+    "id": "dcf-valuation",
+    "title": "Dcf Valuation",
+    "fileName": "dcf-valuation.md"
+  },
+  {
+    "id": "dividend-analysis",
+    "title": "Dividend Analysis",
+    "fileName": "dividend-analysis.md"
+  },
+  {
+    "id": "earnings-call-analysis",
+    "title": "Earnings Call Analysis",
+    "fileName": "earnings-call-analysis.md"
+  },
+  {
+    "id": "economics-analysis",
+    "title": "Economics Analysis",
+    "fileName": "economics-analysis.md"
+  },
+  {
+    "id": "financial-report-analyst",
+    "title": "Financial Report Analyst",
+    "fileName": "financial-report-analyst.md"
+  },
+  {
+    "id": "full-report",
+    "title": "Full Report",
+    "fileName": "full-report.md"
+  },
+  {
+    "id": "fundamental-analysis",
+    "title": "Fundamental Analysis",
+    "fileName": "fundamental-analysis.md"
+  },
+  {
+    "id": "insider-trading",
+    "title": "Insider Trading",
+    "fileName": "insider-trading.md"
+  },
+  {
+    "id": "institutional-ownership",
+    "title": "Institutional Ownership",
+    "fileName": "institutional-ownership.md"
+  },
+  {
+    "id": "options-analysis",
+    "title": "Options Analysis",
+    "fileName": "options-analysis.md"
+  },
+  {
+    "id": "portfolio-review",
+    "title": "Portfolio Review",
+    "fileName": "portfolio-review.md"
+  },
+  {
+    "id": "report-generator",
+    "title": "Report Generator",
+    "fileName": "report-generator.md"
+  },
+  {
+    "id": "research-bundle",
+    "title": "Research Bundle",
+    "fileName": "research-bundle.md"
+  },
+  {
+    "id": "result-validator",
+    "title": "Result Validator",
+    "fileName": "result-validator.md"
+  },
+  {
+    "id": "sector-analysis",
+    "title": "Sector Analysis",
+    "fileName": "sector-analysis.md"
+  },
+  {
+    "id": "short-interest",
+    "title": "Short Interest",
+    "fileName": "short-interest.md"
+  },
+  {
+    "id": "stock-eval",
+    "title": "Stock Eval",
+    "fileName": "stock-eval.md"
+  },
+  {
+    "id": "stock-screener",
+    "title": "Stock Screener",
+    "fileName": "stock-screener.md"
+  },
+  {
+    "id": "stock-valuation",
+    "title": "Stock Valuation",
+    "fileName": "stock-valuation.md"
+  },
+  {
+    "id": "technical-analysis",
+    "title": "Technical Analysis",
+    "fileName": "technical-analysis.md"
+  }
+]

@@ -16,14 +16,45 @@ export interface InvestmentSignal {
 export const investSkillService = {
     // 1. List available Prompts
     async listPrompts(): Promise<PromptInfo[]> {
-        const res = await fetch('/api/invest_skills/list');
-        if (!res.ok) throw new Error('Failed to load prompts list');
-        const data = await res.json();
-        return data.prompts || [];
+        // Try static list first (highly reliable, works everywhere including mobile/Vercel)
+        try {
+            const res = await fetch('/invest-skills/list.json');
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) return data;
+            }
+        } catch (e) {
+            console.warn('Failed to load static prompts list, falling back to API', e);
+        }
+
+        // Fallback to API
+        try {
+            const res = await fetch('/api/invest_skills/list');
+            if (res.ok) {
+                const data = await res.json();
+                return data.prompts || [];
+            }
+        } catch (e) {
+            console.error('All listPrompts methods failed:', e);
+        }
+        return [];
     },
 
     // 2. Read Prompt template content
     async readPrompt(id: string): Promise<string> {
+        // Try static read first (highly reliable, works everywhere)
+        try {
+            const cleanId = id.replace(/\.md$/, '');
+            const res = await fetch(`/invest-skills/${cleanId}.md`);
+            if (res.ok) {
+                const content = await res.text();
+                return content;
+            }
+        } catch (e) {
+            console.warn(`Failed to read static prompt for ${id}, falling back to API`, e);
+        }
+
+        // Fallback to API
         const res = await fetch('/api/invest_skills/read', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
