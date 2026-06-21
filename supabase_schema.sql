@@ -16,5 +16,39 @@ create policy "Users can all their own data"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Enable Realtime for this table
+-- Enable Realtime for user_data
 alter publication supabase_realtime add table user_data;
+
+-- Create the notes table if it doesn't exist
+create table if not exists public.notes (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  title text not null,
+  content text,
+  date timestamp with time zone default timezone('utc'::text, now()) not null,
+  is_thread boolean default false,
+  thread jsonb default '[]'::jsonb,
+  attachments jsonb default '[]'::jsonb,
+  
+  -- AI Enhancement Fields
+  ai_summary text,
+  ai_keywords jsonb default '[]'::jsonb,
+  ai_category text,
+  ai_processed boolean default false,
+  
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable Row Level Security (RLS)
+alter table public.notes enable row level security;
+
+-- Create Policy: Users can manage their own notes
+create policy "Users can manage their own notes" 
+  on public.notes 
+  for all 
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Enable Realtime for notes
+alter publication supabase_realtime add table notes;
+

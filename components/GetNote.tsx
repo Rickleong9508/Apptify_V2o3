@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     Grid,
     Plus,
@@ -67,6 +67,12 @@ interface Note {
     thread?: Note[]; // Mixed content: User Notes, AI Summaries, Q&A Pairs
     role?: 'user' | 'ai' | 'system'; // distinct roles in the thread
     type?: 'note' | 'qa' | 'image_analysis';
+    
+    // AI Enhancement Fields
+    ai_summary?: string;
+    ai_keywords?: string[];
+    ai_category?: string;
+    ai_processed?: boolean;
 }
 
 // Simple "Ding" Sound (Base64 MP3)
@@ -205,6 +211,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     const [isAiThinking, setIsAiThinking] = useState(false);
     const [globalResources, setGlobalResources] = useState<Resource[]>([]);
     const [isProcessingResource, setIsProcessingResource] = useState(false);
+    const [aiMode, setAiMode] = useState<'general' | 'ask_notes'>('general');
 
     // Deep Linking State
     const [targetNoteId, setTargetNoteId] = useState<string | null>(null);
@@ -572,11 +579,137 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         }
     };
 
+    const renderTextWithNoteLinks = (text: string) => {
+        const parts = text.split(/(\[ID:\s*[^\]]+\])/g);
+        return parts.map((part, idx) => {
+            const match = part.match(/\[ID:\s*([^\]]+)\]/);
+            if (match) {
+                const noteId = match[1];
+                let note = notes.find(n => n.id === noteId);
+                if (!note) {
+                    for (const n of notes) {
+                        if (n.thread) {
+                            const sub = n.thread.find(t => t.id === noteId);
+                            if (sub) {
+                                note = sub;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (note) {
+                    return (
+                        <button
+                            key={idx}
+                            onClick={() => {
+                                setIsGlobalChatOpen(false);
+                                setTargetNoteId(noteId);
+                                setActiveTab('notes');
+                            }}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 transition-colors text-[11px] align-baseline shadow-sm border border-white/40"
+                        >
+                            {note.title || "Note"} <ExternalLink size={10} />
+                        </button>
+                    );
+                }
+                return <span key={idx} className="text-gray-400 italic text-xs">[ID: {noteId}]</span>;
+            }
+            return part;
+        });
+    };
+
+    const renderFormattedContent = (content: string) => {
+        if (!content) return null;
+        const lines = content.split('\n');
+        return (
+            <div className="space-y-2">
+                {lines.map((line, lineIdx) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return <div key={lineIdx} className="h-1.5" />;
+
+                    if (trimmed.startsWith('## ')) {
+                        return (
+                            <h4 key={lineIdx} className="text-xs font-bold text-gray-800 border-b border-gray-300/30 pb-1 mt-4 first:mt-0 uppercase tracking-wider">
+                                {trimmed.replace(/^## /, '')}
+                            </h4>
+                        );
+                    }
+                    if (trimmed.startsWith('### ')) {
+                        return (
+                            <h5 key={lineIdx} className="text-xs font-bold text-gray-700 mt-2">
+                                {trimmed.replace(/^### /, '')}
+                            </h5>
+                        );
+                    }
+
+                    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                        const text = trimmed.replace(/^[-*]\s+/, '');
+                        return (
+                            <div key={lineIdx} className="flex items-start gap-2 pl-2">
+                                <span className="text-blue-500 mt-1.5 shrink-0 w-1 h-1 rounded-full bg-blue-500" />
+                                <span className="text-xs text-gray-600 leading-relaxed font-medium">{renderTextWithNoteLinks(text)}</span>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <p key={lineIdx} className="text-xs text-gray-600 leading-relaxed font-medium">
+                            {renderTextWithNoteLinks(trimmed)}
+                        </p>
+                    );
+                })}
+            </div>
+        );
+    };
+
+    const searchNotes = (query: string, allNotes: Note[]): Note[] => {
+        if (!query.trim()) return [];
+        const queryTokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+        if (queryTokens.length === 0) return [];
+
+        const scored = allNotes.map(note => {
+            let score = 0;
+            const title = (note.title || '').toLowerCase();
+            const content = (note.content || '').toLowerCase();
+            const category = (note.ai_category || '').toLowerCase();
+            const keywords = (note.ai_keywords || []).map(k => k.toLowerCase());
+
+            queryTokens.forEach(token => {
+                if (title.includes(token)) score += 10;
+                if (category.includes(token)) score += 8;
+                keywords.forEach(keyword => {
+                    if (keyword.includes(token) || token.includes(keyword)) {
+                        score += 6;
+                    }
+                });
+                if (content.includes(token)) score += 3;
+            });
+
+            if (note.thread) {
+                note.thread.forEach(item => {
+                    const subTitle = (item.title || '').toLowerCase();
+                    const subContent = (item.content || '').toLowerCase();
+                    queryTokens.forEach(token => {
+                        if (subTitle.includes(token)) score += 2;
+                        if (subContent.includes(token)) score += 1;
+                    });
+                });
+            }
+
+            return { note, score };
+        });
+
+        return scored
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(item => item.note)
+            .slice(0, 20);
+    };
+
     const handleGlobalAskAi = async () => {
         if (!globalChatInput.trim() && globalResources.length === 0) return;
 
         if (!apiKey) {
-            // Show error in chat instead of alert
             setGlobalMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 title: 'System',
@@ -592,6 +725,99 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         setGlobalChatInput('');
         setIsAiThinking(true);
 
+        // Branch by Mode
+        if (aiMode === 'ask_notes') {
+            const matchedNotes = searchNotes(userQ, notes);
+            let retrievedNotesContext = "";
+
+            if (matchedNotes.length > 0) {
+                matchedNotes.forEach(n => {
+                    retrievedNotesContext += `[ID: ${n.id}] Title: ${n.title || 'Untitled'}\n`;
+                    if (n.ai_category) retrievedNotesContext += `Category: ${n.ai_category}\n`;
+                    if (n.ai_summary) retrievedNotesContext += `Summary: ${n.ai_summary}\n`;
+                    if (n.ai_keywords && n.ai_keywords.length > 0) retrievedNotesContext += `Keywords: ${n.ai_keywords.join(', ')}\n`;
+                    retrievedNotesContext += `Content: ${n.content || '(Empty)'}\n`;
+                    
+                    if (n.thread && n.thread.length > 0) {
+                        retrievedNotesContext += `Sub-notes:\n`;
+                        n.thread.forEach(item => {
+                            retrievedNotesContext += `- ${item.title || 'Note'}: ${item.content || ''}\n`;
+                        });
+                    }
+                    retrievedNotesContext += `----------------------------------------\n\n`;
+                });
+            } else {
+                retrievedNotesContext = "No notes matched this search query in the user's vault.";
+            }
+
+            const qNote: Note = {
+                id: Date.now().toString(),
+                title: 'You Asked',
+                content: userQ,
+                date: new Date().toISOString(),
+                role: 'user',
+                type: 'qa'
+            };
+            setGlobalMessages(prev => [...prev, qNote]);
+
+            const systemInstruction = `You are an AI Knowledge Assistant.
+The following are notes from the user's personal knowledge vault.
+Your tasks:
+1. Analyze all relevant notes.
+2. Identify patterns and key ideas.
+3. Generate a concise summary.
+4. Provide actionable conclusions.
+5. List source notes used.
+
+You MUST follow this exact response format:
+## Summary
+[Your high-level overview here]
+
+## Key Insights
+- [Insight 1]
+- [Insight 2]
+- [etc.]
+
+## Conclusion
+[Your actionable recommendation here]
+
+## Related Notes
+- [List of note titles used, include their [ID: note_id] tag so the user can click and view them, e.g. "Prompt Engineering Guide [ID: 1718950]"]`;
+
+            const prompt = `Question:
+${userQ}
+
+Notes:
+${retrievedNotesContext}`;
+
+            try {
+                const answer = await aiService.generate(aiProvider, aiModel, apiKey, prompt, systemInstruction);
+                const aNote: Note = {
+                    id: (Date.now() + 1).toString(),
+                    title: 'AI Answer (Notes)',
+                    content: answer,
+                    date: new Date().toISOString(),
+                    role: 'ai',
+                    type: 'qa'
+                };
+                setGlobalMessages(prev => [...prev, aNote]);
+            } catch (e: any) {
+                const errNote: Note = {
+                    id: (Date.now() + 1).toString(),
+                    title: 'Error',
+                    content: "Error: " + e.message,
+                    date: new Date().toISOString(),
+                    role: 'system',
+                    type: 'qa'
+                };
+                setGlobalMessages(prev => [...prev, errNote]);
+            } finally {
+                setIsAiThinking(false);
+            }
+            return;
+        }
+
+        // --- General Chat Mode ---
         // Prepare context from Resources
         let resourceContext = "";
         const imagesToAttach: string[] = [];
@@ -612,9 +838,6 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
             const foundUrls = userQ.match(urlRegex);
 
             if (foundUrls && foundUrls.length > 0) {
-                // Notify user we are scanning (optional visual cue could be added to UI, but acting implicitly for now)
-                // console.log("Scanning URLs:", foundUrls);
-
                 for (const url of foundUrls) {
                     try {
                         const res = await fetch('/api/process_input', {
@@ -634,9 +857,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
             }
         } catch (e) { console.error("URL Scan Error", e); }
 
-        // Clear resources after sending (or keep them? usually clear like attachments)
-        const usedResources = [...globalResources]; // Snapshot for display if needed
-        setGlobalResources([]); // Clear UI
+        setGlobalResources([]);
 
         const qNote: Note = {
             id: Date.now().toString(),
@@ -648,7 +869,6 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         };
         setGlobalMessages(prev => [...prev, qNote]);
 
-        // Build Context from ALL notes
         let context = "You are the 'GetNote' Intelligent Assistant. Your goal is to help the user manage their knowledge base by connecting dots, finding information, and providing deep insights.\n";
         context += "CORE INSTRUCTIONS:\n";
         context += "1. **Analyze Intent**: When the user asks a question, first think about what they *really* mean. If they say 'vacation', they might be looking for 'holiday', 'trip', 'flight', or 'hotel' notes. Use synonyms and concept matching.\n";
@@ -661,7 +881,6 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         if (resourceContext) {
             context += "--- ATTACHED RESOURCES (High Priority) ---\n" + resourceContext + "\n----------------------------------------\n\n";
         }
-
 
         context += "--- USER NOTES (DATABASE) ---\n";
         notes.forEach(n => {
@@ -846,11 +1065,43 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                             </button>
                         </div>
 
+                        {/* Mode Selector */}
+                        <div className="px-4 py-2 flex gap-2 border-b border-gray-200/20 pb-3" style={{ background: "#E0E5EC" }}>
+                            <button
+                                onClick={() => setAiMode('general')}
+                                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aiMode === 'general' ? 'text-blue-600 bg-white/40 shadow-inner' : 'text-gray-400 hover:text-gray-600 bg-transparent'}`}
+                                style={aiMode === 'general' ? {
+                                    boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff"
+                                } : {}}
+                            >
+                                Chat Assistant
+                            </button>
+                            <button
+                                onClick={() => setAiMode('ask_notes')}
+                                className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aiMode === 'ask_notes' ? 'text-purple-600 bg-white/40 shadow-inner' : 'text-gray-400 hover:text-gray-600 bg-transparent'}`}
+                                style={aiMode === 'ask_notes' ? {
+                                    boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff"
+                                } : {}}
+                            >
+                                Ask My Notes
+                            </button>
+                        </div>
+
                         <div className="flex-1 overflow-y-auto p-4 space-y-6">
                             {globalMessages.length === 0 && (
-                                <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 opacity-60">
                                     <Bot size={48} className="mb-4 text-gray-300" />
-                                    <p className="text-sm font-medium">How can I help you today?</p>
+                                    {aiMode === 'general' ? (
+                                        <>
+                                            <p className="text-sm font-bold text-gray-700">Chat Assistant</p>
+                                            <p className="text-xs text-gray-500 mt-1 max-w-[280px]">Ask general questions, brainstorm ideas, or upload documents for custom insights.</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm font-bold text-purple-700">Ask My Notes</p>
+                                            <p className="text-xs text-gray-500 mt-1 max-w-[280px]">Search and synthesize patterns, facts, and conclusions directly from your personal knowledge vault.</p>
+                                        </>
+                                    )}
                                 </div>
                             )}
                             {globalMessages.map((msg, i) => (
@@ -875,6 +1126,8 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
                                     >
                                         {msg.role === 'user' ? (
                                             <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        ) : msg.content.includes('## ') ? (
+                                            renderFormattedContent(msg.content)
                                         ) : (
                                             <div className="flex flex-col gap-2">
                                                 {msg.content.split(/(\[ID:\s*[^\]]+\])/g).map((part, idx) => {
@@ -1298,6 +1551,129 @@ const NotesView: React.FC<{
     const [editForm, setEditForm] = useState<Partial<Note>>({});
     const [isProcessingAi, setIsProcessingAi] = useState(false);
 
+    const getCategoryColor = (cat?: string): string => {
+        switch (cat) {
+            case 'AI': return 'text-purple-600 bg-purple-500/10 border-purple-500/20';
+            case 'Prompt Engineering': return 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20';
+            case 'Design': return 'text-pink-600 bg-pink-500/10 border-pink-500/20';
+            case 'Marketing': return 'text-amber-600 bg-amber-500/10 border-amber-500/20';
+            case 'Business': return 'text-blue-600 bg-blue-500/10 border-blue-500/20';
+            case 'Investment': return 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20';
+            case 'Productivity': return 'text-teal-600 bg-teal-500/10 border-teal-500/20';
+            case 'Learning': return 'text-cyan-600 bg-cyan-500/10 border-cyan-500/20';
+            case 'Personal': return 'text-rose-600 bg-rose-500/10 border-rose-500/20';
+            default: return 'text-gray-600 bg-gray-500/10 border-gray-500/20';
+        }
+    };
+
+    const getRelatedNotes = (currentNote: Note, allNotes: Note[]): Note[] => {
+        if (!currentNote.ai_category && (!currentNote.ai_keywords || currentNote.ai_keywords.length === 0)) {
+            return [];
+        }
+        return allNotes.filter(other => {
+            if (other.id === currentNote.id) return false;
+            const categoryMatch = currentNote.ai_category && other.ai_category && currentNote.ai_category === other.ai_category;
+            const keywordMatch = currentNote.ai_keywords && other.ai_keywords && 
+                currentNote.ai_keywords.some(k => other.ai_keywords!.includes(k));
+            return categoryMatch || keywordMatch;
+        });
+    };
+
+    const handleOpenRelatedNote = (note: Note) => {
+        setEditForm(note);
+        setCurrentThread(note.thread || []);
+        setInteractionMode('VIEW');
+    };
+
+    // --- Background AI Auto-Processing ---
+    const processingNotesRef = useRef<Set<string>>(new Set());
+
+    const triggerAiProcessing = async (note: Note) => {
+        if (!apiKey) return;
+        if (processingNotesRef.current.has(note.id)) return;
+        processingNotesRef.current.add(note.id);
+
+        let fullContent = `Title: ${note.title || 'Untitled Note'}\n`;
+        if (note.content) {
+            fullContent += `Content: ${note.content}\n`;
+        }
+        if (note.thread && note.thread.length > 0) {
+            fullContent += `Additional Details:\n`;
+            note.thread.forEach(item => {
+                fullContent += `- [${item.title || 'Sub-Note'}]: ${item.content || ''}\n`;
+                if (item.attachments && item.attachments.length > 0) {
+                    item.attachments.forEach(att => {
+                        if (att.name) fullContent += `  Attachment: ${att.name}\n`;
+                        if (att.scrapedText) fullContent += `  Scraped Text: ${att.scrapedText}\n`;
+                    });
+                }
+            });
+        }
+
+        try {
+            const systemPrompt = `Analyze the note content.
+
+Return:
+1. A concise summary
+2. A list of keywords (max 8)
+3. A single category
+
+Available Categories:
+- AI
+- Prompt Engineering
+- Design
+- Marketing
+- Business
+- Investment
+- Productivity
+- Learning
+- Personal
+- Other
+
+Output JSON only.
+Example:
+{
+  "summary": "A framework for creating structured prompts.",
+  "keywords": ["Prompt", "AI", "LLM", "Agent"],
+  "category": "AI"
+}`;
+
+            const response = await aiService.generate(aiProvider, aiModel, apiKey, fullContent, systemPrompt);
+            const jsonStart = response.indexOf('{');
+            const jsonEnd = response.lastIndexOf('}');
+            
+            if (jsonStart !== -1 && jsonEnd !== -1) {
+                const jsonStr = response.slice(jsonStart, jsonEnd + 1);
+                const parsed = JSON.parse(jsonStr);
+                
+                const updatedNote: Note = {
+                    ...note,
+                    ai_summary: parsed.summary || '',
+                    ai_keywords: Array.isArray(parsed.keywords) ? parsed.keywords.filter(Boolean) : [],
+                    ai_category: parsed.category || 'Other',
+                    ai_processed: true
+                };
+
+                setNotes((prev: Note[]) => prev.map(n => n.id === note.id ? updatedNote : n));
+                
+                // If currently editing this note, update form state
+                setEditForm(prev => prev.id === note.id ? updatedNote : prev);
+            }
+        } catch (error) {
+            console.error("Auto processing failed for note:", note.id, error);
+        } finally {
+            processingNotesRef.current.delete(note.id);
+        }
+    };
+
+    useEffect(() => {
+        if (!apiKey) return;
+        const unprocessed = notes.find(n => n.ai_processed === false && n.role !== 'ai' && n.role !== 'system');
+        if (unprocessed) {
+            triggerAiProcessing(unprocessed);
+        }
+    }, [notes, apiKey]);
+
     // Thread State
     const [currentThread, setCurrentThread] = useState<Note[]>([]);
     const [newThreadInput, setNewThreadInput] = useState('');
@@ -1376,7 +1752,6 @@ const NotesView: React.FC<{
             setTargetNoteId(null);
         }
     }, [targetNoteId, notes]);
-
     const handleSave = () => {
         if (!editForm.title && !editForm.content && currentThread.length === 0) { setIsEditing(false); return; }
 
@@ -1386,10 +1761,25 @@ const NotesView: React.FC<{
             title: editForm.title || (editForm.content ? editForm.content.slice(0, 30) + '...' : 'Untitled Topic'),
             content: editForm.content || '',
             date: editForm.date || new Date().toISOString(),
-            // If we have sub-notes, treat as thread
             isThread: currentThread.length > 0 || (!!editForm.thread && editForm.thread.length > 0),
             thread: currentThread
         } as Note;
+
+        // Check if content has changed to trigger AI processing again
+        const existingNote = notes.find(n => n.id === noteToSave.id);
+        const hasChanged = !existingNote || 
+            existingNote.title !== noteToSave.title || 
+            existingNote.content !== noteToSave.content || 
+            (existingNote.thread?.length !== noteToSave.thread?.length);
+
+        if (hasChanged) {
+            noteToSave.ai_processed = false;
+        } else {
+            noteToSave.ai_processed = existingNote.ai_processed;
+            noteToSave.ai_summary = existingNote.ai_summary;
+            noteToSave.ai_keywords = existingNote.ai_keywords;
+            noteToSave.ai_category = existingNote.ai_category;
+        }
 
         setNotes((prev: Note[]) => {
             const exists = prev.find(n => n.id === noteToSave.id);
@@ -1629,7 +2019,6 @@ const NotesView: React.FC<{
             attachments: item.attachments || []
         });
     };
-
     const handleSaveReview = () => {
         if (!reviewingItem) return;
         const updatedItem = {
@@ -1643,8 +2032,9 @@ const NotesView: React.FC<{
 
         // IMMEDIATE SAVE
         setNotes((prev: Note[]) => {
-            return prev.map(n => n.id === editForm.id ? { ...n, thread: newThread } : n);
+            return prev.map(n => n.id === editForm.id ? { ...n, thread: newThread, ai_processed: false } : n);
         });
+        setEditForm(prev => prev.id === editForm.id ? { ...prev, thread: newThread, ai_processed: false } : prev);
 
         setReviewingItem(null);
         setReviewEditMode(false);
@@ -1666,7 +2056,6 @@ const NotesView: React.FC<{
             () => setReviewForm(prev => ({ ...prev, attachments: (prev.attachments || []).filter(a => a.id !== id) }))
         );
     };
-
     const handleDeleteReviewItem = () => {
         if (!reviewingItem) return;
         openConfirm(
@@ -1677,8 +2066,9 @@ const NotesView: React.FC<{
                 setCurrentThread(newThread);
                 // IMMEDIATE SAVE FIX
                 setNotes((prev: Note[]) => {
-                    return prev.map(n => n.id === editForm.id ? { ...n, thread: newThread } : n);
+                    return prev.map(n => n.id === editForm.id ? { ...n, thread: newThread, ai_processed: false } : n);
                 });
+                setEditForm(prev => prev.id === editForm.id ? { ...prev, thread: newThread, ai_processed: false } : prev);
                 setReviewingItem(null);
             }
         );
@@ -1742,6 +2132,88 @@ const NotesView: React.FC<{
                         />
                     </div>
 
+                    {/* AI Insights Card */}
+                    {editForm.ai_processed ? (
+                        <div
+                            className="rounded-[28px] p-6 mb-8 border border-white/50 animate-scale-in"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 15px rgb(163,177,198,0.5), -5px -5px 15px rgba(255,255,255, 0.8)"
+                            }}
+                        >
+                            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Sparkles size={14} className="text-purple-500 animate-pulse" /> AI Vault Insights
+                                </h4>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${getCategoryColor(editForm.ai_category)}`}>
+                                    Category: {editForm.ai_category || 'Other'}
+                                </span>
+                            </div>
+                            
+                            {editForm.ai_summary && (
+                                <p className="text-sm text-gray-600 bg-white/20 p-4 rounded-2xl border border-white/40 mb-4 leading-relaxed font-medium">
+                                    "{editForm.ai_summary}"
+                                </p>
+                            )}
+                            
+                            {editForm.ai_keywords && editForm.ai_keywords.length > 0 && (
+                                <div className="flex gap-1.5 flex-wrap mb-2">
+                                    {editForm.ai_keywords.map((kw, i) => (
+                                        <span key={i} className="text-[10px] font-bold text-gray-500 bg-white/45 px-2.5 py-1 rounded-full border border-white/60">
+                                            #{kw}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            <button
+                                onClick={() => {
+                                    if (editForm.id) {
+                                        const noteToUpdate = notes.find(n => n.id === editForm.id);
+                                        if (noteToUpdate) {
+                                            triggerAiProcessing({ ...noteToUpdate, ai_processed: false });
+                                            setEditForm(prev => ({ ...prev, ai_processed: false }));
+                                        }
+                                    }
+                                }}
+                                className="text-[10px] font-bold text-gray-400 hover:text-blue-500 flex items-center gap-1 mt-3 transition-colors duration-200"
+                            >
+                                <RefreshCw size={10} /> Re-analyze with AI
+                            </button>
+                        </div>
+                    ) : (
+                        <div
+                            className="rounded-[28px] p-6 mb-8 border border-white/50 flex flex-col items-center justify-center py-8 text-center"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 15px rgb(163,177,198,0.5), -5px -5px 15px rgba(255,255,255, 0.8)"
+                            }}
+                        >
+                            <Sparkles size={24} className="text-gray-300 animate-pulse mb-2" />
+                            <h4 className="text-sm font-bold text-gray-600">AI Vault processing pending</h4>
+                            <p className="text-xs text-gray-400 max-w-xs mt-1">Classification, keywords, and summary will update automatically in the background.</p>
+                            {apiKey ? (
+                                <button
+                                    onClick={async () => {
+                                        if (editForm.id) {
+                                            const noteMock: Note = {
+                                                ...editForm,
+                                                thread: currentThread
+                                            } as Note;
+                                            setEditForm(prev => ({ ...prev, ai_processed: false }));
+                                            await triggerAiProcessing(noteMock);
+                                        }
+                                    }}
+                                    className="mt-4 px-4 py-2 text-xs font-bold text-blue-500 bg-white/40 border border-white rounded-xl shadow-sm hover:bg-blue-50 transition-colors"
+                                >
+                                    Analyze Now
+                                </button>
+                            ) : (
+                                <p className="text-xs text-amber-500 mt-2 font-medium">Please add your AI API Key in settings to enable this feature.</p>
+                            )}
+                        </div>
+                    )}
+
                     {/* Data / Reference Stream */}
                     <div className="mb-32">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-4">Notes in this Topic</h3>
@@ -1778,6 +2250,56 @@ const NotesView: React.FC<{
                             )}
                         </div>
                     </div>
+
+                    {/* Related Notes Section */}
+                    {editForm.id && (
+                        <div className="mb-32">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 pl-4 flex items-center gap-1.5">
+                                <LinkIcon size={12} className="text-blue-500" /> Related Knowledge
+                            </h3>
+                            
+                            {(() => {
+                                const related = getRelatedNotes(editForm as Note, notes);
+                                if (related.length === 0) {
+                                    return (
+                                        <div className="text-center py-6 text-xs text-gray-400 italic bg-white/10 rounded-2xl border border-white/20">
+                                            No related notes found in vault yet.
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {related.map(r => (
+                                            <div
+                                                key={r.id}
+                                                onClick={() => handleOpenRelatedNote(r)}
+                                                className="p-4 rounded-[24px] cursor-pointer transition-all active:scale-95 group border border-white/30 flex justify-between items-center"
+                                                style={{
+                                                    background: "#E0E5EC",
+                                                    boxShadow: "5px 5px 12px rgb(163,177,198,0.5), -5px -5px 12px rgba(255,255,255, 0.8)"
+                                                }}
+                                            >
+                                                <div className="flex-1 min-w-0 pr-4">
+                                                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border block w-max mb-1.5 ${getCategoryColor(r.ai_category)}`}>
+                                                        {r.ai_category || 'Other'}
+                                                    </span>
+                                                    <h4 className="font-bold text-sm text-gray-700 truncate group-hover:text-blue-500 transition-colors">
+                                                        {r.title || 'Untitled'}
+                                                    </h4>
+                                                    <span className="text-[10px] text-gray-400 mt-1 block">
+                                                        {new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </span>
+                                                </div>
+                                                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/40 shadow-inner group-hover:translate-x-1 transition-transform">
+                                                    <ArrowRight size={14} className="text-gray-500" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
                 </div>
 
                 {/* Input Bar (Trigger Modal) - Keep same look */}
@@ -2129,17 +2651,39 @@ const NotesView: React.FC<{
 
                         <div className="relative z-10 flex flex-col h-full">
                             <div className="flex-1">
+                                {/* Category Badge and AI Status */}
+                                <div className="flex gap-2 items-center flex-wrap mb-1.5">
+                                    {note.ai_category && (
+                                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${getCategoryColor(note.ai_category)}`}>
+                                            {note.ai_category}
+                                        </span>
+                                    )}
+                                    {note.ai_processed === false && apiKey && (
+                                        <span className="text-[9px] text-amber-500 bg-amber-500/10 border border-amber-500/20 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                                            <RefreshCw size={8} className="animate-spin" /> AI Analyzing...
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex justify-between items-start mb-2">
                                     <h3 className="font-bold text-xl leading-tight line-clamp-2 text-gray-700 group-hover:text-blue-600 transition-colors">{note.title || "Untitled Note"}</h3>
                                     {note.thread && note.thread.length > 0 && (
-                                        <div className="text-gray-500 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 bg-[#E0E5EC] shadow-inner">
+                                        <div className="text-gray-500 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 bg-[#E0E5EC] shadow-inner shrink-0">
                                             <Database size={10} /> {note.thread.length}
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-gray-500 text-sm line-clamp-4 leading-relaxed font-medium">
-                                    {note.content || "No content..."}
+                                <p className="text-gray-500 text-sm line-clamp-3 leading-relaxed font-medium">
+                                    {note.ai_summary || note.content || "No content..."}
                                 </p>
+                                {note.ai_keywords && note.ai_keywords.length > 0 && (
+                                    <div className="flex gap-1.5 mt-2.5 flex-wrap">
+                                        {note.ai_keywords.slice(0, 3).map((keyword, kid) => (
+                                            <span key={kid} className="text-[9px] font-bold text-gray-400 bg-[#E0E5EC]/80 px-2 py-0.5 rounded-md shadow-inner border border-white/20">
+                                                #{keyword}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-4 flex justify-between items-center pt-4 border-t border-gray-300/20">
