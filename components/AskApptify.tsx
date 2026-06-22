@@ -44,6 +44,100 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<Message['pendingAction'] | null>(null);
 
+  // --- Draggable Floating Button State & Logic ---
+  const [position, setPosition] = useState({ x: 0, y: 0 }); // offset from bottom-right
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartOffsetRef = useRef({ x: 0, y: 0 });
+  const dragStartCoordsRef = useRef({ x: 0, y: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
+    dragStartOffsetRef.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+    e.preventDefault();
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setIsDragging(true);
+    dragStartCoordsRef.current = { x: touch.clientX, y: touch.clientY };
+    dragStartOffsetRef.current = {
+      x: touch.clientX - position.x,
+      y: touch.clientY - position.y
+    };
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    const distance = Math.sqrt(
+      Math.pow(dragStartCoordsRef.current.x - e.clientX, 2) +
+      Math.pow(dragStartCoordsRef.current.y - e.clientY, 2)
+    );
+    if (distance > 5) {
+      e.preventDefault();
+      return;
+    }
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    const updatePosition = (clientX: number, clientY: number) => {
+      let newX = clientX - dragStartOffsetRef.current.x;
+      let newY = clientY - dragStartOffsetRef.current.y;
+      
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (rect) {
+        const btnWidth = rect.width;
+        const btnHeight = rect.height;
+        const defaultLeft = window.innerWidth - btnWidth - 24;
+        const defaultTop = window.innerHeight - btnHeight - 24;
+        
+        const targetLeft = defaultLeft + newX;
+        const targetTop = defaultTop + newY;
+        
+        const boundedLeft = Math.max(10, Math.min(window.innerWidth - btnWidth - 10, targetLeft));
+        const boundedTop = Math.max(10, Math.min(window.innerHeight - btnHeight - 10, targetTop));
+        
+        newX = boundedLeft - defaultLeft;
+        newY = boundedTop - defaultTop;
+      }
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      updatePosition(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      updatePosition(touch.clientX, touch.clientY);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isDragging, position]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -983,8 +1077,18 @@ ${financialContext}
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-4 rounded-[26px] bg-[#E0E5EC] text-gray-700 font-bold transition-all duration-300 hover:scale-105 active:scale-95 group shadow-clay-btn hover:text-blue-600 border border-white/40"
+        ref={buttonRef}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onClick={handleButtonClick}
+        style={{
+          transform: `translate(${position.x}px, ${position.y}px)`,
+          touchAction: 'none',
+          boxShadow: isDragging 
+            ? "12px 12px 24px rgb(163,177,198,0.8), -12px -12px 24px rgba(255,255,255, 0.7)" 
+            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+        }}
+        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-4 rounded-[26px] bg-[#E0E5EC] text-gray-700 font-bold transition-all duration-300 ${isDragging ? 'scale-105' : 'hover:scale-105 active:scale-95'} group border border-white/40 select-none cursor-grab active:cursor-grabbing`}
       >
         <div className="relative w-6 h-6 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md transition-transform group-hover:rotate-12 duration-300">
           <span className="absolute w-full h-full rounded-full bg-blue-400 animate-ping opacity-20"></span>
