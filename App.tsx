@@ -7,6 +7,7 @@ import AutoCount from './components/AutoCount';
 
 import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal'; // New Import
+import AskApptify from './components/AskApptify';
 
 type AppMode = 'launcher' | 'mywealth' | 'getnote' | 'settings' | 'autocount' | 'newshub';
 
@@ -16,30 +17,29 @@ const App: React.FC = () => {
 
 
 
-  if (currentApp === 'mywealth') {
-    return <MyWealthApp onExit={() => setCurrentApp('launcher')} />;
-  }
+  const renderSubApp = () => {
+    if (currentApp === 'mywealth') {
+      return <MyWealthApp onExit={() => setCurrentApp('launcher')} />;
+    }
 
-  if (currentApp === 'getnote') {
-    return <GetNote onExit={() => setCurrentApp('launcher')} />;
-  }
+    if (currentApp === 'getnote') {
+      return <GetNote onExit={() => setCurrentApp('launcher')} />;
+    }
 
-  if (currentApp === 'settings') {
-    return <GlobalSettings onExit={() => setCurrentApp('launcher')} />;
-  }
+    if (currentApp === 'settings') {
+      return <GlobalSettings onExit={() => setCurrentApp('launcher')} />;
+    }
 
-  if (currentApp === 'autocount') {
-    return <AutoCount onExit={() => setCurrentApp('launcher')} />;
-  }
+    if (currentApp === 'autocount') {
+      return <AutoCount onExit={() => setCurrentApp('launcher')} />;
+    }
 
-  if (currentApp === 'newshub') {
-    return <NewsHub onExit={() => setCurrentApp('launcher')} />;
-  }
+    if (currentApp === 'newshub') {
+      return <NewsHub onExit={() => setCurrentApp('launcher')} />;
+    }
 
-
-
-  return (
-    <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-start pt-16 md:pt-24 p-6 transition-all duration-500 font-sans selection:bg-gray-300">
+    return (
+      <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-start pt-16 md:pt-24 p-6 transition-all duration-500 font-sans selection:bg-gray-300">
 
       <div className="max-w-md w-full flex flex-col items-center gap-8 translate-y-[-20px] md:translate-y-[-40px]">
 
@@ -112,6 +112,14 @@ const App: React.FC = () => {
 
 
     </div>
+    );
+  };
+
+  return (
+    <>
+      {renderSubApp()}
+      <AskApptify currentApp={currentApp} setCurrentApp={setCurrentApp} />
+    </>
   );
 };
 

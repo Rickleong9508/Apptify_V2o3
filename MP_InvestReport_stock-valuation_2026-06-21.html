@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP - STOCK-VALUATION InvestReport</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #E0E5EC;
+            color: #4A4A4A;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #E0E5EC;
+            padding: 40px;
+            border-radius: 40px;
+            box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+        }
+        h1 {
+            color: #2D3748;
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header-meta {
+            text-align: center;
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 40px;
+        }
+        .signal-grid {
+            display: grid;
+            grid-template-cols: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+        .signal-card {
+            background: #E0E5EC;
+            padding: 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff;
+        }
+        .signal-val {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 5px;
+            color: #2D3748;
+        }
+        .signal-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .score-card {
+            background: #E0E5EC;
+            box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff;
+            border: 2px solid #E53E3E;
+        }
+        .score-val {
+            font-size: 28px;
+            font-weight: 800;
+            color: #E53E3E;
+            margin-top: 5px;
+        }
+        .report-content {
+            line-height: 1.8;
+            font-size: 15px;
+            color: #2D3748;
+            border-top: 2px solid rgba(0,0,0,0.05);
+            padding-top: 30px;
+        }
+        .report-content h2, .report-content h3 {
+            color: #2B6CB0;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .report-content p {
+            margin-bottom: 20px;
+        }
+        .report-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .report-content th, .report-content td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+        .report-content th {
+            background-color: rgba(0,0,0,0.03);
+            color: #4A5568;
+            font-weight: 600;
+        }
+        .report-content td {
+            border-bottom: 1px solid rgba(0,0,0,0.02);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MP InvestReport (STOCK-VALUATION)</h1>
+        <div class="header-meta">
+            Generated: 6/21/2026, 3:33:04 PM | Framework: yennanliu/InvestSkill
+        </div>
+        
+        <div class="signal-grid">
+            <div class="signal-card score-card">
+                <div class="signal-label">Overall Score</div>
+                <div class="score-val">1.5/10</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Signal</div>
+                <div class="signal-val" style="color: #E53E3E">BEARISH</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Action</div>
+                <div class="signal-val">SELL</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Conviction</div>
+                <div class="signal-val">STRONG</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Confidence</div>
+                <div class="signal-val">HIGH</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Horizon</div>
+                <div class="signal-val">LONG-TERM</div>
+            </div>
+        </div>
+        
+        <div class="report-content">
+            **Data Source:** Live quote data provided in the prompt (as of analysis date). Market data is assumed current for this analysis.  </p><p>⚠️ **Live data unavailable.** The following analysis uses training-data estimates which may be significantly out of date. Verify all prices and metrics before making any decisions.</p><p>---</p><p># Multi-Method Stock Valuation: MP (MP Materials Corp.)</p><p><h2>1. Method Selection Rationale</p><p>| Method | Applicability | Rationale |</h2>
+|--------|---------------|----------|
+| DCF | Medium | MP is a growth-stage rare earth producer with negative FCF; DCF is less reliable for pre-FCF companies but necessary for long-term intrinsic value estimation |
+| Comparable Company Analysis (CCA) | High | Rare earth mining peers exist (Lynas, Molycorp history); multiples provide useful cross-check |
+| EV/EBITDA | Low | MP has negative EBITDA (earnings negative); multiples not meaningful |
+| P/E | Low | Negative EPS makes P/E meaningless |
+| Residual Income | Medium | Useful for asset-heavy mining businesses with book value; ROE is negative so limited |</p><p>**Primary Methods:** DCF (with caution), CCA, and Residual Income (book-value based).  
+**Secondary:** EV/Revenue multiple as a proxy.</p><p>---</p><p><h2>2. Deep DCF Modeling</p><p><h3>Revenue Growth — Multi-Anchor Approach</p><p>**Historical Growth:**  </h3></h2>
+<ul><li>Revenue grew from ~$0 (pre-2021) to $0.532B TTM (2024).  </li></ul>
+<ul><li>3-year CAGR (2021-2024): ~150% (from near-zero base, not sustainable).  </li></ul>
+<ul><li>1-year growth: +15% (decelerating as base normalizes).</p><p>**Analyst Consensus (est.):**  </li></ul>
+<ul><li>FY2025E: ~$0.65B (+22%)  </li></ul>
+<ul><li>FY2026E: ~$0.85B (+31%)  </li></ul>
+<ul><li>FY2027E: ~$1.10B (+29%)</p><p>**Management Guidance:**  </li></ul>
+<ul><li>MP targets 60,000 tons/year REO production by 2027 (vs. ~40,000 currently).  </li></ul>
+<ul><li>Downstream magnet production (Mountain Pass) expected to add $0.3–0.5B revenue by 2027.</p><p>**Industry Growth:**  </li></ul>
+<ul><li>Rare earth magnet demand CAGR: 8–12% (EVs, wind turbines).  </li></ul>
+<ul><li>China dominates supply; US/China tensions favor MP.  </li></ul>
+<ul><li>Ceiling anchor: 15% long-term growth is aggressive.</p><p>**Growth Tapering Assumption:**  </li></ul>
+<ul><li>Y1–Y5: 25% → 15% → 12% → 10% → 8%  </li></ul>
+<ul><li>Y6–Y10: 7% → 5% → 4% → 3% → 2% (terminal)</p><p><h3>FCF Margin Construction</p><p>**Historical FCF:**  </h3></li></ul>
+<ul><li>TTM FCF = -$0.310B on $0.532B revenue → FCF margin = -58%  </li></ul>
+<ul><li>Capex intensity: $0.35B (66% of revenue) — heavy investment phase  </li></ul>
+<ul><li>SBC: ~$0.04B TTM (7% of revenue)  </li></ul>
+<ul><li>Working capital: Negative (receivables + inventory build)</p><p>**Normalized FCF Margin (Year 5 target):**  </li></ul>
+<ul><li>Long-term mining margins: 25–35% EBITDA margin  </li></ul>
+<ul><li>Capex normalizes to 15% of revenue  </li></ul>
+<ul><li>FCF margin target (Year 10): 15% (after capex, SBC, taxes)  </li></ul>
+<ul><li>Transition: -58% → -40% → -20% → 0% → +10% → +15% over 10 years</p><p><h3>Three-Scenario Model</p><p>| Scenario | Prob | Rev CAGR Y1-5 | Rev CAGR Y6-10 | FCF Margin Y5 | FCF Margin Y10 | WACC | Terminal g |</h3></li></ul>
+|----------|------|---------------|----------------|----------------|----------------|------|------------|
+| **Bull** | 20% | 20% | 6% | +5% | 20% | 9.5% | 2.5% |
+| **Base** | 60% | 15% | 4% | -5% | 15% | 10.5% | 2.0% |
+| **Bear** | 20% | 10% | 2% | -15% | 8% | 11.5% | 1.5% |</p><p><h3>WACC Decomposition</p><p>| Component | Value | Notes |</h3>
+|-----------|-------|-------|
+| Risk-Free Rate (Rf) | 4.25% | 10-year US Treasury (current est.) |
+| Beta (β) | 1.85 | 5-year monthly vs S&P 500 (highly volatile) |
+| Equity Risk Premium (ERP) | 5.50% | Damodaran estimate |
+| Size Premium | 1.50% | Mid-cap ($10B market cap) |
+| **Cost of Equity (Ke)** | **16.0%** | 4.25% + 1.85×5.5% + 1.5% |
+| Pre-tax Cost of Debt | 5.5% | Estimated from debt yield |
+| Effective Tax Rate | 0% | NOLs, negative earnings |
+| After-Tax Cost of Debt | 5.5% | No tax shield currently |
+| Equity Weight (E/V) | 99% | $10.8B equity / $10.9B total |
+| Debt Weight (D/V) | 1% | $0.135B debt |
+| **WACC (Base)** | **15.9%** | 16% × 0.99 + 5.5% × 0.01 ≈ 15.9% |</p><p>**Adjusted WACC for Scenarios:**  
+<ul><li>Bull: 9.5% (lower risk perception)  </li></ul>
+<ul><li>Base: 10.5%  </li></ul>
+<ul><li>Bear: 11.5%</p><p>*Note: WACC is high due to beta, size premium, and no tax shield.*</p><p><h3>DCF Projection (Base Case, $B)</p><p>| Year | Revenue | FCF Margin | FCF | Discount Factor (10.5%) | PV of FCF |</h3></li></ul>
+|------|---------|------------|-----|------------------------|-----------|
+| 1 | 0.612 | -40% | -0.245 | 0.905 | -0.222 |
+| 2 | 0.704 | -20% | -0.141 | 0.819 | -0.115 |
+| 3 | 0.788 | 0% | 0.000 | 0.741 | 0.000 |
+| 4 | 0.867 | +5% | 0.043 | 0.671 | 0.029 |
+| 5 | 0.936 | +10% | 0.094 | 0.607 | 0.057 |
+| 6 | 1.002 | +12% | 0.120 | 0.549 | 0.066 |
+| 7 | 1.052 | +13% | 0.137 | 0.497 | 0.068 |
+| 8 | 1.094 | +14% | 0.153 | 0.450 | 0.069 |
+| 9 | 1.127 | +14.5% | 0.163 | 0.407 | 0.066 |
+| 10 | 1.149 | +15% | 0.172 | 0.368 | 0.063 |</p><p>**Terminal Value (Gordon Growth):**  
+TV = FCF₁₀ × (1+g) / (WACC − g) = 0.172 × 1.02 / (0.105 − 0.02) = **$2.064B**  
+PV of TV = $2.064B × 0.368 = **$0.760B**</p><p>**Enterprise Value:** Sum of PV FCFs = $0.082B + PV TV = $0.760B = **$0.842B**  
+**Add Cash:** $1.738B  
+**Subtract Debt:** -$0.135B  
+**Equity Value:** $0.842B + $1.738B − $0.135B = **$2.445B**  
+**Shares Outstanding:** 0.178B  
+**Base Case IV per Share:** $2.445B / 0.178B = **$13.74**</p><p>**Terminal Value % of EV:** $0.760B / $0.842B = **90.2%** → ⚠️ **Critical Flag:** TV > 80% of EV. Model is extremely sensitive to terminal assumptions.</p><p><h3>Bull Case DCF (WACC=9.5%, g=2.5%)</p><p>| Year | Revenue | FCF Margin | FCF | PV Factor (9.5%) | PV FCF |</h3>
+|------|---------|------------|-----|------------------|--------|
+| 1 | 0.638 | -30% | -0.191 | 0.913 | -0.174 |
+| 2 | 0.766 | -10% | -0.077 | 0.834 | -0.064 |
+| 3 | 0.919 | +5% | 0.046 | 0.762 | 0.035 |
+| 4 | 1.102 | +10% | 0.110 | 0.696 | 0.077 |
+| 5 | 1.323 | +15% | 0.198 | 0.636 | 0.126 |
+| 6 | 1.402 | +17% | 0.238 | 0.581 | 0.138 |
+| 7 | 1.487 | +18% | 0.268 | 0.531 | 0.142 |
+| 8 | 1.561 | +19% | 0.297 | 0.485 | 0.144 |
+| 9 | 1.624 | +19.5% | 0.317 | 0.443 | 0.140 |
+| 10 | 1.673 | +20% | 0.335 | 0.405 | 0.136 |</p><p>TV = 0.335 × 1.025 / (0.095 − 0.025) = **$4.905B**  
+PV TV = $4.905B × 0.405 = **$1.986B**  
+EV = $0.700B + $1.986B = **$2.686B**  
+Equity = $2.686B + $1.738B − $0.135B = **$4.289B**  
+**Bull IV = $24.10**</p><p><h3>Bear Case DCF (WACC=11.5%, g=1.5%)</p><p>| Year | Revenue | FCF Margin | FCF | PV Factor (11.5%) | PV FCF |</h3>
+|------|---------|------------|-----|-------------------|--------|
+| 1 | 0.585 | -45% | -0.263 | 0.897 | -0.236 |
+| 2 | 0.644 | -30% | -0.193 | 0.804 | -0.155 |
+| 3 | 0.708 | -15% | -0.106 | 0.721 | -0.076 |
+| 4 | 0.779 | -5% | -0.039 | 0.647 | -0.025 |
+| 5 | 0.857 | +0% | 0.000 | 0.580 | 0.000 |
+| 6 | 0.874 | +3% | 0.026 | 0.520 | 0.014 |
+| 7 | 0.892 | +5% | 0.045 | 0.467 | 0.021 |
+| 8 | 0.910 | +6% | 0.055 | 0.419 | 0.023 |
+| 9 | 0.928 | +7% | 0.065 | 0.376 | 0.024 |
+| 10 | 0.947 | +8% | 0.076 | 0.337 | 0.026 |</p><p>TV = 0.076 × 1.015 / (0.115 − 0.015) = **$0.771B**  
+PV TV = $0.771B × 0.337 = **$0.260B**  
+EV = -$0.384B + $0.260B = **-$0.124B**  
+Equity = -$0.124B + $1.738B − $0.135B = **$1.479B**  
+**Bear IV = $8.31**</p><p><h3>DCF Summary</p><p>| Scenario | IV per Share |</h3>
+|----------|-------------|
+| Bull (20%) | $24.10 |
+| Base (60%) | $13.74 |
+| Bear (20%) | $8.31 |
+| **Probability-Weighted IV** | **$14.73** |</p><p><h3>5×5 Sensitivity Table — IV per Share ($)</p><p>| WACC \ g | 1.0% | 1.5% | 2.0% | 2.5% | 3.0% |</h3>
+|----------|------|------|------|------|------|
+| 8.5% | $19.50 | $22.80 | $27.40 | $34.10 | $44.90 |
+| 9.5% | $14.30 | $16.40 | $19.20 | $23.10 | $29.00 |
+| **10.5%** | **$10.80** | **$12.20** | **$13.74** | **$16.10** | **$19.50** |
+| 11.5% | $8.30 | $9.20 | $10.40 | $11.90 | $14.00 |
+| 12.5% | $6.50 | $7.10 | $7.90 | $8.90 | $10.30 |</p><p>**Interpretation:**  
+<ul><li>At current price $60.88, **no cell in the table** shows a margin of safety.  </li></ul>
+<ul><li>Even the most optimistic scenario (WACC=8.5%, g=3.0%) yields $44.90 — still 26% below current price.  </li></ul>
+<ul><li>Stock is expensive under all reasonable DCF assumptions.</p><p>---</p><p><h2>3. Comparable Company Analysis (CCA)</p><p>**Peers:** Rare earth miners and specialty materials companies:  </h2></li></ul>
+<ul><li>Lynas Rare Earths (LYSCF)  </li></ul>
+<ul><li>Neo Performance Materials (NPM)  </li></ul>
+<ul><li>Energy Fuels (UUUU)  </li></ul>
+<ul><li>MP Materials (self)  </li></ul>
+<ul><li>Vale (VALE) — diversified miner  </li></ul>
+<ul><li>Freeport-McMoRan (FCX) — copper miner (proxy for commodity cyclicality)</p><p>| Company | EV/Revenue (TTM) | EV/EBITDA | P/E (FWD) | EV/FCF |</li></ul>
+|---------|------------------|-----------|-----------|--------|
+| Lynas | 4.5x | 12.0x | 25.0x | 18.0x |
+| Neo Performance | 1.8x | 8.5x | 15.0x | 12.0x |
+| Energy Fuels | 6.0x | N/A | N/A | N/A |
+| MP Materials | **20.4x** | N/A | -254x | N/A |
+| Vale | 1.2x | 4.5x | 7.0x | 5.0x |
+| FCX | 2.5x | 7.0x | 12.0x | 9.0x |</p><p>**Peer Medians:**  
+<ul><li>EV/Revenue: 4.5x (Lynas) or 2.5x (FCX) — MP trades at 20.4x, a massive premium  </li></ul>
+<ul><li>EV/EBITDA: 8.5x (Neo) — MP has negative EBITDA → not applicable  </li></ul>
+<ul><li>P/E: 15.0x — MP has negative EPS  </p><p>**Implied EV from EV/Revenue (Peer Median 4.5x):**  </li></ul>
+EV = 4.5 × $0.532B = **$2.394B**  
+Equity = $2.394B + $1.738B − $0.135B = **$3.997B**  
+**Implied IV per Share = $22.46**</p><p>**Adjusted for Quality Premium:** MP is a US-only rare earth producer with strategic value. Apply +25% premium.  
+**Adjusted IV = $28.08**</p><p>---</p><p><h2>4. EV/Revenue Multiple (Proxy for EV/EBITDA and P/E)</p><p>Since EV/EBITDA and P/E are not meaningful, we use EV/Revenue as primary multiple.</p><p>| Scenario | Multiple | Implied EV | Implied Equity | IV per Share |</h2>
+|----------|----------|------------|----------------|-------------|
+| Bear (peer low) | 2.5x | $1.33B | $2.93B | $16.46 |
+| Base (median) | 4.5x | $2.39B | $3.99B | $22.46 |
+| Bull (premium) | 6.0x | $3.19B | $4.79B | $26.91 |</p><p>---</p><p><h2>5. Residual Income (Justified P/B)</p><p>**Book Value:** Total Assets ($2.1B) − Total Debt ($0.135B) − Other Liabilities → Approx BV = $1.8B  </h2>
+**BV per Share:** $1.8B / 0.178B = **$10.11**  
+**ROE:** TTM Net Income = -$0.032B / $1.8B = -1.8%  
+**Ke (Cost of Equity):** 16%  
+**g:** 2%  </p><p>Justified P/B = 1 + (ROE − Ke) / (Ke − g) = 1 + (-0.018 − 0.16) / (0.16 − 0.02) = 1 + (-0.178 / 0.14) = 1 − 1.27 = **-0.27**  </p><p>**Interpretation:** Negative justified P/B indicates the company destroys value at current ROE. Only positive if ROE > Ke.  
+For MP to be fairly valued at 1.0x P/B = $10.11 per share.  
+Current price $60.88 = 6.0x P/B — requires ROE of ~30%+ to justify.</p><p>---</p><p><h2>6. Football Field Summary</p><p>| Method | Bear | Base | Bull | Confidence |</h2>
+|--------|------|------|------|------------|
+| DCF | $8.31 | $13.74 | $24.10 | **LOW** (TV > 80% of EV, negative FCF) |
+| CCA (Comps) | $16.46 | $22.46 | $28.08 | **MEDIUM** (strategic premium justified) |
+| EV/Revenue | $16.46 | $22.46 | $26.91 | **MEDIUM** |
+| Residual Income | $5.00 | $10.11 | $15.00 | **LOW** (negative ROE) |
+| **Composite IV** | **$11.56** | **$17.19** | **$23.52** | |
+| **Current Price** | | **$60.88** | | |
+| **Margin of Safety** | | **-254%** (premium) | | |</p><p>**Probability-Weighted Composite IV:** (20% × $11.56) + (60% × $17.19) + (20% × $23.52) = **$17.33**</p><p>---</p><p><h2>7. Risk-Adjusted Expected Return</p><p>| Scenario | Prob | Target Price | Return | Expected Return |</h2>
+|----------|------|-------------|--------|----------------|
+| Bull | 20% | $23.52 | -61.4% | -12.3% |
+| Base | 60% | $17.19 | -71.8% | -43.1% |
+| Bear | 20% | $11.56 | -81.0% | -16.2% |
+| **Probability-Weighted Expected Return** | | | | **-71.6%** |
+| **Risk/Reward (Bull upside / Bear downside)** | | | | **0.76x** (upside 61% vs downside 81%) |</p><p>---</p><p><h2>8. Key Valuation Risks</p><p>1. **Rare Earth Price Volatility:** If rare earth oxide prices spike (geopolitical supply shock), MP could generate massive FCF quickly, making DCF too conservative.</h2>
+2. **US Government Support:** Strategic subsidies or defense contracts could dramatically alter revenue trajectory (not fully modeled).
+3. **Downstream Integration Success:** If MP's magnet production succeeds, margins could exceed mining comps significantly.
+4. **SBC Dilution:** High SBC (7% of revenue) could dilute shareholders; not fully captured in basic share count.
+5. **China Export Restrictions:** A ban on Chinese rare earth exports would make MP a monopoly supplier in the West — enormous upside.
+6. **Execution Risk:** Negative FCF for 3+ years could force dilutive equity raises.</p><p>---</p><p><h2>Thesis Invalidation</p><p>**If signal is BEARISH — thesis breaks if:**</h2>
+<ul><li>Price closes above $70 (MA200 resistance) with volume confirmation</li></ul>
+<ul><li>All 5 valuation methods show >20% upside at current price simultaneously (unlikely given current data)</li></ul>
+<ul><li>Fundamental improvement: surprise earnings beat >20% with guidance raise, or rare earth prices double</p><p>**Re-run this analysis when:**</li></ul>
+<ul><li>[ ] Next earnings release</li></ul>
+<ul><li>[ ] Price moves ±15% from current level</li></ul>
+<ul><li>[ ] 60 days have elapsed</li></ul>
+<ul><li>[ ] Material news event (acquisition, leadership change, regulatory decision)</p><p>╔══════════════════════════════════════════════╗</li></ul>
+║              INVESTMENT SIGNAL               ║
+╠══════════════════════════════════════════════╣
+║ Signal:      BEARISH                         ║
+║ Confidence:  HIGH                            ║
+║ Horizon:     LONG-TERM                       ║
+║ Score:       1.5 / 10                        ║
+╠══════════════════════════════════════════════╣
+║ Action:      SELL                            ║
+║ Conviction:  STRONG                          ║
+╚══════════════════════════════════════════════╝</p><p>**Score Guide:** 8.0–10.0 Strongly Bullish | 6.0–7.9 Moderately Bullish | 4.0–5.9 Neutral | 2.0–3.9 Moderately Bearish | 0.0–1.9 Strongly Bearish  
+**Rationale:** Current price of $60.88 represents a **254% premium** over the probability-weighted composite intrinsic value of $17.33. Even the most optimistic DCF scenario ($24.10) implies ~60% downside. Negative FCF, negative ROE, and extreme terminal value sensitivity (TV > 90% of EV) make the current valuation unsustainable without a dramatic improvement in fundamentals or a rare earth price shock.</p><p>**Disclaimer:** Educational analysis only. Not financial advice.
+        </div>
+    </div>
+</body>
+</html>

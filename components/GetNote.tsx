@@ -19,6 +19,7 @@ import {
     ChevronUp,
     Sparkles,
     ArrowUpDown,
+    ArrowRight,
     History,
     Triangle,
     Star,
@@ -439,6 +440,21 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
             return () => clearTimeout(timer);
         }
     }, [notes, todos, isDataLoaded, session, user]);
+
+    // --- Expose State to Window for Ask Apptify ---
+    useEffect(() => {
+        (window as any).__apptify_getnote = {
+            notes,
+            setNotes,
+            todos,
+            setTodos,
+            activeTab,
+            setActiveTab
+        };
+        return () => {
+            (window as any).__apptify_getnote = null;
+        };
+    }, [notes, todos, activeTab]);
 
     // --- Deadline Notifications ---
     const notifiedTasksRef = useRef<Set<string>>(new Set());
@@ -976,23 +992,11 @@ ${retrievedNotesContext}`;
                             )}
                         </div>
 
-                        {/* Global AI Trigger */}
-                        <button
-                            onClick={() => setIsGlobalChatOpen(true)}
-                            className="text-gray-700 px-5 py-2.5 rounded-[20px] flex items-center gap-2 transition-all active:scale-95 group hover:text-blue-600"
-                            style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                            }}
-                        >
-                            <Sparkles size={16} className="text-amber-500 group-hover:rotate-12 transition-transform" />
-                            <span className="font-bold text-sm">Ask AI</span>
-                        </button>
                     </div>
 
                     {/* View Renderer */}
                     <div className="animate-slide-up">
-                        {activeTab === 'notes' && <NotesView notes={notes} setNotes={setNotes} openGlobalChat={() => setIsGlobalChatOpen(true)} targetNoteId={targetNoteId} setTargetNoteId={setTargetNoteId} />}
+                        {activeTab === 'notes' && <NotesView notes={notes} setNotes={setNotes} openGlobalChat={() => {}} targetNoteId={targetNoteId} setTargetNoteId={setTargetNoteId} />}
                         {activeTab === 'todo' && <TodoView todos={todos} setTodos={setTodos} />}
                         {activeTab === 'focus' && (
                             <FocusView
@@ -1044,7 +1048,7 @@ ${retrievedNotesContext}`;
             </div>
 
             {/* GLOBAL AI OVERLAY - CLAY STYLE */}
-            {isGlobalChatOpen && (
+            {false && (
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setIsGlobalChatOpen(false)}></div>
                     <div className="w-full max-w-[450px] bg-[#E0E5EC] h-full shadow-2xl relative flex flex-col animate-slide-left border-l border-white/40">

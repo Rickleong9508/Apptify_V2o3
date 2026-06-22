@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>META - CHART-MASTER InvestReport</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #E0E5EC;
+            color: #4A4A4A;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #E0E5EC;
+            padding: 40px;
+            border-radius: 40px;
+            box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+        }
+        h1 {
+            color: #2D3748;
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header-meta {
+            text-align: center;
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 40px;
+        }
+        .signal-grid {
+            display: grid;
+            grid-template-cols: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+        .signal-card {
+            background: #E0E5EC;
+            padding: 15px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff;
+        }
+        .signal-val {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 5px;
+            color: #2D3748;
+        }
+        .signal-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .score-card {
+            background: #E0E5EC;
+            box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff;
+            border: 2px solid #319795;
+        }
+        .score-val {
+            font-size: 28px;
+            font-weight: 800;
+            color: #319795;
+            margin-top: 5px;
+        }
+        .report-content {
+            line-height: 1.8;
+            font-size: 15px;
+            color: #2D3748;
+            border-top: 2px solid rgba(0,0,0,0.05);
+            padding-top: 30px;
+        }
+        .report-content h2, .report-content h3 {
+            color: #2B6CB0;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .report-content p {
+            margin-bottom: 20px;
+        }
+        .report-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .report-content th, .report-content td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+        .report-content th {
+            background-color: rgba(0,0,0,0.03);
+            color: #4A5568;
+            font-weight: 600;
+        }
+        .report-content td {
+            border-bottom: 1px solid rgba(0,0,0,0.02);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>META InvestReport (CHART-MASTER)</h1>
+        <div class="header-meta">
+            Generated: 6/21/2026, 3:37:33 PM | Framework: yennanliu/InvestSkill
+        </div>
+        
+        <div class="signal-grid">
+            <div class="signal-card score-card">
+                <div class="signal-label">Overall Score</div>
+                <div class="score-val">6.6/10</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Signal</div>
+                <div class="signal-val" style="color: #319795">BULLISH</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Action</div>
+                <div class="signal-val">BUY</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Conviction</div>
+                <div class="signal-val">MODERATE</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Confidence</div>
+                <div class="signal-val">MEDIUM</div>
+            </div>
+            <div class="signal-card">
+                <div class="signal-label">Horizon</div>
+                <div class="signal-val">MEDIUM</div>
+            </div>
+        </div>
+        
+        <div class="report-content">
+            # META Platforms — Chart Master Visualization Report</p><p>**Data Source:** Live quotes & raw financial data provided (assumed current as of latest session). Price: $577.22. All metrics are as supplied.</p><p>> ⚠️ **Note:** Some metrics (e.g., TTM FCF negative at -$75.988B, Total Debt "N/A") may be incomplete or anomalous. Verify directly with latest filings before trading.</p><p>---</p><p><h2>1. Price vs. Moving Averages — MA Line Chart</p><p>Using the 30-day close prices provided, I've approximated MA lines for visualization.</p><p>```</h2>
+Price vs. Moving Averages (30-Day)
+$610 ┤                                        ●
+$600 ┤                      ●──●
+$590 ┤          ●──●──●────────
+$580 ┤●──●──●───────────────────── (MA10 approx)
+$570 ┤●─────────────────────────
+$560 ┼────────────────────────────────────────
+       D1  D4  D7  D10 D13 D16 D19 D22 D25 D28</p><p>       ● Price  ─ ─ MA10 (approx)  · · · MA20 (approx)
+       ▼ Recent dip below MA line</p><p>Recent price action shows a sharp decline from $600+ to $577, breaking below short-term moving averages.
+```</p><p>---</p><p><h2>2. Price + Volume — Dual-Panel Analysis</p><p>```</h2>
+Price + Volume (30-Day)
+Price │
+$610  │                                        ●
+$590  │          ●──●──●────────────●──●
+$570  │●──●──●─────────────────────────●
+      └────────────────────────────────────────
+      D1   D4   D7   D10  D13  D16  D19  D22  D25  D28</p><p>Volume│ (green = up, red = down)
+ High │               ██  ██
+  Med │██      ██          ██      ██
+  Low │   ██      ██                  ██  ██
+      └────────────────────────────────────────
+```</p><p>**Volume Trend: Bearish** — confirms the price decline with elevated volume on down days.</p><p>---</p><p><h2>3. RSI Indicator — Momentum Panel</p><p>```</h2>
+RSI (14-period) — Approximated from 30-day closes
+100 ┤ ─────────────── Overbought ──────────────
+ 70 ┤                       ●
+ 60 ┤          ●──●──●──●──────────●──●
+ 50 ┤●──●──●─────────────────────────●
+ 30 ┤·············································  Oversold
+  0 ┼────────────────────────────────────────────
+      D1   D4   D7   D10  D13  D16  D19  D22  D25  D28
+```</p><p>**RSI Estimate:** ~42–48 range — neutral with bearish tilt, not yet oversold. Room for further downside before a reversal signal triggers.</p><p>---</p><p><h2>4. MACD — Trend & Momentum Panel</p><p>```</h2>
+MACD (12,26,9) — Approximated
+ +2 ┤              ██  ██
+ +1 ┤           ████████████
+  0 ┼──────────────────────────────────────────
+ -1 ┤                              ████
+ -2 ┤                                   ████████
+      D1   D4   D7   D10  D13  D16  D19  D22  D25  D28</p><p>    ─── MACD Line  ─ ─ Signal Line  ██ Histogram
+    ▼ Bearish cross (recent)
+```</p><p>The MACD likely crossed bearish recently (price dropping from $600 to $577), with histogram bars turning negative.</p><p>---</p><p><h2>5. Revenue & Earnings Growth — Bar + Line Combo</p><p>```mermaid</h2>
+xychart-beta
+    title "META Revenue & Net Income (USD Billions)"
+    x-axis ["2020", "2021", "2022", "2023", "2024"]
+    y-axis "USD Billions" 0 --> 250
+    bar [85.9, 117.9, 116.6, 134.9, 225.2]
+    line [29.1, 39.4, 23.2, 39.1, 107.1]
+```</p><p>**Note:** 2024 figures are TTM ($225.2B revenue, $107.1B net income). Revenue growth of 15% and massive net income expansion underscore strong fundamentals.</p><p>---</p><p><h2>6. Margin Trends — Multi-Line</p><p>```mermaid</h2>
+xychart-beta
+    title "META Margin Trends (%)"
+    x-axis ["2020", "2021", "2022", "2023", "2024"]
+    y-axis "Margin %" 0 --> 60
+    line [80.6, 81.4, 78.4, 80.8, 81.5]
+    line [38.0, 40.2, 31.5, 35.0, 47.6]
+    line [33.9, 33.4, 19.9, 29.0, 47.5]
+```</p><p>*Line 1: Gross Margin | Line 2: Operating Margin | Line 3: Net Margin*</p><p>**Key Insight:** Operating and net margins have nearly doubled from 2022 lows, reflecting aggressive cost restructuring and AI-driven efficiency gains.</p><p>---</p><p><h2>7. Valuation Comparison — Horizontal Bar</p><p>```mermaid</h2>
+xychart-beta horizontal
+    title "P/E Ratio: META vs. Mega-Cap Peers"
+    x-axis 0 --> 40
+    y-axis ["META", "MSFT", "GOOGL", "AMZN", "AAPL"]
+    bar [18.9, 33.5, 22.0, 35.0, 30.0]
+```</p><p>META trades at 18.9x P/E — a significant discount to mega-cap tech peers (30–35x range), despite superior revenue growth (15%) and net income margins (~47.5%).</p><p>---</p><p><h2>8. Fair Value Range Analysis</p><p>```</h2>
+Fair Value Range Analysis — META
+─────────────────────────────────────────────
+Bear Case   Fair Value   Bull Case
+  $350    ←───┼────────────┼────────────→  $700
+              $480         $620</p><p>Current Price: $577  ●</p><p> UNDERVALUED │ FAIRLY VALUED │ OVERVALUED
+  (<$480)    │  ($480–$620)  │  (>$620)
+─────────────────────────────────────────────
+Status: FAIRLY VALUED (+5% to midpoint $550)
+P/E at 18.9x vs. sector 25-30x suggests room for multiple expansion.
+```</p><p>---</p><p><h2>9. Signal Dashboard — Multi-Metric Scorecard</p><p>```mermaid</h2>
+xychart-beta
+    title "META Multi-Factor Signal Scores (0–10)"
+    x-axis ["Fundamental", "Technical", "Valuation", "Sentiment", "Macro"]
+    y-axis "Score" 0 --> 10
+    bar [8.5, 4.0, 8.0, 6.5, 6.0]
+```</p><p>```
+Signal Dashboard
+──────────────────────────────────────
+Fundamental  █████████░  8.5 / 10  🟢
+Technical    ████░░░░░░  4.0 / 10  🟡
+Valuation    ████████░░  8.0 / 10  🟢
+Sentiment    ██████░░░░  6.5 / 10  🟡
+Macro        ██████░░░░  6.0 / 10  🟡
+──────────────────────────────────────
+Composite    ██████░░░░  6.6 / 10  🟡 MODERATE BULLISH
+```</p><p>---</p><p><h2>10. Support & Resistance — Price Level Map</p><p>```</h2>
+Support & Resistance Map — META
+─────────────────────────────────────────────
+$620 ················· Strong Resistance (bull case)
+$600 ┤                  ← Recent resistance / VWAP zone
+$577 ●────────────────── Current Price
+$560 ─────────────────── Support (recent low area)
+$540 ┤
+$520 ─────────────────── Support (MA50 approx)
+$500 ┤
+$480 ━━━━━━━━━━━━━━━━━━━ Major Support (fair value floor)
+─────────────────────────────────────────────
+Upside to resistance ($600): +$23 (+4%)
+Risk to support ($520): -$57 (-10%)
+Risk/Reward: 1:2.5 — Moderately favorable
+```</p><p>---</p><p><h2>Thesis Invalidation</p><p>**If signal is BULLISH — thesis breaks if:**</h2>
+<ul><li>Price closes below $520 (MA50 support) on above-average volume</li></ul>
+<ul><li>RSI drops below 35 AND MACD histogram deepens further negative</li></ul>
+<ul><li>Revenue growth decelerates below 10% in next earnings report</p><p>**If signal is BEARISH — thesis breaks if:**</li></ul>
+<ul><li>Price reclaims $600 with volume confirmation (VWAP reclaim)</li></ul>
+<ul><li>RSI rises above 60 AND MACD generates bullish crossover</li></ul>
+<ul><li>Earnings beat >15% with raised guidance</p><p>**Re-run this analysis when:**</li></ul>
+<ul><li>[ ] Next earnings release (expected late April/May 2025)</li></ul>
+<ul><li>[ ] Price moves ±15% from current level ($490–$663)</li></ul>
+<ul><li>[ ] 60 days have elapsed</li></ul>
+<ul><li>[ ] Material news event (AI regulation, antitrust decision, major product launch)</p><p>---</p><p>╔══════════════════════════════════════════════╗</li></ul>
+║              INVESTMENT SIGNAL               ║
+╠══════════════════════════════════════════════╣
+║ Signal:      BULLISH                         ║
+║ Confidence:  MEDIUM                          ║
+║ Horizon:     MEDIUM-TERM                     ║
+║ Score:       6.6 / 10                        ║
+╠══════════════════════════════════════════════╣
+║ Action:      BUY                             ║
+║ Conviction:  MODERATE                        ║
+╚══════════════════════════════════════════════╝</p><p>**Score Guide:** 8.0–10.0 Strongly Bullish | 6.0–7.9 Moderately Bullish | 4.0–5.9 Neutral | 2.0–3.9 Moderately Bearish | 0.0–1.9 Strongly Bearish</p><p>**Rationale:** META combines exceptional fundamentals (47.5% net margins, 15% revenue growth, $107B TTM net income) with a deeply discounted valuation (18.9x P/E vs. 30x+ peers). Technicals are near-term bearish (price below VWAP, declining momentum), creating a potential entry opportunity. The fundamental/valuation strength outweighs the technical weakness, yielding a moderate BUY signal with medium-term horizon.</p><p>**Disclaimer:** Educational analysis only. Not financial advice. Verify all data points before trading.
+        </div>
+    </div>
+</body>
+</html>

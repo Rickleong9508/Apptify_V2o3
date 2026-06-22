@@ -16,7 +16,6 @@ import Budget from './Budget';
 import Loans from './Loans';
 import Investments from './Investments';
 import { Account, Expense, Loan, Stock, MonthlyData, Transaction, BudgetHistoryItem, ExpenseCategory, CashHolding } from '../types';
-import WealthAiAssistant from './WealthAiAssistant';
 import { aiService } from '../services/aiService';
 import { useAuth } from './AuthProvider'; // New
 import { supabase } from '../services/supabaseClient'; // New
@@ -332,6 +331,33 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
   }, [accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, isDataLoaded, session, user]);
 
+  // --- Expose State to Window for Ask Apptify ---
+  useEffect(() => {
+    (window as any).__apptify_mywealth = {
+      accounts,
+      setAccounts,
+      monthlyData,
+      setMonthlyData,
+      budgetHistory,
+      setBudgetHistory,
+      fixedExpenses,
+      setFixedExpenses,
+      loans,
+      setLoans,
+      stocks,
+      setStocks,
+      cash,
+      setCash,
+      exchangeRate,
+      setExchangeRate,
+      activeTab,
+      setActiveTab,
+    };
+    return () => {
+      (window as any).__apptify_mywealth = null;
+    };
+  }, [accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, activeTab]);
+
   const handleArchiveMonth = () => {
     // 1. Calculate Totals
     const currentVariableExpenses = monthlyData.expenses;
@@ -610,8 +636,6 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           </div>
         </div>
       </main>
-
-      <WealthAiAssistant onProcessCommand={processAiCommand} />
 
 
 
