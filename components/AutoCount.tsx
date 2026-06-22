@@ -71,9 +71,26 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
         loadPrompts();
     }, []);
 
+    // Expose methods to window for Ask Apptify orchestration
+    useEffect(() => {
+        (window as any).__apptify_autocount = {
+            symbol,
+            setSymbol,
+            handleSearch,
+            handleRunAnalysis,
+            generatingReport,
+            reportMarkdown,
+            parsedSignal
+        };
+        return () => {
+            (window as any).__apptify_autocount = null;
+        };
+    }, [symbol, stockData, generatingReport, reportMarkdown, parsedSignal]);
+
     // Handle stock symbol search
-    const handleSearch = async () => {
-        if (!symbol.trim()) return;
+    const handleSearch = async (searchSymbol?: string) => {
+        const activeSymbol = searchSymbol || symbol;
+        if (!activeSymbol.trim()) return;
 
         setLoading(true);
         setError(null);
@@ -82,19 +99,22 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
         setParsedSignal(null);
 
         try {
-            const data = await stockService.getDetailedQuote(symbol.toUpperCase());
+            const data = await stockService.getDetailedQuote(activeSymbol.toUpperCase());
             setStockData(data);
+            return data;
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to find US stock ticker. Please check symbol (e.g. AAPL, PLTR, MSFT).');
+            throw err;
         } finally {
             setLoading(false);
         }
     };
 
     // Run selected InvestSkill analysis using AI
-    const handleRunAnalysis = async () => {
-        if (!stockData || !apiKey) return;
+    const handleRunAnalysis = async (customStockData?: DetailedStockData) => {
+        const activeStockData = customStockData || stockData;
+        if (!activeStockData || !apiKey) return;
 
         setGeneratingReport(true);
         setError(null);
@@ -106,25 +126,25 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
             const promptTemplate = await investSkillService.readPrompt(selectedPromptId);
             
             // 2. Format detailed financials context
-            const financials = stockData.valuationFields || {};
+            const financials = activeStockData.valuationFields || {};
             const revenueBillions = financials.revenueTtm ? (financials.revenueTtm / 1e9).toFixed(3) + 'B' : 'N/A';
             const netIncomeBillions = financials.netIncomeTtm ? (financials.netIncomeTtm / 1e9).toFixed(3) + 'B' : 'N/A';
             const fcfBillions = financials.obsFreeCashFlowTtm ? (financials.obsFreeCashFlowTtm / 1e9).toFixed(3) + 'B' : 'N/A';
             const cashBillions = financials.cashAndEquivalents ? (financials.cashAndEquivalents / 1e9).toFixed(3) + 'B' : 'N/A';
             const debtBillions = financials.totalDebt ? (financials.totalDebt / 1e9).toFixed(3) + 'B' : 'N/A';
-            const marketCapBillions = stockData.marketCap ? (stockData.marketCap / 1e9).toFixed(3) + 'B' : 'N/A';
+            const marketCapBillions = activeStockData.marketCap ? (activeStockData.marketCap / 1e9).toFixed(3) + 'B' : 'N/A';
 
             const financialContext = `
 === live quotes and raw financial data ===
-Ticker: ${stockData.symbol}
-Company Description: ${stockData.description ? stockData.description.slice(0, 500) + '...' : 'N/A'}
-Current Stock Price: $${stockData.price}
+Ticker: ${activeStockData.symbol}
+Company Description: ${activeStockData.description ? activeStockData.description.slice(0, 500) + '...' : 'N/A'}
+Current Stock Price: $${activeStockData.price}
 Market Cap: $${marketCapBillions}
-Trailing PE Ratio: ${stockData.peRatio ? stockData.peRatio.toFixed(2) : 'N/A'}
-PEG Ratio: ${stockData.pegRatio ? stockData.pegRatio.toFixed(2) : 'N/A'}
-Trailing EPS: ${stockData.eps ? stockData.eps.toFixed(2) : 'N/A'}
-Revenue Growth: ${stockData.financeGrowth ? (stockData.financeGrowth * 100).toFixed(2) + '%' : 'N/A'}
-Dividend Rate: $${stockData.dividendRate ? stockData.dividendRate.toFixed(2) : '0.00'}
+Trailing PE Ratio: ${activeStockData.peRatio ? activeStockData.peRatio.toFixed(2) : 'N/A'}
+PEG Ratio: ${activeStockData.pegRatio ? activeStockData.pegRatio.toFixed(2) : 'N/A'}
+Trailing EPS: ${activeStockData.eps ? activeStockData.eps.toFixed(2) : 'N/A'}
+Revenue Growth: ${activeStockData.financeGrowth ? (activeStockData.financeGrowth * 100).toFixed(2) + '%' : 'N/A'}
+Dividend Rate: $${activeStockData.dividendRate ? activeStockData.dividendRate.toFixed(2) : '0.00'}
 
 === TTM Financial Ratios ===
 TTM Revenue: $${revenueBillions} (Latest Quarter Rev: $${(financials.revenueQtr / 1e9).toFixed(3)}B)
@@ -133,12 +153,12 @@ TTM Free Cash Flow (FCF): $${fcfBillions}
 Total Cash & Equivalents: $${cashBillions}
 Total Debt: $${debtBillions}
 Shares Outstanding: ${financials.sharesOutstanding ? (financials.sharesOutstanding / 1e9).toFixed(3) + 'B' : 'N/A'}
-Book Value Per Share: $${stockData.bookValue ? stockData.bookValue.toFixed(2) : 'N/A'}
+Book Value Per Share: $${activeStockData.bookValue ? activeStockData.bookValue.toFixed(2) : 'N/A'}
 
 === Technical Price Action (Last 30 Days) ===
-30-Day VWAP: $${stockData.vwap ? stockData.vwap.toFixed(2) : 'N/A'}
-Volume Trend: ${stockData.volumeSignal}
-Recent Price History (Close Prices): ${stockData.history ? stockData.history.slice(-10).map(h => `$${h.close.toFixed(2)}`).join(', ') : 'N/A'}
+30-Day VWAP: $${activeStockData.vwap ? activeStockData.vwap.toFixed(2) : 'N/A'}
+Volume Trend: ${activeStockData.volumeSignal}
+Recent Price History (Close Prices): ${activeStockData.history ? activeStockData.history.slice(-10).map(h => `$${h.close.toFixed(2)}`).join(', ') : 'N/A'}
 `;
 
             const systemInstruction = `
@@ -181,10 +201,12 @@ Please run the framework and output the research report with the Signal Block at
             // Parse Investment Signal
             const parsed = investSkillService.parseInvestmentSignal(response);
             setParsedSignal(parsed);
+            return { report: response, signal: parsed };
 
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Failed to complete InvestSkill analysis.');
+            throw err;
         } finally {
             setGeneratingReport(false);
         }

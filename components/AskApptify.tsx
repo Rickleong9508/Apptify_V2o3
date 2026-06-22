@@ -7,6 +7,63 @@ import { stockService } from '../services/stockService';
 import { investSkillService, InvestmentSignal } from '../services/investSkillService';
 import { Account, Expense, Loan, Stock, MonthlyData } from '../types';
 
+interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+}
+
+const validateWalletOperation = (intent: string, data: any, accounts: Account[]): ValidationResult => {
+  if (!data) {
+    return { isValid: false, error: "No parameters were provided for the wallet operation." };
+  }
+
+  // 1. Verify amount is valid
+  const amount = Number(data.amount);
+  if (isNaN(amount) || amount <= 0) {
+    return { isValid: false, error: `Invalid amount "${data.amount}". Amount must be a positive number.` };
+  }
+
+  // Helper to find wallet by name (case-insensitive, match or contains)
+  const findWallet = (name: string) => {
+    if (!name) return null;
+    return accounts.find(a => a.name.toLowerCase() === name.toLowerCase() || a.name.toLowerCase().includes(name.toLowerCase()));
+  };
+
+  // 2. Verify wallets exist
+  if (intent === 'ADD_MONEY' || intent === 'WITHDRAW_MONEY') {
+    const walletName = data.walletName || data.accountName;
+    if (!walletName) {
+      return { isValid: false, error: "No wallet name was specified in the request." };
+    }
+    const wallet = findWallet(walletName);
+    if (!wallet) {
+      return { isValid: false, error: `Wallet "${walletName}" does not exist. Available wallets: ${accounts.map(a => a.name).join(', ')}.` };
+    }
+  } else if (intent === 'TRANSFER_MONEY') {
+    const sourceName = data.sourceWallet || data.sourceAccount;
+    const destName = data.destinationWallet || data.destinationAccount;
+
+    if (!sourceName) {
+      return { isValid: false, error: "Source wallet was not specified for the transfer." };
+    }
+    if (!destName) {
+      return { isValid: false, error: "Destination wallet was not specified for the transfer." };
+    }
+
+    const sourceWallet = findWallet(sourceName);
+    const destWallet = findWallet(destName);
+
+    if (!sourceWallet) {
+      return { isValid: false, error: `Source wallet "${sourceName}" does not exist. Available wallets: ${accounts.map(a => a.name).join(', ')}.` };
+    }
+    if (!destWallet) {
+      return { isValid: false, error: `Destination wallet "${destName}" does not exist. Available wallets: ${accounts.map(a => a.name).join(', ')}.` };
+    }
+  }
+
+  return { isValid: true };
+};
+
 interface AskApptifyProps {
   currentApp: string;
   setCurrentApp: (app: any) => void;
@@ -245,11 +302,11 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       return `Target ${data.target} not recognized.`;
     }
 
-    // 2. ADD_TRANSACTION
-    if (intent === 'ADD_TRANSACTION') {
-      const { action, accountName, amount, description, category } = data;
+    // 2a. ADD_MONEY
+    if (intent === 'ADD_MONEY') {
+      const { walletName, amount, description } = data;
       const transactionAmt = Number(amount) || 0;
-      
+
       let accounts: Account[] = [];
       let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
       let fixedExpenses: Expense[] = [];
@@ -283,48 +340,183 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
         }
       }
 
-      // Find matching wallet
-      let targetAcc = accounts.find(a => a.name.toLowerCase().includes(accountName?.toLowerCase() || ''));
-      if (!targetAcc && accounts.length > 0) targetAcc = accounts[0];
-      if (!targetAcc) {
-        targetAcc = { id: Date.now().toString(), name: accountName || 'Cash', balance: 0, reservations: [], history: [] };
-        accounts.push(targetAcc);
-      }
+      const targetAcc = accounts.find(a => a.name.toLowerCase() === walletName?.toLowerCase() || a.name.toLowerCase().includes(walletName?.toLowerCase()));
+      if (!targetAcc) throw new Error(`Wallet "${walletName}" not found.`);
 
       const newTx = {
         id: Date.now().toString(),
         date: new Date().toISOString(),
-        type: action === 'IN' ? 'IN' as const : 'OUT' as const,
+        type: 'IN' as const,
         amount: transactionAmt,
-        description: description || 'Command Layer Tx'
+        description: description || 'Deposit'
       };
 
-      targetAcc.balance = action === 'IN' ? targetAcc.balance + transactionAmt : targetAcc.balance - transactionAmt;
+      targetAcc.balance += transactionAmt;
       targetAcc.history = [newTx, ...targetAcc.history];
 
-      // Cross-Module: Update Budget Planner if expense
-      if (action === 'OUT') {
-        const newExpense = {
-          id: (Date.now() + 1).toString(),
-          name: description || 'Expense',
-          amount: transactionAmt,
-          category: category || 'Other',
-          isFixed: false
-        };
-        monthlyData.expenses = [newExpense, ...monthlyData.expenses];
-      }
-
-      // Save
+      // Save My Wealth state
       if (mw) {
         mw.setAccounts(accounts);
-        if (action === 'OUT') mw.setMonthlyData(monthlyData);
       } else {
         const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
         localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
         await syncMyWealthToCloud(dataToSave);
       }
 
-      return `Recorded ${action === 'IN' ? 'Income' : 'Expense'} of RM${transactionAmt} inside ${targetAcc.name} Wallet (${description || 'Uncategorized'}).`;
+      return `Deposited RM${transactionAmt} into ${targetAcc.name} Wallet.`;
+    }
+
+    // 2b. WITHDRAW_MONEY
+    if (intent === 'WITHDRAW_MONEY') {
+      const { walletName, amount, description, category } = data;
+      const transactionAmt = Number(amount) || 0;
+
+      let accounts: Account[] = [];
+      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
+      let fixedExpenses: Expense[] = [];
+      let loans: Loan[] = [];
+      let stocks: Stock[] = [];
+      let cash = { myr: 0, usd: 0, hkd: 0 };
+      let exchangeRate = 4.50;
+      let budgetHistory: any[] = [];
+
+      if (mw) {
+        accounts = [...mw.accounts];
+        monthlyData = { ...mw.monthlyData };
+        fixedExpenses = [...mw.fixedExpenses];
+        loans = [...mw.loans];
+        stocks = [...mw.stocks];
+        cash = { ...mw.cash };
+        exchangeRate = mw.exchangeRate;
+        budgetHistory = [...mw.budgetHistory];
+      } else {
+        const savedMW = localStorage.getItem('mw_data_main');
+        if (savedMW) {
+          const parsed = JSON.parse(savedMW);
+          accounts = parsed.accounts || [];
+          monthlyData = parsed.monthlyData || monthlyData;
+          fixedExpenses = parsed.fixedExpenses || [];
+          loans = parsed.loans || [];
+          stocks = parsed.stocks || [];
+          cash = parsed.cash || cash;
+          exchangeRate = parsed.exchangeRate || exchangeRate;
+          budgetHistory = parsed.budgetHistory || [];
+        }
+      }
+
+      const targetAcc = accounts.find(a => a.name.toLowerCase() === walletName?.toLowerCase() || a.name.toLowerCase().includes(walletName?.toLowerCase()));
+      if (!targetAcc) throw new Error(`Wallet "${walletName}" not found.`);
+
+      const newTx = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        type: 'OUT' as const,
+        amount: transactionAmt,
+        description: description || 'Withdrawal'
+      };
+
+      targetAcc.balance -= transactionAmt;
+      targetAcc.history = [newTx, ...targetAcc.history];
+
+      // Cross-Module: Update Budget Planner if expense
+      const newExpense = {
+        id: (Date.now() + 1).toString(),
+        name: description || 'Withdrawal Expense',
+        amount: transactionAmt,
+        category: category || 'Other',
+        isFixed: false
+      };
+      monthlyData.expenses = [newExpense, ...monthlyData.expenses];
+
+      // Save My Wealth state
+      if (mw) {
+        mw.setAccounts(accounts);
+        mw.setMonthlyData(monthlyData);
+      } else {
+        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
+        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
+        await syncMyWealthToCloud(dataToSave);
+      }
+
+      return `Withdrew RM${transactionAmt} from ${targetAcc.name} Wallet. Recorded as expense.`;
+    }
+
+    // 2c. TRANSFER_MONEY
+    if (intent === 'TRANSFER_MONEY') {
+      const { sourceWallet, destinationWallet, amount, description } = data;
+      const transactionAmt = Number(amount) || 0;
+
+      let accounts: Account[] = [];
+      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
+      let fixedExpenses: Expense[] = [];
+      let loans: Loan[] = [];
+      let stocks: Stock[] = [];
+      let cash = { myr: 0, usd: 0, hkd: 0 };
+      let exchangeRate = 4.50;
+      let budgetHistory: any[] = [];
+
+      if (mw) {
+        accounts = [...mw.accounts];
+        monthlyData = { ...mw.monthlyData };
+        fixedExpenses = [...mw.fixedExpenses];
+        loans = [...mw.loans];
+        stocks = [...mw.stocks];
+        cash = { ...mw.cash };
+        exchangeRate = mw.exchangeRate;
+        budgetHistory = [...mw.budgetHistory];
+      } else {
+        const savedMW = localStorage.getItem('mw_data_main');
+        if (savedMW) {
+          const parsed = JSON.parse(savedMW);
+          accounts = parsed.accounts || [];
+          monthlyData = parsed.monthlyData || monthlyData;
+          fixedExpenses = parsed.fixedExpenses || [];
+          loans = parsed.loans || [];
+          stocks = parsed.stocks || [];
+          cash = parsed.cash || cash;
+          exchangeRate = parsed.exchangeRate || exchangeRate;
+          budgetHistory = parsed.budgetHistory || [];
+        }
+      }
+
+      const sourceAcc = accounts.find(a => a.name.toLowerCase() === sourceWallet?.toLowerCase() || a.name.toLowerCase().includes(sourceWallet?.toLowerCase()));
+      const destAcc = accounts.find(a => a.name.toLowerCase() === destinationWallet?.toLowerCase() || a.name.toLowerCase().includes(destinationWallet?.toLowerCase()));
+
+      if (!sourceAcc) throw new Error(`Source wallet "${sourceWallet}" not found.`);
+      if (!destAcc) throw new Error(`Destination wallet "${destinationWallet}" not found.`);
+
+      const outTx = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        type: 'OUT' as const,
+        amount: transactionAmt,
+        description: description || `Transfer to ${destAcc.name}`
+      };
+
+      const inTx = {
+        id: (Date.now() + 1).toString(),
+        date: new Date().toISOString(),
+        type: 'IN' as const,
+        amount: transactionAmt,
+        description: description || `Transfer from ${sourceAcc.name}`
+      };
+
+      sourceAcc.balance -= transactionAmt;
+      sourceAcc.history = [outTx, ...sourceAcc.history];
+
+      destAcc.balance += transactionAmt;
+      destAcc.history = [inTx, ...destAcc.history];
+
+      // Save My Wealth state
+      if (mw) {
+        mw.setAccounts(accounts);
+      } else {
+        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
+        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
+        await syncMyWealthToCloud(dataToSave);
+      }
+
+      return `Transferred RM${transactionAmt} from ${sourceAcc.name} to ${destAcc.name}.`;
     }
 
     // 3. ADD_BUDGET
@@ -818,7 +1010,7 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
 
     Respond ONLY with a valid JSON matching this schema:
     {
-      "intent": "NAVIGATE" | "ADD_TRANSACTION" | "ADD_BUDGET" | "ADD_LOAN" | "REPAY_LOAN" | "BUY_STOCK" | "SELL_STOCK" | "CREATE_NOTE" | "CREATE_TODO" | "UPDATE_TODO" | "DELETE_NOTE" | "DELETE_TODO" | "ANALYZE_STOCK" | "SEARCH_NEWS" | "CHAT",
+      "intent": "NAVIGATE" | "ADD_MONEY" | "WITHDRAW_MONEY" | "TRANSFER_MONEY" | "ADD_BUDGET" | "ADD_LOAN" | "REPAY_LOAN" | "BUY_STOCK" | "SELL_STOCK" | "CREATE_NOTE" | "CREATE_TODO" | "UPDATE_TODO" | "DELETE_NOTE" | "DELETE_TODO" | "ANALYZE_STOCK" | "SEARCH_NEWS" | "CHAT",
       "data": { ... },
       "confirmationRequired": boolean,
       "confirmationMessage": "Description of destructive action requiring user consent",
@@ -826,8 +1018,25 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
     }
 
     CRITICAL RULES:
-    1. If the user wants to delete records, overwrite records, or make bulk changes (e.g., "delete note X", "delete task Y", "delete all notes"), you MUST set "confirmationRequired" to true and write a clear, descriptive "confirmationMessage".
-    2. Do NOT output markdown formatting (no \`\`\`json). Return only the JSON object.
+    1. Wallet Action Rules:
+       - ADD_MONEY: Use this intent when the user wants to add, deposit, top up, increase, or save money into a specific wallet.
+         Keywords: add, deposit, top up, increase, save into.
+         Format data: { "walletName": "string", "amount": number, "description": "string" }
+         Do NOT infer transfers or deduct from other wallets. Only increase this wallet.
+       - WITHDRAW_MONEY: Use this intent when the user wants to withdraw, take out, spend, deduct, or remove money from a specific wallet.
+         Keywords: withdraw, take out, spend, deduct, remove.
+         Format data: { "walletName": "string", "amount": number, "description": "string" }
+         Do NOT infer transfers. Only decrease this wallet.
+       - TRANSFER_MONEY: Use this intent ONLY when the user explicitly asks to transfer, move, send, or shift money from one wallet to another.
+         Keywords: transfer, move, send, shift.
+         Format data: { "sourceWallet": "string", "destinationWallet": "string", "amount": number, "description": "string" }
+         Never assume/infer transfer actions unless explicitly requested with source and destination.
+       
+    2. Confirmation Rules:
+       - You MUST set "confirmationRequired" to true if the user wants to delete records, overwrite records, or make bulk changes (e.g., "delete note X", "delete task Y", "delete all notes").
+       - Read, Create, and Update actions do not require confirmation.
+
+    3. Do NOT output markdown formatting (no \`\`\`json). Return only the JSON object.
     
     --- CONTEXT ---
     ${contextInfo}
@@ -837,6 +1046,45 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       const responseText = await aiService.generate(provider, model, apiKey, text, systemInstruction);
       const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       const action = JSON.parse(cleanJson);
+
+      // Force confirmation for DELETE/Destructive actions
+      const isDeleteAction = ['DELETE_NOTE', 'DELETE_TODO'].includes(action.intent);
+      const isDestructive = action.intent?.includes('DELETE') || action.intent?.includes('REMOVE') || action.intent?.includes('CLEAR');
+      
+      if (isDeleteAction || isDestructive) {
+        action.confirmationRequired = true;
+        if (!action.confirmationMessage) {
+          action.confirmationMessage = `Are you sure you want to perform this destructive action (${action.intent})?`;
+        }
+      }
+
+      // Read current accounts for validation
+      let currentAccounts: Account[] = [];
+      if (mw) {
+        currentAccounts = [...mw.accounts];
+      } else {
+        const savedMW = localStorage.getItem('mw_data_main');
+        if (savedMW) {
+          try {
+            currentAccounts = JSON.parse(savedMW).accounts || [];
+          } catch {}
+        }
+      }
+
+      // Mandatory Validation Layer for Wallet Operations
+      if (['ADD_MONEY', 'WITHDRAW_MONEY', 'TRANSFER_MONEY'].includes(action.intent)) {
+        const validation = validateWalletOperation(action.intent, action.data, currentAccounts);
+        if (!validation.isValid) {
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: `⚠️ **Validation Error:** ${validation.error}\n\nPlease clarify your request.`,
+            isError: true
+          }]);
+          setIsProcessing(false);
+          return;
+        }
+      }
 
       // Check for Confirmation Required
       if (action.confirmationRequired) {
@@ -856,67 +1104,54 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
         return;
       }
 
-      // Handle custom routes: ANALYZE_STOCK
+      // Handle custom routes: ANALYZE_STOCK (Orchestrate AutoCount Engine)
       if (action.intent === 'ANALYZE_STOCK') {
         const symbol = action.data.symbol?.toUpperCase();
         if (!symbol) throw new Error("Stock symbol missing.");
 
-        const stockData = await stockService.getDetailedQuote(symbol);
-        const promptTemplate = await investSkillService.readPrompt('stock-eval');
+        // 1. Route to AutoCount app mode
+        setCurrentApp('autocount');
 
-        const financials = (stockData.valuationFields || {}) as any;
-        const revenueBillions = financials.revenueTtm ? (financials.revenueTtm / 1e9).toFixed(3) + 'B' : 'N/A';
-        const netIncomeBillions = financials.netIncomeTtm ? (financials.netIncomeTtm / 1e9).toFixed(3) + 'B' : 'N/A';
-        const fcfBillions = financials.obsFreeCashFlowTtm ? (financials.obsFreeCashFlowTtm / 1e9).toFixed(3) + 'B' : 'N/A';
-        const cashBillions = financials.cashAndEquivalents ? (financials.cashAndEquivalents / 1e9).toFixed(3) + 'B' : 'N/A';
-        const debtBillions = financials.totalDebt ? (financials.totalDebt / 1e9).toFixed(3) + 'B' : 'N/A';
-        const marketCapBillions = stockData.marketCap ? (stockData.marketCap / 1e9).toFixed(3) + 'B' : 'N/A';
+        // 2. Wait for AutoCount to initialize
+        const getAutoCount = () => (window as any).__apptify_autocount;
+        const waitForAutoCount = () => {
+          return new Promise<any>((resolve, reject) => {
+            let attempts = 0;
+            const interval = setInterval(() => {
+              const ac = getAutoCount();
+              if (ac) {
+                clearInterval(interval);
+                resolve(ac);
+              } else {
+                attempts++;
+                if (attempts > 50) {
+                  clearInterval(interval);
+                  reject(new Error("AutoCount engine failed to initialize."));
+                }
+              }
+            }, 100);
+          });
+        };
 
-        const financialContext = `
-Ticker: ${stockData.symbol}
-Current Price: $${stockData.price}
-Market Cap: $${marketCapBillions}
-TTM Revenue: $${revenueBillions}
-TTM Net Income: $${netIncomeBillions}
-TTM Free Cash Flow: $${fcfBillions}
-Cash & Equivalents: $${cashBillions}
-Total Debt: $${debtBillions}
-Volume Signal: ${stockData.volumeSignal}
-`;
+        const autocount = await waitForAutoCount();
+        autocount.setSymbol(symbol);
 
-        const autoCountInstruction = `
-You are an equity research assistant. Adhere strictly to stock valuation instructions.
-At the very end of your response, you MUST include this INVESTMENT SIGNAL block exactly:
-╔══════════════════════════════════════════════╗
-║              INVESTMENT SIGNAL               ║
-╠══════════════════════════════════════════════╣
-║ Signal:      BULLISH / NEUTRAL / BEARISH     ║
-║ Confidence:  HIGH / MEDIUM / LOW             ║
-║ Horizon:     SHORT / MEDIUM / LONG-TERM      ║
-║ Score:       X.X / 10                        ║
-╠══════════════════════════════════════════════╣
-║ Action:      BUY / HOLD / SELL               ║
-║ Conviction:  STRONG / MODERATE / WEAK        ║
-╚══════════════════════════════════════════════╝
-`;
-        const analysisPrompt = `
-Selected framework:
-${promptTemplate}
+        // 3. Search and Run framework analysis inside AutoCount
+        const searchResult = await autocount.handleSearch(symbol);
+        const analysisResult = await autocount.handleRunAnalysis(searchResult);
 
-Financial stats:
-${financialContext}
-`;
-        const reportResponse = await aiService.generate(provider, model, apiKey, analysisPrompt, autoCountInstruction);
-        const parsedSignal = investSkillService.parseInvestmentSignal(reportResponse);
+        if (!analysisResult) {
+          throw new Error("Analysis failed to run.");
+        }
 
         setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `Stock analysis completed for ${symbol}. Here is the summary:`,
+          content: `Stock analysis completed for ${symbol} using AutoCount. Here is the summary:`,
           stockAnalysis: {
             symbol,
-            signal: parsedSignal,
-            report: reportResponse
+            signal: analysisResult.signal,
+            report: analysisResult.report
           }
         }]);
         setIsProcessing(false);
