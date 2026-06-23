@@ -6,6 +6,8 @@ import { aiService } from '../services/aiService';
 import { stockService } from '../services/stockService';
 import { investSkillService, InvestmentSignal } from '../services/investSkillService';
 import { Account, Expense, Loan, Stock, MonthlyData } from '../types';
+import { skillRegistry } from '../services/skillRegistry';
+import { videoSummarySkillService } from '../services/videoSummarySkillService';
 
 interface ValidationResult {
   isValid: boolean;
@@ -79,12 +81,219 @@ interface Message {
     signal: InvestmentSignal;
     report: string;
   };
+  videoSummary?: {
+    url: string;
+    title: string;
+    markdown: string;
+  };
   pendingAction?: {
     intent: string;
     data: any;
     message: string;
   };
 }
+
+interface VideoSummaryWidgetProps {
+  summary: {
+    url: string;
+    title: string;
+    markdown: string;
+  };
+  onSaveSuccess: (msg: string) => void;
+  onSaveError: (msg: string) => void;
+}
+
+const VideoSummaryWidget: React.FC<VideoSummaryWidgetProps> = ({ summary, onSaveSuccess, onSaveError }) => {
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const kv = (window as any).__apptify_knowledgevault;
+  const hasObsidian = !!(kv && kv.vaultPath);
+
+  // Extract excerpt and tags
+  const summaryMatch = summary.markdown.match(/## Executive Summary\r?\n([\s\S]+?)(?:\r?\n##|$)/);
+  const excerpt = summaryMatch ? summaryMatch[1].trim() : (summary.markdown.slice(0, 200) + '...');
+  
+  const tagsMatch = summary.markdown.match(/Tags:\r?\n([^\r\n]+)/i);
+  const tags = tagsMatch ? tagsMatch[1].split(/\s+/).map((t: string) => t.trim()).filter(Boolean) : [];
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (hasObsidian) {
+        // Save to local Obsidian Vault
+        await videoSummarySkillService.saveToVault(
+          kv.vaultPath,
+          summary.title,
+          summary.markdown,
+          'Video Summary'
+        );
+        // Reload notes in KnowledgeVault state
+        const res = await fetch('/api/obsidian/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vaultPath: kv.vaultPath })
+        });
+        const data = await res.json();
+        if (res.ok && data.notes && kv.setNotes) {
+          kv.setNotes(data.notes);
+        }
+        setSaved(true);
+        onSaveSuccess(`Saved video summary "${summary.title}" to Obsidian vault successfully!`);
+      } else {
+        // Fallback to internal Storage / Supabase
+        let notes: any[] = [];
+        let todos: any[] = [];
+
+        if (kv) {
+          notes = [...kv.notes];
+          todos = [...kv.todos];
+        } else {
+          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
+          todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
+        }
+
+        const exists = notes.some(n => n.title === summary.title);
+        if (exists) {
+          throw new Error(`A note with the title "${summary.title}" already exists.`);
+        }
+
+        const newNote = {
+          id: Date.now().toString(),
+          title: summary.title,
+          content: summary.markdown,
+          date: new Date().toISOString(),
+          ai_category: 'Video Summary',
+          ai_processed: true,
+          ai_summary: excerpt.slice(0, 150),
+          ai_keywords: tags.map(t => t.replace(/^#/, ''))
+        };
+
+        notes = [newNote, ...notes];
+
+        if (kv) {
+          kv.setNotes(notes);
+        } else {
+          localStorage.setItem('gn_notes', JSON.stringify(notes));
+          localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
+        }
+        setSaved(true);
+        onSaveSuccess(`Saved video summary "${summary.title}" to local Knowledge Vault!`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      onSaveError(err.message || "Failed to save summary.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/40 space-y-4">
+      <div className="border-b border-gray-300/40 pb-2">
+        <p className="font-extrabold text-indigo-600 text-sm">YouTube Summary Widget</p>
+        <p className="text-xs text-gray-500 line-clamp-1">{summary.title}</p>
+      </div>
+
+      <div className="p-3 rounded-xl bg-[#E0E5EC] shadow-clay-btn text-xs text-gray-700 italic space-y-1">
+        <span className="font-extrabold text-gray-500 block uppercase text-[9px]">Excerpt</span>
+        <p className="line-clamp-3 leading-relaxed">{excerpt}</p>
+      </div>
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {tags.map((tag, idx) => (
+            <span key={idx} className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-bold">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={isSaving || saved}
+        className={`w-full py-2.5 rounded-xl text-white font-bold text-xs transition flex items-center justify-center gap-1.5 ${
+          saved
+            ? 'bg-green-500 shadow-none cursor-default'
+            : isSaving
+              ? 'bg-indigo-400 cursor-wait'
+              : 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
+        }`}
+      >
+        {saved ? (
+          <>
+            <Check size={14} /> Saved to {hasObsidian ? 'Obsidian' : 'Knowledge Vault'}
+          </>
+        ) : isSaving ? (
+          <>
+            <RefreshCw size={14} className="animate-spin" /> Saving...
+          </>
+        ) : (
+          <>
+            <FileText size={14} /> Save to {hasObsidian ? 'Obsidian Vault' : 'Knowledge Vault'}
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
+
+const buildSystemInstruction = (skills: any[], contextInfo: string) => {
+  const intentsList = skills.flatMap(s => Object.keys(s.intents));
+  
+  let skillsDoc = '';
+  skills.forEach(skill => {
+    skillsDoc += `### Skill: ${skill.name} (${skill.id})\nDescription: ${skill.description}\n`;
+    Object.entries(skill.intents).forEach(([intentName, intentDef]: [string, any]) => {
+      skillsDoc += `- **Intent**: ${intentName}\n  Description: ${intentDef.description}\n  Parameters:\n`;
+      Object.entries(intentDef.parameters).forEach(([paramName, paramDef]: [string, any]) => {
+        skillsDoc += `    * \`${paramName}\` (${paramDef.type}): ${paramDef.description}${paramDef.required ? ' (Required)' : ''}\n`;
+      });
+      if (intentDef.examples && intentDef.examples.length > 0) {
+        skillsDoc += `  Examples:\n`;
+        intentDef.examples.forEach((ex: string) => {
+          skillsDoc += `    * "${ex}"\n`;
+        });
+      }
+    });
+    skillsDoc += `\n`;
+  });
+
+  return `You are "Ask Apptify", the system-wide intelligent command layer and Personal Operating System assistant for the Apptify platform.
+Your focus is execution first, chat second. Parse instructions into structural actions based on the available skills registry.
+
+Respond ONLY with a valid JSON matching this schema:
+{
+  "intent": ${intentsList.map(i => `"${i}"`).join(' | ')} | "CHAT",
+  "data": { ... },
+  "confirmationRequired": boolean,
+  "confirmationMessage": "Description of destructive action requiring user consent",
+  "message": "Assistant conversational response"
+}
+
+### AVAILABLE SKILLS & INTENTS REGISTERED:
+${skillsDoc}
+
+CRITICAL RULES:
+1. Wallet Action Rules:
+   - ADD_MONEY: Use this intent when the user wants to add, deposit, top up, increase, or save money into a specific wallet.
+     Do NOT infer transfers or deduct from other wallets. Only increase this wallet.
+   - WITHDRAW_MONEY: Use this intent when the user wants to withdraw, take out, spend, deduct, or remove money from a specific wallet.
+     Do NOT infer transfers. Only decrease this wallet.
+   - TRANSFER_MONEY: Use this intent ONLY when the user explicitly asks to transfer, move, send, or shift money from one wallet to another.
+     Never assume/infer transfer actions unless explicitly requested with source and destination.
+   
+2. Confirmation Rules:
+   - You MUST set "confirmationRequired" to true if the user wants to delete records, overwrite records, or make bulk changes (e.g., "delete note X", "delete task Y", "delete all notes").
+   - Read, Create, and Update actions do not require confirmation.
+
+3. Do NOT output markdown formatting (no \`\`\`json). Return only the JSON object.
+
+--- CONTEXT ---
+${contextInfo}
+`;
+};
 
 const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) => {
   const { session, user } = useAuth();
@@ -279,25 +488,39 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
   // --- State Execution Action ---
   const executeAction = async (intent: string, data: any): Promise<string> => {
     const mw = (window as any).__apptify_mywealth;
-    const gn = (window as any).__apptify_getnote;
+    const kv = (window as any).__apptify_knowledgevault;
 
     // 1. NAVIGATE
     if (intent === 'NAVIGATE') {
-      const target = data.target?.toLowerCase() || '';
-      const tabMap: any = { wallet: 'accounts', budget: 'budget', loan: 'loans', portfolio: 'investments', overview: 'dashboard' };
+      let target = data.target?.toLowerCase() || '';
+      if (target === 'getnote' || target === 'notes' || target === 'notebook' || target === 'secondbrain') {
+        target = 'knowledgevault';
+      }
+
+      const mwTabMap: any = { wallet: 'accounts', budget: 'budget', loan: 'loans', portfolio: 'investments', overview: 'dashboard' };
+      const kvTabMap: any = { note: 'notes', notes: 'notes', video: 'video', videosummary: 'video', todo: 'todo', todos: 'todo', task: 'todo', tasks: 'todo', focus: 'focus' };
       
-      if (['mywealth', 'getnote', 'settings', 'autocount', 'newshub', 'launcher'].includes(target)) {
-        setCurrentApp(target === 'launcher' ? 'launcher' : target);
+      if (['mywealth', 'knowledgevault', 'settings', 'autocount', 'newshub', 'launcher'].includes(target)) {
+        setCurrentApp(target === 'launcher' ? 'launcher' : (target as any));
         return `Navigated to ${data.target}.`;
-      } else if (tabMap[target]) {
+      } else if (mwTabMap[target]) {
         setCurrentApp('mywealth');
         setTimeout(() => {
           const freshMw = (window as any).__apptify_mywealth;
           if (freshMw) {
-            freshMw.setActiveTab(tabMap[target]);
+            freshMw.setActiveTab(mwTabMap[target]);
           }
         }, 150);
         return `Navigated My Wealth to ${data.target}.`;
+      } else if (kvTabMap[target]) {
+        setCurrentApp('knowledgevault');
+        setTimeout(() => {
+          const freshKv = (window as any).__apptify_knowledgevault;
+          if (freshKv) {
+            freshKv.setActiveTab(kvTabMap[target]);
+          }
+        }, 150);
+        return `Navigated Knowledge Vault to ${data.target}.`;
       }
       return `Target ${data.target} not recognized.`;
     }
@@ -798,40 +1021,67 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
 
     // 7. CREATE_NOTE
     if (intent === 'CREATE_NOTE') {
-      const { title, content, category } = data;
+      const { title, content, category, tags } = data;
       let notes: any[] = [];
       let todos: any[] = [];
 
-      if (gn) {
-        notes = [...gn.notes];
-        todos = [...gn.todos];
+      if (kv && kv.vaultPath) {
+        // Obsidian flow
+        const res = await fetch('/api/obsidian/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vaultPath: kv.vaultPath,
+            title: title || 'New Note',
+            content: content || '',
+            category: category || 'General',
+            keywords: tags || [category || 'General'],
+            summary: (content || '').slice(0, 100),
+            date: new Date().toISOString()
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to create Obsidian note');
+        }
+        const resData = await res.json();
+        if (kv.setNotes) {
+          kv.setNotes((prev: any[]) => [resData.note, ...prev]);
+        }
+        return `Created Obsidian Note: "${resData.note.title}" under category "${resData.note.ai_category}".`;
       } else {
-        notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-        todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
+        // Standard flow
+        if (kv) {
+          notes = [...kv.notes];
+          todos = [...kv.todos];
+        } else {
+          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
+          todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
+        }
+
+        const newNote = {
+          id: Date.now().toString(),
+          title: title || 'New Note',
+          content: content || '',
+          date: new Date().toISOString(),
+          ai_category: category || 'General',
+          ai_processed: true,
+          ai_summary: (content || '').slice(0, 100),
+          ai_keywords: tags || [category || 'General']
+        };
+
+        notes = [newNote, ...notes];
+
+        if (kv) {
+          kv.setNotes(notes);
+        } else {
+          localStorage.setItem('gn_notes', JSON.stringify(notes));
+          localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
+          await syncGetNoteToCloud(notes, todos);
+        }
+
+        return `Created Note: "${newNote.title}" under category "${newNote.ai_category}".`;
       }
-
-      const newNote = {
-        id: Date.now().toString(),
-        title: title || 'New Note',
-        content: content || '',
-        date: new Date().toISOString(),
-        ai_category: category || 'General',
-        ai_processed: true,
-        ai_summary: (content || '').slice(0, 100),
-        ai_keywords: [category || 'General']
-      };
-
-      notes = [newNote, ...notes];
-
-      if (gn) {
-        gn.setNotes(notes);
-      } else {
-        localStorage.setItem('gn_notes', JSON.stringify(notes));
-        localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-        await syncGetNoteToCloud(notes, todos);
-      }
-
-      return `Created Note: "${newNote.title}" under category "${newNote.ai_category}".`;
     }
 
     // 8. CREATE_TODO
@@ -840,9 +1090,9 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       let notes: any[] = [];
       let todos: any[] = [];
 
-      if (gn) {
-        notes = [...gn.notes];
-        todos = [...gn.todos];
+      if (kv) {
+        notes = [...kv.notes];
+        todos = [...kv.todos];
       } else {
         notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
         todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
@@ -858,8 +1108,8 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
 
       todos = [newTodo, ...todos];
 
-      if (gn) {
-        gn.setTodos(todos);
+      if (kv) {
+        kv.setTodos(todos);
       } else {
         localStorage.setItem('gn_todos', JSON.stringify(todos));
         localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
@@ -875,9 +1125,9 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       let notes: any[] = [];
       let todos: any[] = [];
 
-      if (gn) {
-        notes = [...gn.notes];
-        todos = [...gn.todos];
+      if (kv) {
+        notes = [...kv.notes];
+        todos = [...kv.todos];
       } else {
         notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
         todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
@@ -889,8 +1139,8 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       targetTask.completed = completed;
       targetTask.completedAt = completed ? new Date().toISOString() : undefined;
 
-      if (gn) {
-        gn.setTodos([...todos]);
+      if (kv) {
+        kv.setTodos([...todos]);
       } else {
         localStorage.setItem('gn_todos', JSON.stringify(todos));
         localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
@@ -906,28 +1156,53 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       let notes: any[] = [];
       let todos: any[] = [];
 
-      if (gn) {
-        notes = [...gn.notes];
-        todos = [...gn.todos];
+      if (kv && kv.vaultPath) {
+        // Obsidian flow
+        let noteToDelete = kv.notes.find((n: any) => n.id === id || n.title.toLowerCase() === title?.toLowerCase());
+        if (!noteToDelete) {
+          return `I couldn't find any note matching title "${title || id}".`;
+        }
+        const res = await fetch('/api/obsidian/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vaultPath: kv.vaultPath,
+            id: noteToDelete.id
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to delete Obsidian note');
+        }
+        if (kv.setNotes) {
+          kv.setNotes((prev: any[]) => prev.filter(n => n.id !== noteToDelete.id));
+        }
+        return `Deleted Obsidian note: "${noteToDelete.title}".`;
       } else {
-        notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-        todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
+        // Standard flow
+        if (kv) {
+          notes = [...kv.notes];
+          todos = [...kv.todos];
+        } else {
+          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
+          todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
+        }
+
+        const beforeLen = notes.length;
+        notes = notes.filter(n => n.id !== id && n.title.toLowerCase() !== title?.toLowerCase());
+        
+        if (notes.length === beforeLen) return `I couldn't find any note matching ID "${id}" or title "${title}".`;
+
+        if (kv) {
+          kv.setNotes(notes);
+        } else {
+          localStorage.setItem('gn_notes', JSON.stringify(notes));
+          localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
+          await syncGetNoteToCloud(notes, todos);
+        }
+
+        return `Deleted note: "${title || id}".`;
       }
-
-      const beforeLen = notes.length;
-      notes = notes.filter(n => n.id !== id && n.title.toLowerCase() !== title?.toLowerCase());
-      
-      if (notes.length === beforeLen) return `I couldn't find any note matching ID "${id}" or title "${title}".`;
-
-      if (gn) {
-        gn.setNotes(notes);
-      } else {
-        localStorage.setItem('gn_notes', JSON.stringify(notes));
-        localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-        await syncGetNoteToCloud(notes, todos);
-      }
-
-      return `Deleted note: "${title || id}".`;
     }
 
     // 11. DELETE_TODO
@@ -936,9 +1211,9 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       let notes: any[] = [];
       let todos: any[] = [];
 
-      if (gn) {
-        notes = [...gn.notes];
-        todos = [...gn.todos];
+      if (kv) {
+        notes = [...kv.notes];
+        todos = [...kv.todos];
       } else {
         notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
         todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
@@ -949,8 +1224,8 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
 
       if (todos.length === beforeLen) return `I couldn't find any task matching ID "${id}" or title "${title}".`;
 
-      if (gn) {
-        gn.setTodos(todos);
+      if (kv) {
+        kv.setTodos(todos);
       } else {
         localStorage.setItem('gn_todos', JSON.stringify(todos));
         localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
@@ -990,57 +1265,21 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
 
     // Read context
     const mw = (window as any).__apptify_mywealth;
-    const gn = (window as any).__apptify_getnote;
+    const kv = (window as any).__apptify_knowledgevault;
     
     const contextInfo = `
     CURRENT STATE & CONTEXT:
     Active Module: ${currentApp}
-    Active Sub-tab: ${currentApp === 'mywealth' && mw ? mw.activeTab : currentApp === 'getnote' && gn ? gn.activeTab : 'None'}
+    Active Sub-tab: ${currentApp === 'mywealth' && mw ? mw.activeTab : currentApp === 'knowledgevault' && kv ? kv.activeTab : 'None'}
     
     EXISITING DATABASE:
     My Wealth Wallets: ${mw ? JSON.stringify(mw.accounts.map((a: any) => ({ name: a.name, balance: a.balance }))) : localStorage.getItem('mw_data_main') || '[]'}
     My Wealth Stocks: ${mw ? JSON.stringify(mw.stocks.map((s: any) => s.symbol)) : '[]'}
-    GetNote Todos: ${gn ? JSON.stringify(gn.todos.filter((t: any) => !t.completed).map((t: any) => t.title)) : '[]'}
-    GetNote Notes: ${gn ? JSON.stringify(gn.notes.map((n: any) => ({ id: n.id, title: n.title }))) : '[]'}
+    Knowledge Vault Todos: ${kv ? JSON.stringify(kv.todos.filter((t: any) => !t.completed).map((t: any) => t.title)) : localStorage.getItem('gn_todos') ? JSON.stringify(JSON.parse(localStorage.getItem('gn_todos') || '[]').filter((t: any) => !t.completed).map((t: any) => t.title)) : '[]'}
+    Knowledge Vault Notes: ${kv ? JSON.stringify(kv.notes.map((n: any) => ({ id: n.id, title: n.title }))) : localStorage.getItem('gn_notes') ? JSON.stringify(JSON.parse(localStorage.getItem('gn_notes') || '[]').map((n: any) => ({ id: n.id, title: n.title }))) : '[]'}
     `;
 
-    const systemInstruction = `
-    You are "Ask Apptify", the system-wide intelligent command layer and Personal Operating System assistant for the Apptify platform.
-    Your focus is execution first, chat second. Parse instructions into structural actions.
-
-    Respond ONLY with a valid JSON matching this schema:
-    {
-      "intent": "NAVIGATE" | "ADD_MONEY" | "WITHDRAW_MONEY" | "TRANSFER_MONEY" | "ADD_BUDGET" | "ADD_LOAN" | "REPAY_LOAN" | "BUY_STOCK" | "SELL_STOCK" | "CREATE_NOTE" | "CREATE_TODO" | "UPDATE_TODO" | "DELETE_NOTE" | "DELETE_TODO" | "ANALYZE_STOCK" | "SEARCH_NEWS" | "CHAT",
-      "data": { ... },
-      "confirmationRequired": boolean,
-      "confirmationMessage": "Description of destructive action requiring user consent",
-      "message": "Assistant conversational response"
-    }
-
-    CRITICAL RULES:
-    1. Wallet Action Rules:
-       - ADD_MONEY: Use this intent when the user wants to add, deposit, top up, increase, or save money into a specific wallet.
-         Keywords: add, deposit, top up, increase, save into.
-         Format data: { "walletName": "string", "amount": number, "description": "string" }
-         Do NOT infer transfers or deduct from other wallets. Only increase this wallet.
-       - WITHDRAW_MONEY: Use this intent when the user wants to withdraw, take out, spend, deduct, or remove money from a specific wallet.
-         Keywords: withdraw, take out, spend, deduct, remove.
-         Format data: { "walletName": "string", "amount": number, "description": "string" }
-         Do NOT infer transfers. Only decrease this wallet.
-       - TRANSFER_MONEY: Use this intent ONLY when the user explicitly asks to transfer, move, send, or shift money from one wallet to another.
-         Keywords: transfer, move, send, shift.
-         Format data: { "sourceWallet": "string", "destinationWallet": "string", "amount": number, "description": "string" }
-         Never assume/infer transfer actions unless explicitly requested with source and destination.
-       
-    2. Confirmation Rules:
-       - You MUST set "confirmationRequired" to true if the user wants to delete records, overwrite records, or make bulk changes (e.g., "delete note X", "delete task Y", "delete all notes").
-       - Read, Create, and Update actions do not require confirmation.
-
-    3. Do NOT output markdown formatting (no \`\`\`json). Return only the JSON object.
-    
-    --- CONTEXT ---
-    ${contextInfo}
-    `;
+    const systemInstruction = buildSystemInstruction(skillRegistry, contextInfo);
 
     try {
       const responseText = await aiService.generate(provider, model, apiKey, text, systemInstruction);
@@ -1100,6 +1339,120 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
         };
         setPendingConfirm(confirmMsg.pendingAction || null);
         setMessages(prev => [...prev, confirmMsg]);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Handle custom routes: SUMMARIZE_VIDEO
+      if (action.intent === 'SUMMARIZE_VIDEO') {
+        const url = action.data.url;
+        if (!url) throw new Error("YouTube video URL is missing.");
+
+        const summaryResult = await videoSummarySkillService.generateSummary(url, provider, model, apiKey);
+        
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `Successfully generated summary for YouTube video: **${summaryResult.title}**`,
+          videoSummary: {
+            url,
+            title: summaryResult.title,
+            markdown: summaryResult.markdown
+          }
+        }]);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Handle custom routes: SEARCH_NOTES
+      if (action.intent === 'SEARCH_NOTES') {
+        const query = action.data.query;
+        if (!query) throw new Error("Search query is missing.");
+
+        let notes: any[] = [];
+        if (kv) {
+          notes = kv.notes;
+        } else {
+          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
+        }
+
+        if (notes.length === 0) {
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: `You don't have any notes in your Knowledge Vault to search yet.`
+          }]);
+          setIsProcessing(false);
+          return;
+        }
+
+        const queryTokens = query.toLowerCase().split(/\s+/).filter((t: string) => t.length > 1);
+        const scored = notes.map(note => {
+          let score = 0;
+          const title = (note.title || '').toLowerCase();
+          const content = (note.content || '').toLowerCase();
+          const category = (note.ai_category || '').toLowerCase();
+          const keywords = (note.ai_keywords || []).map((k: string) => k.toLowerCase());
+
+          if (queryTokens.length === 0) {
+            if (title.includes(query.toLowerCase())) score += 10;
+            if (content.includes(query.toLowerCase())) score += 3;
+          } else {
+            queryTokens.forEach(token => {
+              if (title.includes(token)) score += 10;
+              if (category.includes(token)) score += 8;
+              keywords.forEach((keyword: string) => {
+                if (keyword.includes(token) || token.includes(keyword)) {
+                  score += 6;
+                }
+              });
+              if (content.includes(token)) score += 3;
+            });
+          }
+          return { note, score };
+        });
+
+        const matchedNotes = scored
+          .filter(item => item.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .map(item => item.note)
+          .slice(0, 5);
+
+        if (matchedNotes.length === 0) {
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: `No notes matched the query "${query}" in your vault.`
+          }]);
+          setIsProcessing(false);
+          return;
+        }
+
+        let retrievedNotesContext = "";
+        matchedNotes.forEach(n => {
+          retrievedNotesContext += `Title: ${n.title || 'Untitled'}\n`;
+          if (n.ai_category) retrievedNotesContext += `Category: ${n.ai_category}\n`;
+          if (n.ai_summary) retrievedNotesContext += `Summary: ${n.ai_summary}\n`;
+          if (n.ai_keywords && n.ai_keywords.length > 0) retrievedNotesContext += `Keywords: ${n.ai_keywords.join(', ')}\n`;
+          retrievedNotesContext += `Content: ${n.content || '(Empty)'}\n`;
+          retrievedNotesContext += `----------------------------------------\n\n`;
+        });
+
+        const systemPrompt = `You are an AI Knowledge Assistant.
+Analyze the following notes from the user's personal knowledge vault and synthesize a comprehensive answer to their query: "${query}".
+
+If the notes don't contain enough information, explain that.
+
+Format your response in a clear and readable manner. Cite the note titles you used to answer the query.`;
+
+        const userPrompt = `Notes Context:\n${retrievedNotesContext}\n\nUser Question: ${query}`;
+        const synthesis = await aiService.generate(provider, model, apiKey, userPrompt, systemPrompt);
+
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: synthesis
+        }]);
         setIsProcessing(false);
         return;
       }
@@ -1433,6 +1786,28 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
                       <FileText size={14} /> Export HTML Research Report
                     </button>
                   </div>
+                )}
+
+                {/* Video Summary Card Widget */}
+                {msg.videoSummary && (
+                  <VideoSummaryWidget
+                    summary={msg.videoSummary}
+                    onSaveSuccess={(successMsg) => {
+                      setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'assistant',
+                        content: `✅ ${successMsg}`
+                      }]);
+                    }}
+                    onSaveError={(errorMsg) => {
+                      setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'assistant',
+                        content: `❌ ${errorMsg}`,
+                        isError: true
+                      }]);
+                    }}
+                  />
                 )}
 
                 {/* Pending Confirmation Buttons */}

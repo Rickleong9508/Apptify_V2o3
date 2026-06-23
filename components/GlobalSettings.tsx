@@ -38,6 +38,11 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     const [checkStatus, setCheckStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
     const [statusMsg, setStatusMsg] = useState('');
 
+    // --- Obsidian Integration State ---
+    const [obsidianPath, setObsidianPath] = useState(() => localStorage.getItem('app_obsidian_vault_path') || '');
+    const [obsidianStatus, setObsidianStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
+    const [obsidianStatusMsg, setObsidianStatusMsg] = useState('');
+
     // --- Backup State ---
     const [fileInput, setFileInput] = useState<HTMLInputElement | null>(null);
 
@@ -45,6 +50,30 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     useEffect(() => { localStorage.setItem('app_global_ai_provider', aiProvider); }, [aiProvider]);
     useEffect(() => { localStorage.setItem('app_global_api_key', apiKey); }, [apiKey]);
     useEffect(() => { localStorage.setItem('app_global_ai_model', aiModel); }, [aiModel]);
+    useEffect(() => { localStorage.setItem('app_obsidian_vault_path', obsidianPath); }, [obsidianPath]);
+
+    const checkObsidianConnection = async () => {
+        if (!obsidianPath.trim()) return;
+        setObsidianStatus('checking');
+        setObsidianStatusMsg('Verifying directory access...');
+        try {
+            const res = await fetch('/api/obsidian/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vaultPath: obsidianPath })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setObsidianStatus('success');
+                setObsidianStatusMsg('Successfully connected to local Obsidian vault.');
+            } else {
+                throw new Error(data.error || 'Failed to verify folder.');
+            }
+        } catch (e: any) {
+            setObsidianStatus('error');
+            setObsidianStatusMsg(e.message || 'Verification failed. Make sure path is correct & writeable.');
+        }
+    };
 
     // Reset model defaults when provider changes
     useEffect(() => {
@@ -470,6 +499,80 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+
+                {/* Obsidian Vault Integration Card */}
+                <div
+                    className="p-8 rounded-[32px] animate-scale-in opacity-0"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                        animationDelay: '150ms'
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-8">
+                        <div
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-emerald-600"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            }}
+                        >
+                            <HardDrive size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-700">Obsidian Knowledge Vault</h2>
+                            <p className="text-sm text-gray-500 font-medium">Connect your local Obsidian Vault folder</p>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">
+                            Obsidian Vault Path (Absolute Path)
+                        </label>
+                        <div className="flex gap-4">
+                            <input
+                                type="text"
+                                value={obsidianPath}
+                                onChange={(e) => {
+                                    setObsidianPath(e.target.value);
+                                    setObsidianStatus('idle');
+                                    setObsidianStatusMsg('');
+                                }}
+                                placeholder="/Users/username/Obsidian/MyVault"
+                                className="flex-1 p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                style={{
+                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                }}
+                            />
+                            <button
+                                onClick={checkObsidianConnection}
+                                disabled={!obsidianPath || obsidianStatus === 'checking'}
+                                className={`px-6 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 active:scale-95 ${
+                                    obsidianStatus === 'success' ? 'text-green-500' : obsidianStatus === 'error' ? 'text-red-500' : 'text-gray-600'
+                                }`}
+                                style={{
+                                    background: "#E0E5EC",
+                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                }}
+                            >
+                                {obsidianStatus === 'checking' ? <Activity className="animate-spin" size={18} /> :
+                                    obsidianStatus === 'success' ? <Check size={18} /> :
+                                        obsidianStatus === 'error' ? <AlertCircle size={18} /> :
+                                            "Verify"}
+                            </button>
+                        </div>
+                        {obsidianStatusMsg && (
+                            <p className={`text-xs font-bold mt-3 pl-2 ${
+                                obsidianStatus === 'success' ? 'text-green-600' : obsidianStatus === 'error' ? 'text-red-600' : 'text-gray-400'
+                            }`}>
+                                {obsidianStatusMsg}
+                            </p>
+                        )}
+                        <p className="text-[10px] text-gray-400 font-bold mt-2 ml-2 tracking-wide leading-relaxed">
+                            💡 Enter the absolute folder path to your local Obsidian vault directory. The Apptify server will read/write markdown notes directly in this folder. Leaves blank to fallback to internal Supabase storage.
+                        </p>
                     </div>
                 </div>
 

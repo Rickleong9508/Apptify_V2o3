@@ -44,13 +44,14 @@ import {
     MoreHorizontal,
     Languages,
     ExternalLink,
-    RefreshCw
+    RefreshCw,
+    Loader2
 } from 'lucide-react';
 import { aiService, AIProvider } from '../services/aiService';
 import { useAuth } from './AuthProvider'; // New
 import { supabase } from '../services/supabaseClient'; // New
 
-interface GetNoteProps {
+interface KnowledgeVaultProps {
     onExit: () => void;
 }
 
@@ -192,8 +193,9 @@ interface Window {
 }
 
 // --- Main Component ---
-const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
-    const [activeTab, setActiveTab] = useState<'notes' | 'todo' | 'focus'>('notes');
+const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
+    const [activeTab, setActiveTab] = useState<'notes' | 'todo' | 'focus' | 'video'>('notes');
+    const vaultPath = localStorage.getItem('app_obsidian_vault_path') || '';
 
     // --- States ---
     const [notes, setNotes] = useState<Note[]>(() => {
@@ -297,55 +299,79 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
     const [showSyncSuccess, setShowSyncSuccess] = useState(false);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-    // --- Load Data (Local then Cloud) ---
-    // --- Load Data (Local then Cloud) ---
+    // --- Load Data (Local then Cloud / Obsidian) ---
     const fetchData = async () => {
         setIsDataLoaded(false);
-        // 1. Load Local
-        const savedNotes = localStorage.getItem('gn_notes');
+        
+        // 1. Load Todos from Local first
         const savedTodos = localStorage.getItem('gn_todos');
-        let localTime = 0;
-
-        if (savedNotes) setNotes(JSON.parse(savedNotes));
         if (savedTodos) setTodos(JSON.parse(savedTodos));
 
-        // Try to find local timestamp if we stored it
-        const savedMeta = localStorage.getItem('gn_meta');
-        if (savedMeta) {
-            localTime = new Date(JSON.parse(savedMeta).lastUpdated).getTime();
-        }
-
-        // 2. Sync Cloud if Logged In
-        if (session && user) {
+        if (vaultPath) {
+            // Load from Obsidian local vault
             setIsSyncing(true);
             try {
-                const { data, error } = await supabase
-                    .from('user_data')
-                    .select('data, updated_at')
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (data && data.data && data.data.getnote) {
-                    const cloudApp = data.data.getnote;
-                    const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
-
-                    console.log(`Sync Check - Local: ${localTime}, Cloud: ${cloudTime}`);
-
-                    if (cloudTime > localTime) {
-                        console.log("Sync: Cloud (GetNote) is newer, applying...");
-                        setNotes(cloudApp.notes || []);
-                        setTodos(cloudApp.todos || []);
-
-                        // Update local storage to match cloud state immediately
-                        localStorage.setItem('gn_notes', JSON.stringify(cloudApp.notes || []));
-                        localStorage.setItem('gn_todos', JSON.stringify(cloudApp.todos || []));
-                        localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date(cloudTime).toISOString() }));
-                    }
+                const res = await fetch('/api/obsidian/notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vaultPath })
+                });
+                const data = await res.json();
+                if (res.ok && data.notes) {
+                    setNotes(data.notes);
+                } else {
+                    console.error("Obsidian load error:", data.error);
                 }
             } catch (err) {
-                console.error("Sync error:", err);
+                console.error("Failed to fetch Obsidian notes:", err);
             } finally {
                 setIsSyncing(false);
+            }
+        } else {
+            // Standard LocalStorage + Supabase flow
+            const savedNotes = localStorage.getItem('gn_notes');
+            let localTime = 0;
+
+            if (savedNotes) setNotes(JSON.parse(savedNotes));
+
+            // Try to find local timestamp if we stored it
+            const savedMeta = localStorage.getItem('gn_meta');
+            if (savedMeta) {
+                localTime = new Date(JSON.parse(savedMeta).lastUpdated).getTime();
+            }
+
+            // 2. Sync Cloud if Logged In
+            if (session && user) {
+                setIsSyncing(true);
+                try {
+                    const { data, error } = await supabase
+                        .from('user_data')
+                        .select('data, updated_at')
+                        .eq('user_id', user.id)
+                        .single();
+
+                    if (data && data.data && data.data.getnote) {
+                        const cloudApp = data.data.getnote;
+                        const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
+
+                        console.log(`Sync Check - Local: ${localTime}, Cloud: ${cloudTime}`);
+
+                        if (cloudTime > localTime) {
+                            console.log("Sync: Cloud (GetNote) is newer, applying...");
+                            setNotes(cloudApp.notes || []);
+                            setTodos(cloudApp.todos || []);
+
+                            // Update local storage to match cloud state immediately
+                            localStorage.setItem('gn_notes', JSON.stringify(cloudApp.notes || []));
+                            localStorage.setItem('gn_todos', JSON.stringify(cloudApp.todos || []));
+                            localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date(cloudTime).toISOString() }));
+                        }
+                    }
+                } catch (err) {
+                    console.error("Sync error:", err);
+                } finally {
+                    setIsSyncing(false);
+                }
             }
         }
         setIsDataLoaded(true);
@@ -353,15 +379,15 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
 
     useEffect(() => {
         fetchData();
-    }, [session, user]);
+    }, [session, user, vaultPath]);
 
     const handleManualSync = () => {
         fetchData();
     };
 
-    // --- Realtime Sync Subscription ---
+    // --- Realtime Sync Subscription (Only for standard sync mode) ---
     useEffect(() => {
-        if (!user) return;
+        if (!user || vaultPath) return;
 
         const channel = supabase.channel(`getnote_sync_${user.id}`)
             .on(
@@ -387,7 +413,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user]);
+    }, [user, vaultPath]);
 
     // --- Save Data (Local & Cloud) ---
     useEffect(() => {
@@ -395,7 +421,9 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
 
         // Save Local
         try {
-            localStorage.setItem('gn_notes', JSON.stringify(notes));
+            if (!vaultPath) {
+                localStorage.setItem('gn_notes', JSON.stringify(notes));
+            }
             localStorage.setItem('gn_todos', JSON.stringify(todos));
             localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
         } catch (e) {
@@ -411,7 +439,7 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
 
                     let finalData = existing?.data || {};
                     finalData.getnote = {
-                        notes,
+                        notes: vaultPath ? [] : notes, // do not upload local obsidian files
                         todos,
                         lastUpdated: new Date().toISOString()
                     };
@@ -439,22 +467,23 @@ const GetNote: React.FC<GetNoteProps> = ({ onExit }) => {
             const timer = setTimeout(pushToCloud, 2000);
             return () => clearTimeout(timer);
         }
-    }, [notes, todos, isDataLoaded, session, user]);
+    }, [notes, todos, isDataLoaded, session, user, vaultPath]);
 
-    // --- Expose State to Window for Ask Apptify ---
+    // --- Expose State to Window for Ask Apptify OS ---
     useEffect(() => {
-        (window as any).__apptify_getnote = {
+        (window as any).__apptify_knowledgevault = {
             notes,
             setNotes,
             todos,
             setTodos,
             activeTab,
-            setActiveTab
+            setActiveTab,
+            vaultPath
         };
         return () => {
-            (window as any).__apptify_getnote = null;
+            (window as any).__apptify_knowledgevault = null;
         };
-    }, [notes, todos, activeTab]);
+    }, [notes, todos, activeTab, vaultPath]);
 
     // --- Deadline Notifications ---
     const notifiedTasksRef = useRef<Set<string>>(new Set());
@@ -945,6 +974,7 @@ ${retrievedNotesContext}`;
 
     const navItems = [
         { id: 'notes', icon: FileText, label: 'Notes' },
+        { id: 'video', icon: VideoIcon, label: 'Video Summary' },
         { id: 'todo', icon: CheckCircle2, label: 'Tasks' },
         { id: 'focus', icon: Clock, label: 'Focus' }
     ];
@@ -969,7 +999,7 @@ ${retrievedNotesContext}`;
                             <div className="w-6 h-6 rounded-full flex items-center justify-center text-gray-600 shadow-inner group-hover:scale-110 transition-transform">
                                 <Triangle size={10} fill="currentColor" className="rotate-180" />
                             </div>
-                            <span className="font-semibold text-sm tracking-tight text-gray-700">GetNote</span>
+                            <span className="font-semibold text-sm tracking-tight text-gray-700">Knowledge Vault</span>
                         </div>
 
                         {/* Sync Status & Manual Trigger */}
@@ -981,7 +1011,7 @@ ${retrievedNotesContext}`;
                                 title="Force Cloud Sync"
                             >
                                 <RefreshCw size={12} className={isSyncing ? "animate-spin text-blue-500" : ""} />
-                                {isSyncing ? "Syncing..." : "Cloud Sync"}
+                                {isSyncing ? "Syncing..." : "Sync Vault"}
                             </button>
 
                             {showSyncSuccess && !isSyncing && (
@@ -1008,7 +1038,8 @@ ${retrievedNotesContext}`;
 
                     {/* View Renderer */}
                     <div className="animate-slide-up">
-                        {activeTab === 'notes' && <NotesView notes={notes} setNotes={setNotes} openGlobalChat={() => setIsGlobalChatOpen(true)} targetNoteId={targetNoteId} setTargetNoteId={setTargetNoteId} />}
+                        {activeTab === 'notes' && <NotesView notes={notes} setNotes={setNotes} openGlobalChat={() => setIsGlobalChatOpen(true)} targetNoteId={targetNoteId} setTargetNoteId={setTargetNoteId} vaultPath={vaultPath} />}
+                        {activeTab === 'video' && <VideoSummaryView vaultPath={vaultPath} provider={aiProvider} model={aiModel} apiKey={apiKey} />}
                         {activeTab === 'todo' && <TodoView todos={todos} setTodos={setTodos} />}
                         {activeTab === 'focus' && (
                             <FocusView
@@ -1555,8 +1586,9 @@ const NotesView: React.FC<{
     setNotes: any,
     openGlobalChat: () => void,
     targetNoteId: string | null,
-    setTargetNoteId: (id: string | null) => void
-}> = ({ notes, setNotes, openGlobalChat, targetNoteId, setTargetNoteId }) => {
+    setTargetNoteId: (id: string | null) => void,
+    vaultPath: string
+}> = ({ notes, setNotes, openGlobalChat, targetNoteId, setTargetNoteId, vaultPath }) => {
     // Shared state like global settings
     const [aiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
     const [apiKey] = useState(() => localStorage.getItem('app_global_api_key') || '');
@@ -1670,6 +1702,27 @@ Example:
                     ai_processed: true
                 };
 
+                if (vaultPath) {
+                    try {
+                        await fetch('/api/obsidian/update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                vaultPath,
+                                id: note.id,
+                                title: updatedNote.title,
+                                content: updatedNote.content,
+                                category: updatedNote.ai_category,
+                                keywords: updatedNote.ai_keywords,
+                                summary: updatedNote.ai_summary,
+                                date: updatedNote.date
+                            })
+                        });
+                    } catch (e) {
+                        console.error("Failed to update frontmatter in Obsidian:", e);
+                    }
+                }
+
                 setNotes((prev: Note[]) => prev.map(n => n.id === note.id ? updatedNote : n));
                 
                 // If currently editing this note, update form state
@@ -1688,7 +1741,7 @@ Example:
         if (unprocessed) {
             triggerAiProcessing(unprocessed);
         }
-    }, [notes, apiKey]);
+    }, [notes, apiKey, vaultPath]);
 
     // Thread State
     const [currentThread, setCurrentThread] = useState<Note[]>([]);
@@ -1768,40 +1821,85 @@ Example:
             setTargetNoteId(null);
         }
     }, [targetNoteId, notes]);
-    const handleSave = () => {
+
+    const handleSave = async () => {
         if (!editForm.title && !editForm.content && currentThread.length === 0) { setIsEditing(false); return; }
 
-        // Construct final note object
-        const noteToSave: Note = {
-            ...editForm,
-            title: editForm.title || (editForm.content ? editForm.content.slice(0, 30) + '...' : 'Untitled Topic'),
-            content: editForm.content || '',
-            date: editForm.date || new Date().toISOString(),
-            isThread: currentThread.length > 0 || (!!editForm.thread && editForm.thread.length > 0),
-            thread: currentThread
-        } as Note;
+        const title = editForm.title || (editForm.content ? editForm.content.slice(0, 30) + '...' : 'Untitled Topic');
+        const content = editForm.content || '';
+        let tags = editForm.ai_keywords || [];
+        const category = editForm.ai_category || 'General';
+        const summary = editForm.ai_summary || '';
+        const date = editForm.date || new Date().toISOString();
 
-        // Check if content has changed to trigger AI processing again
-        const existingNote = notes.find(n => n.id === noteToSave.id);
-        const hasChanged = !existingNote || 
-            existingNote.title !== noteToSave.title || 
-            existingNote.content !== noteToSave.content || 
-            (existingNote.thread?.length !== noteToSave.thread?.length);
+        if (vaultPath) {
+            setIsProcessingAi(true);
+            try {
+                const isNew = !notes.some(n => n.id === editForm.id);
+                const url = isNew ? '/api/obsidian/create' : '/api/obsidian/update';
+                const body: any = {
+                    vaultPath,
+                    title,
+                    content,
+                    category,
+                    keywords: tags,
+                    summary,
+                    date
+                };
+                if (!isNew) body.id = editForm.id;
 
-        if (hasChanged) {
-            noteToSave.ai_processed = false;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (res.ok && data.success && data.note) {
+                    setNotes((prev: Note[]) => {
+                        const exists = prev.find(n => n.id === data.note.id || n.id === editForm.id);
+                        if (exists) return prev.map(n => (n.id === data.note.id || n.id === editForm.id) ? data.note : n);
+                        return [data.note, ...prev];
+                    });
+                } else {
+                    alert("Error saving to Obsidian: " + (data.error || "Unknown error"));
+                }
+            } catch (err: any) {
+                alert("Error connecting to server: " + err.message);
+            } finally {
+                setIsProcessingAi(false);
+            }
         } else {
-            noteToSave.ai_processed = existingNote.ai_processed;
-            noteToSave.ai_summary = existingNote.ai_summary;
-            noteToSave.ai_keywords = existingNote.ai_keywords;
-            noteToSave.ai_category = existingNote.ai_category;
-        }
+            // Fallback localStorage/Supabase flow
+            const noteToSave: Note = {
+                ...editForm,
+                title,
+                content,
+                date,
+                isThread: currentThread.length > 0 || (!!editForm.thread && editForm.thread.length > 0),
+                thread: currentThread
+            } as Note;
 
-        setNotes((prev: Note[]) => {
-            const exists = prev.find(n => n.id === noteToSave.id);
-            if (exists) return prev.map(n => n.id === noteToSave.id ? noteToSave : n);
-            return [noteToSave, ...prev];
-        });
+            const existingNote = notes.find(n => n.id === noteToSave.id);
+            const hasChanged = !existingNote || 
+                existingNote.title !== noteToSave.title || 
+                existingNote.content !== noteToSave.content || 
+                (existingNote.thread?.length !== noteToSave.thread?.length);
+
+            if (hasChanged) {
+                noteToSave.ai_processed = false;
+            } else {
+                noteToSave.ai_processed = existingNote.ai_processed;
+                noteToSave.ai_summary = existingNote.ai_summary;
+                noteToSave.ai_keywords = existingNote.ai_keywords;
+                noteToSave.ai_category = existingNote.ai_category;
+            }
+
+            setNotes((prev: Note[]) => {
+                const exists = prev.find(n => n.id === noteToSave.id);
+                if (exists) return prev.map(n => n.id === noteToSave.id ? noteToSave : n);
+                return [noteToSave, ...prev];
+            });
+        }
         setIsEditing(false);
     };
 
@@ -1810,9 +1908,30 @@ Example:
         openConfirm(
             "Delete Note",
             "Are you sure you want to delete this note?",
-            () => {
-                const updated = notes.filter(n => n.id !== id);
-                setNotes(updated);
+            async () => {
+                if (vaultPath) {
+                    setIsProcessingAi(true);
+                    try {
+                        const res = await fetch('/api/obsidian/delete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ vaultPath, id })
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                            setNotes(prev => prev.filter(n => n.id !== id));
+                        } else {
+                            alert("Error deleting from Obsidian: " + (data.error || "Unknown error"));
+                        }
+                    } catch (err: any) {
+                        alert("Error connecting to server: " + err.message);
+                    } finally {
+                        setIsProcessingAi(false);
+                    }
+                } else {
+                    const updated = notes.filter(n => n.id !== id);
+                    setNotes(updated);
+                }
             }
         );
     };
@@ -3639,4 +3758,209 @@ const FocusView: React.FC<FocusViewProps> = ({ timeLeft, setTimeLeft, isActive, 
     );
 };
 
-export default GetNote;
+// --- VIDEO SUMMARY VIEW ---
+const VideoSummaryView = ({
+    vaultPath,
+    provider,
+    model,
+    apiKey
+}: {
+    vaultPath: string;
+    provider: AIProvider;
+    model: string;
+    apiKey: string;
+}) => {
+    const [url, setUrl] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [title, setTitle] = useState('');
+    const [markdown, setMarkdown] = useState('');
+    const [category, setCategory] = useState('Video Summary');
+    const [savedStatus, setSavedStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const [error, setError] = useState('');
+
+    const handleGenerate = async () => {
+        if (!url.trim()) return;
+        setLoading(true);
+        setError('');
+        setTitle('');
+        setMarkdown('');
+        setSavedStatus('idle');
+
+        try {
+            const { videoSummarySkillService } = await import('../services/videoSummarySkillService');
+            const result = await videoSummarySkillService.generateSummary(url, provider, model, apiKey);
+            setTitle(result.title);
+            setMarkdown(result.markdown);
+        } catch (err: any) {
+            setError(err.message || 'Failed to generate summary.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!markdown || !title) return;
+        setSavedStatus('saving');
+        try {
+            const { videoSummarySkillService } = await import('../services/videoSummarySkillService');
+            if (vaultPath) {
+                await videoSummarySkillService.saveToVault(vaultPath, title, markdown, category);
+                setSavedStatus('saved');
+                setTimeout(() => setSavedStatus('idle'), 3000);
+            } else {
+                const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8;' });
+                const dUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = dUrl;
+                const cleanTitle = title.replace(/[/\\?%*:|"<>]/g, '-').trim();
+                link.setAttribute('download', `${cleanTitle}.md`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(dUrl);
+                setSavedStatus('saved');
+                setTimeout(() => setSavedStatus('idle'), 3000);
+            }
+        } catch (err: any) {
+            alert("Error saving: " + err.message);
+            setSavedStatus('error');
+        }
+    };
+
+    return (
+        <div className="space-y-8 animate-fade-in">
+            <div
+                className="p-8 rounded-[32px]"
+                style={{
+                    background: "#E0E5EC",
+                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                }}
+            >
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <VideoIcon size={20} />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-700">Video Summary Skill</h3>
+                        <p className="text-xs text-gray-500 font-medium">Extract transcript & generate structured knowledge notes from YouTube</p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="relative group">
+                        <input
+                            type="text"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...)"
+                            className="w-full text-base font-bold py-4 pl-4 pr-16 rounded-[20px] outline-none transition-all placeholder:text-gray-300 text-gray-700"
+                            style={{
+                                background: "#E0E5EC",
+                                boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                            }}
+                        />
+                        <div className="absolute inset-y-0 right-2.5 flex items-center">
+                            <button
+                                onClick={handleGenerate}
+                                disabled={loading || !url.trim()}
+                                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 transition-all active:scale-95 shadow-md flex items-center gap-1.5"
+                            >
+                                {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                                {loading ? "Extracting..." : "Generate"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <p className="text-xs text-red-500 font-bold bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>
+                    )}
+                </div>
+            </div>
+
+            {markdown && (
+                <div
+                    className="p-8 rounded-[32px] space-y-6"
+                    style={{
+                        background: "#E0E5EC",
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                    }}
+                >
+                    <div className="flex justify-between items-center flex-wrap gap-4 pb-4 border-b border-gray-300/40">
+                        <div className="flex-1 min-w-[200px]">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Video Title</p>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full text-lg font-bold text-gray-800 bg-transparent outline-none border-b border-gray-300/40 focus:border-blue-500/50 pb-1"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col">
+                                <label className="text-[9px] font-bold text-gray-400 uppercase">Save Folder</label>
+                                <input
+                                    type="text"
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    placeholder="Folder name"
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#E0E5EC] outline-none text-gray-700 max-w-[120px]"
+                                    style={{ boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff" }}
+                                />
+                            </div>
+                            <button
+                                onClick={handleSave}
+                                disabled={savedStatus === 'saving' || savedStatus === 'saved'}
+                                className="px-6 py-3 rounded-2xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-md self-end"
+                            >
+                                <CheckCircle2 size={14} />
+                                {savedStatus === 'saving' ? 'Saving...' : savedStatus === 'saved' ? 'Saved to Vault ✓' : 'Save to Vault'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
+                        <div className="flex flex-col h-full">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Edit Markdown</label>
+                            <textarea
+                                value={markdown}
+                                onChange={(e) => setMarkdown(e.target.value)}
+                                className="flex-1 w-full p-5 text-sm font-mono leading-relaxed bg-[#E0E5EC] rounded-[24px] outline-none resize-none overflow-y-auto"
+                                style={{
+                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff",
+                                    color: "#2D3748"
+                                }}
+                            />
+                        </div>
+
+                        <div className="flex flex-col h-full overflow-hidden">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Rendered Note</label>
+                            <div
+                                className="flex-1 w-full p-6 bg-[#E0E5EC] rounded-[24px] overflow-y-auto prose prose-sm leading-relaxed"
+                                style={{
+                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff",
+                                    color: "#2D3748"
+                                }}
+                            >
+                                {markdown.split('\n').map((line, idx) => {
+                                    if (line.startsWith('# ')) {
+                                        return <h1 key={idx} className="text-xl font-bold text-gray-800 mb-4">{line.slice(2)}</h1>;
+                                    }
+                                    if (line.startsWith('## ')) {
+                                        return <h2 key={idx} className="text-base font-bold text-blue-600 mt-6 mb-3 border-b border-gray-300/40 pb-1 uppercase tracking-wider">{line.slice(3)}</h2>;
+                                    }
+                                    if (line.startsWith('- ') || line.startsWith('* ')) {
+                                        return <li key={idx} className="ml-4 list-disc text-xs text-gray-600 mb-1">{line.slice(2)}</li>;
+                                    }
+                                    if (line.trim() === '') return <div key={idx} className="h-2" />;
+                                    return <p key={idx} className="text-xs text-gray-600 leading-relaxed mb-2 font-medium">{line}</p>;
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default KnowledgeVault;

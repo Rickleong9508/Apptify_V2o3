@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, NotebookPen, ArrowRight, Sparkles, Settings, Cpu } from 'lucide-react';
 import MyWealthApp from './components/MyWealthApp';
-import GetNote from './components/GetNote';
+import KnowledgeVault from './components/KnowledgeVault';
 import GlobalSettings from './components/GlobalSettings';
 import AutoCount from './components/AutoCount';
 
@@ -9,7 +9,7 @@ import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal'; // New Import
 import AskApptify from './components/AskApptify';
 
-type AppMode = 'launcher' | 'mywealth' | 'getnote' | 'settings' | 'autocount' | 'newshub';
+type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'autocount' | 'newshub';
 
 const App: React.FC = () => {
   const [currentApp, setCurrentApp] = useState<AppMode>('launcher');
@@ -22,8 +22,8 @@ const App: React.FC = () => {
       return <MyWealthApp onExit={() => setCurrentApp('launcher')} />;
     }
 
-    if (currentApp === 'getnote') {
-      return <GetNote onExit={() => setCurrentApp('launcher')} />;
+    if (currentApp === 'knowledgevault') {
+      return <KnowledgeVault onExit={() => setCurrentApp('launcher')} />;
     }
 
     if (currentApp === 'settings') {
@@ -57,7 +57,7 @@ const App: React.FC = () => {
           {[
             { id: 'mywealth', icon: Wallet, title: 'MyWealth', desc: 'Finance & Portfolio' },
             { id: 'autocount', icon: Cpu, title: 'AutoCount', desc: 'AI Object Valuation' },
-            { id: 'getnote', icon: NotebookPen, title: 'GetNote', desc: 'Second Brain' },
+            { id: 'knowledgevault', icon: NotebookPen, title: 'Knowledge Vault', desc: 'Second Brain' },
             { id: 'newshub', icon: Sparkles, title: 'NewsHub Beta', desc: 'Tech & Trends' },
           ].map((item, index) => (
             <button
