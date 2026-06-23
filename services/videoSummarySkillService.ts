@@ -25,11 +25,19 @@ export const videoSummarySkillService = {
         });
 
         if (!processRes.ok) {
-            const err = await processRes.json();
-            throw new Error(err.error || "Failed to extract video details.");
+            const errText = await processRes.text();
+            let errJson: any = {};
+            try { errJson = JSON.parse(errText); } catch (e) {}
+            throw new Error(errJson.error || errText || "Failed to extract video details.");
         }
 
-        const data = await processRes.json();
+        const resText = await processRes.text();
+        let data: any = {};
+        try {
+            data = JSON.parse(resText);
+        } catch (e) {
+            throw new Error(`Invalid response format from server: ${resText.slice(0, 100)}`);
+        }
         const extractedText = data.text;
         const title = data.metadata?.title || "YouTube Video Summary";
 

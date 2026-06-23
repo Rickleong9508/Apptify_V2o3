@@ -54,6 +54,22 @@ export default defineConfig(({ mode }) => {
             });
           }
         },
+        '/api/process_input': {
+          target: 'http://localhost:3001',
+          changeOrigin: true
+        },
+        '/api/news': {
+          target: 'http://localhost:3001',
+          changeOrigin: true
+        },
+        '/api/obsidian': {
+          target: 'http://localhost:3001',
+          changeOrigin: true
+        },
+        '/api/invest_skills': {
+          target: 'http://localhost:3001',
+          changeOrigin: true
+        },
       }
     },
     plugins: [react()],
