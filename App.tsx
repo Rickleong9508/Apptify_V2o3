@@ -8,7 +8,6 @@ import AutoCount from './components/AutoCount';
 import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal'; // New Import
 import AskApptify from './components/AskApptify';
-import AiNoteCard from './components/AiNote/AiNoteCard';
 
 type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'autocount' | 'newshub';
 
@@ -42,7 +41,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-start pt-16 md:pt-24 p-6 transition-all duration-500 font-sans selection:bg-gray-300">
 
-      <div className="max-w-md md:max-w-3xl w-full flex flex-col items-center gap-8 translate-y-[-20px] md:translate-y-[-40px]">
+      <div className="max-w-md w-full flex flex-col items-center gap-8 translate-y-[-20px] md:translate-y-[-40px]">
 
         {/* Header */}
         <div className="text-center space-y-2 animate-fade-in-down w-full relative">
@@ -52,8 +51,8 @@ const App: React.FC = () => {
           <p className="text-sm font-medium text-gray-500 uppercase tracking-widest">Next Gen Personal OS</p>
         </div>
 
-        {/* Responsive Grid Layout */}
-        <div className="grid gap-6 w-full px-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+        {/* 2x2 Grid Layout */}
+        <div className="grid grid-cols-2 gap-6 w-full px-2">
 
           {[
             { id: 'mywealth', icon: Wallet, title: 'MyWealth', desc: 'Finance & Portfolio' },
@@ -92,8 +91,6 @@ const App: React.FC = () => {
             </button>
           ))}
 
-          <AiNoteCard onNavigate={setCurrentApp} />
-
         </div>
 
         {/* Settings Button - Wide Pill */}
@@ -102,7 +99,7 @@ const App: React.FC = () => {
           className="w-full flex items-center gap-4 py-4 px-8 rounded-[30px] bg-[#E0E5EC] text-gray-700 font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 hover:text-blue-600 group animate-fade-in-up opacity-0"
           style={{
             boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-            animationDelay: '500ms'
+            animationDelay: '400ms'
           }}
         >
           <div className="group-hover:rotate-90 transition-transform duration-500">
