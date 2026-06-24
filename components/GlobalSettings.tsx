@@ -113,7 +113,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
     // Load models for SiliconFlow
     const loadSiliconFlowModels = async (keyToUse = apiKeys.siliconflow, forceRefresh = false) => {
-        if (!keyToUse) return;
         setIsLoadingModels(true);
         setModelError('');
         try {
@@ -124,6 +123,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                     setIsLoadingModels(false);
                     return;
                 }
+            }
+            if (!keyToUse) {
+                setIsLoadingModels(false);
+                return;
             }
             const models = await aiService.getModels('siliconflow', keyToUse);
             setSiliconFlowModels(models);
@@ -137,10 +140,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     };
 
     useEffect(() => {
-        if (aiProvider === 'siliconflow' && apiKeys.siliconflow) {
+        if (aiProvider === 'siliconflow') {
             loadSiliconFlowModels(apiKeys.siliconflow, false);
         }
-    }, [aiProvider]);
+    }, [aiProvider, apiKeys.siliconflow]);
 
     // Reset model defaults when provider changes
     useEffect(() => {
@@ -346,27 +349,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     const [confirmLogout, setConfirmLogout] = useState(false);
 
     return (
-        <div className="min-h-screen bg-[#E0E5EC] text-gray-700 flex flex-col items-center p-6 animate-fade-in font-sans">
+        <div className="min-h-screen bg-[#E0E5EC] text-gray-700 flex flex-col items-center px-6 pb-6 pt-0 animate-fade-in font-sans">
             <div className="max-w-4xl w-full space-y-8 pb-20">
-                {/* Header */}
-                <div className="flex items-center justify-between animate-fade-in-down">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={onExit}
-                            className="p-3 rounded-full transition-all active:scale-95 text-gray-600 hover:text-blue-500"
-                            style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                            }}
-                        >
-                            <ArrowLeft size={24} />
-                        </button>
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-700">Global Settings</h1>
-                            <p className="text-gray-500 font-medium">Configure AI & Data for all applications</p>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Account Actions Section */}
                 <div
@@ -533,10 +517,26 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         )}
                     </div>
 
-                    {/* Standard Providers model selector (Google, DeepSeek, OpenAI, Anthropic, OpenRouter) */}
-                    {aiProvider !== 'siliconflow' && (
-                        <div className="mb-4">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Model Selection</label>
+                    {/* Unified Model Selection Block */}
+                    <div className="mb-4">
+                        <div className="flex justify-between items-center mb-4 pl-2 pr-2">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Model Selection</label>
+                            {aiProvider === 'siliconflow' && (
+                                <button
+                                    onClick={() => loadSiliconFlowModels(apiKeys.siliconflow, true)}
+                                    disabled={isLoadingModels || !apiKeys.siliconflow}
+                                    className="px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold bg-[#E0E5EC] hover:text-purple-600 transition flex items-center gap-1.5 active:scale-95"
+                                    style={{
+                                        boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                    }}
+                                >
+                                    <RefreshCw size={10} className={isLoadingModels ? 'animate-spin' : ''} />
+                                    Sync Catalog
+                                </button>
+                            )}
+                        </div>
+
+                        {aiProvider !== 'siliconflow' ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {aiProvider === 'google' && [
                                     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Recommended: Default fast & efficient' },
@@ -676,211 +676,183 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     </div>
                                 )}
                             </div>
-                        </div>
-                    )}
-
-                    {/* SiliconFlow Dynamic Model Hub */}
-                    {aiProvider === 'siliconflow' && (
-                        <div className="mt-8 border-t border-gray-300/40 pt-8">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2">
-                                        SiliconFlow Model Hub Catalog
-                                        {isLoadingModels && <Activity className="animate-spin text-purple-500" size={16} />}
-                                    </h3>
-                                    <p className="text-xs text-gray-400">Discover and switch models dynamically from SiliconFlow API</p>
-                                </div>
-                                <button
-                                    onClick={() => loadSiliconFlowModels(apiKeys.siliconflow, true)}
-                                    disabled={isLoadingModels || !apiKeys.siliconflow}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-[#E0E5EC] hover:text-purple-600 transition flex items-center gap-2 active:scale-95"
-                                    style={{
-                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                                    }}
-                                >
-                                    <RefreshCw size={12} className={isLoadingModels ? 'animate-spin' : ''} />
-                                    Sync Models
-                                </button>
-                            </div>
-
-                            {modelError && (
-                                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-sm mb-6 flex items-center gap-2">
-                                    <AlertCircle size={16} />
-                                    {modelError}
-                                </div>
-                            )}
-
-                            {/* Search & Filters Panel */}
-                            <div className="space-y-4 mb-6">
-                                {/* Search Bar */}
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
-                                        placeholder="Search by Model Name, Provider, Capability (e.g. qwen, deepseek, flux)..."
-                                        className="w-full pl-12 pr-4 py-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
-                                        style={{
-                                            boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                        }}
-                                    />
-                                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                </div>
-
-                                {/* Filter Controls */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-[#E0E5EC]"
-                                     style={{ boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff" }}>
-                                    
-                                    {/* Capability Filter */}
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Capability</label>
-                                        <select
-                                            value={selectedCapability}
-                                            onChange={e => setSelectedCapability(e.target.value)}
-                                            className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
-                                        >
-                                            <option value="all">All Capabilities</option>
-                                            <option value="chat">General Chat</option>
-                                            <option value="reasoning">Reasoning Models</option>
-                                            <option value="coding">Coding Models</option>
-                                            <option value="vision">Vision Models</option>
-                                            <option value="image">Image Generation</option>
-                                            <option value="video">Video Generation</option>
-                                            <option value="audio">Audio Processing</option>
-                                            <option value="embedding">Embeddings</option>
-                                        </select>
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Search & Filters Panel */}
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            placeholder="Search by Model Name, Provider, Capability (e.g. qwen, deepseek, flux)..."
+                                            className="w-full pl-12 pr-4 py-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                            style={{
+                                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                            }}
+                                        />
+                                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     </div>
 
-                                    {/* Sub-Provider Filter */}
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Sub-Provider</label>
-                                        <select
-                                            value={selectedSubProvider}
-                                            onChange={e => setSelectedSubProvider(e.target.value)}
-                                            className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
-                                        >
-                                            <option value="all">All Sub-Providers</option>
-                                            <option value="deepseek">DeepSeek</option>
-                                            <option value="qwen">Qwen / Alibaba</option>
-                                            <option value="glm">GLM / THUDM</option>
-                                            <option value="meta">Meta Llama</option>
-                                            <option value="mistral">Mistral AI</option>
-                                            <option value="kimi">Kimi / Moonshot</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Context Length Filter */}
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Context Size</label>
-                                        <select
-                                            value={selectedContextLength}
-                                            onChange={e => setSelectedContextLength(e.target.value)}
-                                            className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
-                                        >
-                                            <option value="all">Any Context Length</option>
-                                            <option value="32k">32K+ Tokens</option>
-                                            <option value="128k">128K+ Tokens</option>
-                                            <option value="256k">256K+ Tokens</option>
-                                            <option value="1m">1M+ Tokens</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Active Model Indicator */}
-                            <div className="mb-4 px-4 py-3 rounded-2xl bg-[#E0E5EC] flex justify-between items-center text-xs font-bold"
-                                 style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
-                                <span className="text-gray-400">Currently Active Model:</span>
-                                <span className="text-purple-600 font-mono">{aiModel || 'None Selected'}</span>
-                            </div>
-
-                            {/* Catalog Model List */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
-                                {sortedModels.length > 0 ? (
-                                    sortedModels.map((m) => {
-                                        const isSelected = aiModel === m.id;
-                                        const isFav = favorites.includes(m.id);
-                                        return (
-                                            <div
-                                                key={m.id}
-                                                className={`p-5 rounded-2xl transition-all relative flex flex-col justify-between border ${
-                                                    isSelected ? 'border-purple-300/60 shadow-clay-inner' : 'border-white/20'
-                                                }`}
-                                                style={{
-                                                    background: "#E0E5EC",
-                                                    boxShadow: isSelected
-                                                        ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                        : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                                                }}
+                                    {/* Filter Controls */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-[#E0E5EC]"
+                                         style={{ boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff" }}>
+                                        
+                                        {/* Capability Filter */}
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Capability</label>
+                                            <select
+                                                value={selectedCapability}
+                                                onChange={e => setSelectedCapability(e.target.value)}
+                                                className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
                                             >
-                                                {/* Card Header */}
-                                                <div>
-                                                    <div className="flex justify-between items-start gap-2 mb-2">
-                                                        <div className="flex-1">
-                                                            <h4 className="text-sm font-extrabold text-gray-800 leading-tight break-all">
-                                                                {m.name}
-                                                            </h4>
-                                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1 inline-block">
-                                                                {m.provider}
-                                                            </span>
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                toggleFavorite(m.id);
-                                                            }}
-                                                            className={`p-1.5 rounded-lg active:scale-95 transition-all text-amber-500`}
-                                                        >
-                                                            <Star size={16} fill={isFav ? "currentColor" : "none"} />
-                                                        </button>
-                                                    </div>
+                                                <option value="all">All Capabilities</option>
+                                                <option value="chat">General Chat</option>
+                                                <option value="reasoning">Reasoning Models</option>
+                                                <option value="coding">Coding Models</option>
+                                                <option value="vision">Vision Models</option>
+                                                <option value="image">Image Generation</option>
+                                                <option value="video">Video Generation</option>
+                                                <option value="audio">Audio Processing</option>
+                                                <option value="embedding">Embeddings</option>
+                                            </select>
+                                        </div>
 
-                                                    <p className="text-xs text-gray-400 mb-3 leading-relaxed">
-                                                        {m.description}
-                                                    </p>
-                                                </div>
+                                        {/* Sub-Provider Filter */}
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Sub-Provider</label>
+                                            <select
+                                                value={selectedSubProvider}
+                                                onChange={e => setSelectedSubProvider(e.target.value)}
+                                                className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                            >
+                                                <option value="all">All Sub-Providers</option>
+                                                <option value="deepseek">DeepSeek</option>
+                                                <option value="qwen">Qwen / Alibaba</option>
+                                                <option value="glm">GLM / THUDM</option>
+                                                <option value="meta">Meta Llama</option>
+                                                <option value="mistral">Mistral AI</option>
+                                                <option value="kimi">Kimi / Moonshot</option>
+                                            </select>
+                                        </div>
 
-                                                {/* Card Footer */}
-                                                <div className="mt-4 pt-3 border-t border-gray-300/40 flex justify-between items-center">
-                                                    <div className="space-y-1">
-                                                        <span className="text-[9px] font-extrabold text-gray-400 uppercase block">Specs</span>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {m.context_length > 0 ? (
-                                                                <span className="text-[9px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
-                                                                    Context: {m.context_length >= 1048576 ? `${(m.context_length / 1048576).toFixed(0)}M` : `${(m.context_length / 1024).toFixed(0)}K`}
-                                                                </span>
-                                                            ) : null}
-                                                            {m.capabilities.map(cap => (
-                                                                <span key={cap} className="text-[9px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded uppercase">
-                                                                    {cap}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
+                                        {/* Context Length Filter */}
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Context Size</label>
+                                            <select
+                                                value={selectedContextLength}
+                                                onChange={e => setSelectedContextLength(e.target.value)}
+                                                className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                            >
+                                                <option value="all">Any Context Length</option>
+                                                <option value="32k">32K+ Tokens</option>
+                                                <option value="128k">128K+ Tokens</option>
+                                                <option value="256k">256K+ Tokens</option>
+                                                <option value="1m">1M+ Tokens</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                                    <button
-                                                        onClick={() => setAiModel(m.id)}
-                                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                                                            isSelected ? 'bg-purple-600 text-white shadow-md' : 'bg-[#E0E5EC] text-gray-500 hover:text-purple-600'
-                                                        }`}
-                                                        style={!isSelected ? {
-                                                            boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
-                                                        } : {}}
-                                                    >
-                                                        {isSelected ? 'Active' : 'Select'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="col-span-full py-8 text-center text-gray-400 text-sm">
-                                        No models match your search/filter parameters.
+                                {modelError && (
+                                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-sm flex items-center gap-2">
+                                        <AlertCircle size={16} />
+                                        {modelError}
                                     </div>
                                 )}
+
+                                {/* Active Model Indicator */}
+                                <div className="px-4 py-3 rounded-2xl bg-[#E0E5EC] flex justify-between items-center text-xs font-bold"
+                                     style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
+                                    <span className="text-gray-400">Currently Active Model:</span>
+                                    <span className="text-purple-600 font-mono">{aiModel || 'None Selected'}</span>
+                                </div>
+
+                                {/* Catalog Model List */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                                    {sortedModels.length > 0 ? (
+                                        sortedModels.map((m) => {
+                                            const isSelected = aiModel === m.id;
+                                            const isFav = favorites.includes(m.id);
+                                            return (
+                                                <div
+                                                    key={m.id}
+                                                    className={`p-5 rounded-2xl transition-all relative flex flex-col justify-between border ${
+                                                        isSelected ? 'border-purple-300/60 shadow-clay-inner' : 'border-white/20'
+                                                    }`}
+                                                    style={{
+                                                        background: "#E0E5EC",
+                                                        boxShadow: isSelected
+                                                            ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                    }}
+                                                >
+                                                    <div>
+                                                        <div className="flex justify-between items-start gap-2 mb-2">
+                                                            <div className="flex-1">
+                                                                <h4 className="text-sm font-extrabold text-gray-800 leading-tight break-all">
+                                                                    {m.name}
+                                                                </h4>
+                                                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1 inline-block">
+                                                                    {m.provider}
+                                                                </span>
+                                                            </div>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    toggleFavorite(m.id);
+                                                                }}
+                                                                className={`p-1.5 rounded-lg active:scale-95 transition-all text-amber-500`}
+                                                            >
+                                                                <Star size={16} fill={isFav ? "currentColor" : "none"} />
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+                                                            {m.description}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="mt-4 pt-3 border-t border-gray-300/40 flex justify-between items-center">
+                                                        <div className="space-y-1">
+                                                            <span className="text-[9px] font-extrabold text-gray-400 uppercase block">Specs</span>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {m.context_length > 0 ? (
+                                                                    <span className="text-[9px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
+                                                                        Context: {m.context_length >= 1048576 ? `${(m.context_length / 1048576).toFixed(0)}M` : `${(m.context_length / 1024).toFixed(0)}K`}
+                                                                    </span>
+                                                                ) : null}
+                                                                {m.capabilities.map(cap => (
+                                                                    <span key={cap} className="text-[9px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded uppercase">
+                                                                        {cap}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => setAiModel(m.id)}
+                                                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                                                                isSelected ? 'bg-purple-600 text-white shadow-md' : 'bg-[#E0E5EC] text-gray-500 hover:text-purple-600'
+                                                            }`}
+                                                            style={!isSelected ? {
+                                                                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                            } : {}}
+                                                        >
+                                                            {isSelected ? 'Active' : 'Select'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="col-span-full py-8 text-center text-gray-400 text-sm">
+                                            No models match your search/filter parameters.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 {/* Obsidian Vault Integration Card */}
