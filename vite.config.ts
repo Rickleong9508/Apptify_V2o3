@@ -25,6 +25,21 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
+        '/api/openai': {
+          target: 'https://api.openai.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/openai/, ''),
+        },
+        '/api/anthropic': {
+          target: 'https://api.anthropic.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
+        },
+        '/api/siliconflow': {
+          target: 'https://api.siliconflow.cn',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/siliconflow/, ''),
+        },
         '/api/openrouter': {
           target: 'https://openrouter.ai/api',
           changeOrigin: true,

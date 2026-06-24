@@ -15,28 +15,69 @@ import {
     CheckCircle2,
     HardDrive,
     Globe,
-    MessageSquare
+    MessageSquare,
+    Star,
+    RefreshCw,
+    Search,
+    Sliders,
+    Info
 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
-import { aiService, AIProvider } from '../services/aiService';
+import { aiService, AIProvider, ModelMetadata } from '../services/aiService';
 import { useAuth } from './AuthProvider';
-import AuthModal from './AuthModal'; // New Import
+import AuthModal from './AuthModal';
 
 interface GlobalSettingsProps {
     onExit: () => void;
 }
 
-
-
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
-    // --- AI State ---
+    // --- AI Provider & Key State ---
     const [aiProvider, setAiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
-    const [apiKey, setApiKey] = useState(() => localStorage.getItem('app_global_api_key') || '');
+    
+    const [apiKeys, setApiKeys] = useState<Record<string, string>>(() => {
+        return {
+            google: localStorage.getItem('app_api_key_google') || localStorage.getItem('app_global_api_key') || '',
+            deepseek: localStorage.getItem('app_api_key_deepseek') || '',
+            openai: localStorage.getItem('app_api_key_openai') || '',
+            anthropic: localStorage.getItem('app_api_key_anthropic') || '',
+            siliconflow: localStorage.getItem('app_api_key_siliconflow') || '',
+            openrouter: localStorage.getItem('app_api_key_openrouter') || ''
+        };
+    });
+
     const [aiModel, setAiModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
 
     // Connection Check State
     const [checkStatus, setCheckStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
     const [statusMsg, setStatusMsg] = useState('');
+
+    // --- SiliconFlow Model Hub Catalog State ---
+    const [siliconFlowModels, setSiliconFlowModels] = useState<ModelMetadata[]>([]);
+    const [isLoadingModels, setIsLoadingModels] = useState(false);
+    const [modelError, setModelError] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    // Filters
+    const [selectedCapability, setSelectedCapability] = useState<string>('all');
+    const [selectedSubProvider, setSelectedSubProvider] = useState<string>('all');
+    const [selectedContextLength, setSelectedContextLength] = useState<string>('all');
+
+    // Favorites & Recent
+    const [favorites, setFavorites] = useState<string[]>(() => {
+        try {
+            return JSON.parse(localStorage.getItem('app_ai_favorites') || '[]');
+        } catch (e) {
+            return [];
+        }
+    });
+
+    const [recentModels, setRecentModels] = useState<string[]>(() => {
+        try {
+            return JSON.parse(localStorage.getItem('app_ai_recent') || '[]');
+        } catch (e) {
+            return [];
+        }
+    });
 
     // --- Obsidian Integration State ---
     const [obsidianPath, setObsidianPath] = useState(() => localStorage.getItem('app_obsidian_vault_path') || '');
@@ -46,11 +87,86 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     // --- Backup State ---
     const [fileInput, setFileInput] = useState<HTMLInputElement | null>(null);
 
-    // Persist AI Settings
-    useEffect(() => { localStorage.setItem('app_global_ai_provider', aiProvider); }, [aiProvider]);
-    useEffect(() => { localStorage.setItem('app_global_api_key', apiKey); }, [apiKey]);
-    useEffect(() => { localStorage.setItem('app_global_ai_model', aiModel); }, [aiModel]);
-    useEffect(() => { localStorage.setItem('app_obsidian_vault_path', obsidianPath); }, [obsidianPath]);
+    // Save keys per provider and sync active settings to local storage
+    useEffect(() => {
+        localStorage.setItem('app_global_ai_provider', aiProvider);
+        const currentKey = apiKeys[aiProvider] || '';
+        localStorage.setItem('app_global_api_key', currentKey);
+    }, [aiProvider, apiKeys]);
+
+    useEffect(() => {
+        localStorage.setItem('app_global_ai_model', aiModel);
+        if (aiModel && !recentModels.includes(aiModel)) {
+            const updated = [aiModel, ...recentModels.slice(0, 4)];
+            setRecentModels(updated);
+            localStorage.setItem('app_ai_recent', JSON.stringify(updated));
+        }
+    }, [aiModel]);
+
+    useEffect(() => {
+        localStorage.setItem('app_ai_favorites', JSON.stringify(favorites));
+    }, [favorites]);
+
+    useEffect(() => {
+        localStorage.setItem('app_obsidian_vault_path', obsidianPath);
+    }, [obsidianPath]);
+
+    // Load models for SiliconFlow
+    const loadSiliconFlowModels = async (keyToUse = apiKeys.siliconflow, forceRefresh = false) => {
+        if (!keyToUse) return;
+        setIsLoadingModels(true);
+        setModelError('');
+        try {
+            if (!forceRefresh) {
+                const cached = localStorage.getItem('app_siliconflow_models_cache');
+                if (cached) {
+                    setSiliconFlowModels(JSON.parse(cached));
+                    setIsLoadingModels(false);
+                    return;
+                }
+            }
+            const models = await aiService.getModels('siliconflow', keyToUse);
+            setSiliconFlowModels(models);
+            localStorage.setItem('app_siliconflow_models_cache', JSON.stringify(models));
+        } catch (e: any) {
+            console.error("Error loading SiliconFlow models:", e);
+            setModelError(e.message || "Failed to load SiliconFlow models. Please verify API key.");
+        } finally {
+            setIsLoadingModels(false);
+        }
+    };
+
+    useEffect(() => {
+        if (aiProvider === 'siliconflow' && apiKeys.siliconflow) {
+            loadSiliconFlowModels(apiKeys.siliconflow, false);
+        }
+    }, [aiProvider]);
+
+    // Reset model defaults when provider changes
+    useEffect(() => {
+        const defaults: Record<string, string> = {
+            'google': 'gemini-2.5-flash',
+            'deepseek': 'deepseek-chat',
+            'openai': 'gpt-4o-mini',
+            'anthropic': 'claude-3-5-sonnet-20241022',
+            'siliconflow': 'deepseek-ai/DeepSeek-V3',
+            'openrouter': 'anthropic/claude-3.7-sonnet'
+        };
+        const currentModel = localStorage.getItem('app_global_ai_model') || '';
+        
+        // Reset only if the current model doesn't belong to the selected provider
+        let needsReset = false;
+        if (aiProvider === 'google' && !currentModel.startsWith('gemini-')) needsReset = true;
+        if (aiProvider === 'deepseek' && !currentModel.startsWith('deepseek-')) needsReset = true;
+        if (aiProvider === 'openai' && !currentModel.startsWith('gpt-') && !currentModel.startsWith('o1') && !currentModel.startsWith('o3')) needsReset = true;
+        if (aiProvider === 'anthropic' && !currentModel.startsWith('claude-')) needsReset = true;
+        if (aiProvider === 'siliconflow' && !currentModel.includes('/')) needsReset = true;
+        if (aiProvider === 'openrouter' && !currentModel.includes('/')) needsReset = true;
+
+        if (needsReset) {
+            setAiModel(defaults[aiProvider]);
+        }
+    }, [aiProvider]);
 
     const checkObsidianConnection = async () => {
         if (!obsidianPath.trim()) return;
@@ -75,53 +191,100 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
         }
     };
 
-    // Reset model defaults when provider changes
-    useEffect(() => {
-        const defaults: Record<string, string> = {
-            'google': 'gemini-2.5-flash',
-            'deepseek': 'deepseek-chat',
-            'openrouter': 'anthropic/claude-3.7-sonnet'
-        };
-        // Only reset if the current model clearly doesn't belong to the new provider
-        if (aiProvider === 'google' && !aiModel.startsWith('gemini-')) setAiModel(defaults['google']);
-        if (aiProvider === 'deepseek' && !aiModel.startsWith('deepseek-')) setAiModel(defaults['deepseek']);
-        if (aiProvider === 'openrouter' && !aiModel.includes('/')) setAiModel(defaults['openrouter']);
-    }, [aiProvider]);
-
-    // --- Helpers ---
-
-
     const checkConnection = async () => {
+        const activeKey = apiKeys[aiProvider];
+        if (!activeKey) {
+            setCheckStatus('error');
+            setStatusMsg('API Key is missing');
+            return;
+        }
+
         setCheckStatus('checking');
-        setStatusMsg('Pinging API...');
+        setStatusMsg('Testing API connection...');
         try {
-            await aiService.generate(aiProvider, aiModel, apiKey, "Hi");
-            setCheckStatus('success');
-            setStatusMsg('Connected Successfully');
+            if (aiProvider === 'siliconflow') {
+                const models = await aiService.getModels('siliconflow', activeKey);
+                if (models.length === 0) throw new Error("No models retrieved.");
+                setSiliconFlowModels(models);
+                localStorage.setItem('app_siliconflow_models_cache', JSON.stringify(models));
+                setCheckStatus('success');
+                setStatusMsg(`Connected! Retrieved ${models.length} models.`);
+            } else {
+                const testModel = aiModel;
+                await aiService.generate(aiProvider, testModel, activeKey, "Hi");
+                setCheckStatus('success');
+                setStatusMsg('Connected Successfully');
+            }
         } catch (e: any) {
             setCheckStatus('error');
             setStatusMsg(e.message || "Connection Failed");
         }
-        setTimeout(() => { if (checkStatus !== 'error') setCheckStatus('idle'); }, 3000);
+        setTimeout(() => { if (checkStatus !== 'error') setCheckStatus('idle'); }, 4000);
     };
+
+    const handleKeyChange = (val: string) => {
+        const updated = { ...apiKeys, [aiProvider]: val };
+        setApiKeys(updated);
+        localStorage.setItem(`app_api_key_${aiProvider}`, val);
+    };
+
+    const toggleFavorite = (modelId: string) => {
+        if (favorites.includes(modelId)) {
+            setFavorites(favorites.filter(id => id !== modelId));
+        } else {
+            setFavorites([...favorites, modelId]);
+        }
+    };
+
+    // Filter Logic for SiliconFlow Models
+    const filteredModels = siliconFlowModels.filter(m => {
+        const matchesSearch = m.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              m.provider.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesCapability = selectedCapability === 'all' || m.capabilities.includes(selectedCapability);
+        const matchesProvider = selectedSubProvider === 'all' || m.provider.toLowerCase().includes(selectedSubProvider.toLowerCase());
+        
+        let matchesContext = true;
+        if (selectedContextLength !== 'all') {
+            const len = m.context_length;
+            if (selectedContextLength === '32k') matchesContext = len >= 32768;
+            else if (selectedContextLength === '128k') matchesContext = len >= 131072;
+            else if (selectedContextLength === '256k') matchesContext = len >= 262144;
+            else if (selectedContextLength === '1m') matchesContext = len >= 1048576;
+        }
+
+        return matchesSearch && matchesCapability && matchesProvider && matchesContext;
+    });
+
+    const sortedModels = [...filteredModels].sort((a, b) => {
+        const aFav = favorites.includes(a.id) ? 1 : 0;
+        const bFav = favorites.includes(b.id) ? 1 : 0;
+        if (aFav !== bFav) return bFav - aFav; // Favorites first
+        return a.id.localeCompare(b.id);
+    });
 
     // --- Backup Functions ---
     const handleFullBackup = () => {
         const backupData = {
             meta: {
-                version: 1,
+                version: 2,
                 date: new Date().toISOString(),
                 app: "Apptify Global"
             },
             data: {
-                // Global Settings
-                app_global_api_key: localStorage.getItem('app_global_api_key'),
                 app_global_ai_provider: localStorage.getItem('app_global_ai_provider'),
                 app_global_ai_model: localStorage.getItem('app_global_ai_model'),
-                // GetNote Data
+                app_api_key_google: localStorage.getItem('app_api_key_google'),
+                app_api_key_openai: localStorage.getItem('app_api_key_openai'),
+                app_api_key_anthropic: localStorage.getItem('app_api_key_anthropic'),
+                app_api_key_deepseek: localStorage.getItem('app_api_key_deepseek'),
+                app_api_key_siliconflow: localStorage.getItem('app_api_key_siliconflow'),
+                app_api_key_openrouter: localStorage.getItem('app_api_key_openrouter'),
+                app_ai_favorites: localStorage.getItem('app_ai_favorites'),
+                app_ai_recent: localStorage.getItem('app_ai_recent'),
                 gn_notes: localStorage.getItem('gn_notes'),
                 gn_todos: localStorage.getItem('gn_todos'),
-                // MyWealth Data
                 mw_data_main: localStorage.getItem('mw_data_main'),
                 mw_theme: localStorage.getItem('mw_theme'),
             }
@@ -148,21 +311,29 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 const json = JSON.parse(ev.target?.result as string);
                 if (!json.data) throw new Error("Invalid backup file format");
 
-                // Restore keys
                 Object.keys(json.data).forEach(key => {
                     if (json.data[key] !== null) {
                         localStorage.setItem(key, json.data[key]);
                     }
                 });
 
-                // Update local state to reflect changes immediately
-                setApiKey(localStorage.getItem('app_global_api_key') || '');
+                // Reload local state
                 setAiProvider((localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
                 setAiModel(localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+                setApiKeys({
+                    google: localStorage.getItem('app_api_key_google') || '',
+                    deepseek: localStorage.getItem('app_api_key_deepseek') || '',
+                    openai: localStorage.getItem('app_api_key_openai') || '',
+                    anthropic: localStorage.getItem('app_api_key_anthropic') || '',
+                    siliconflow: localStorage.getItem('app_api_key_siliconflow') || '',
+                    openrouter: localStorage.getItem('app_api_key_openrouter') || ''
+                });
+                setFavorites(JSON.parse(localStorage.getItem('app_ai_favorites') || '[]'));
+                setRecentModels(JSON.parse(localStorage.getItem('app_ai_recent') || '[]'));
 
-                alert("Restore Successful! Please restart apps to see data.");
+                alert("Restore Successful! Please restart applications to sync properly.");
             } catch (err) {
-                alert("Failed to restore: Invalid file.");
+                alert("Failed to restore: Invalid file format.");
                 console.error(err);
             }
             if (fileInput) fileInput.value = '';
@@ -172,11 +343,11 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
     const { session, user, signOut } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const [confirmLogout, setConfirmLogout] = useState(false); // New state for inline confirmation
+    const [confirmLogout, setConfirmLogout] = useState(false);
 
     return (
         <div className="min-h-screen bg-[#E0E5EC] text-gray-700 flex flex-col items-center p-6 animate-fade-in font-sans">
-            <div className="max-w-3xl w-full space-y-8">
+            <div className="max-w-4xl w-full space-y-8 pb-20">
                 {/* Header */}
                 <div className="flex items-center justify-between animate-fade-in-down">
                     <div className="flex items-center gap-4">
@@ -197,13 +368,12 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                     </div>
                 </div>
 
-                {/* Account Actions Section (New) */}
+                {/* Account Actions Section */}
                 <div
-                    className="p-8 rounded-[32px] animate-scale-in opacity-0"
+                    className="p-8 rounded-[32px] animate-scale-in"
                     style={{
                         background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-                        animationDelay: '50ms'
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-6">
@@ -238,7 +408,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             setConfirmLogout(false);
                                         } else {
                                             setConfirmLogout(true);
-                                            // Auto-reset after 3 seconds if not confirmed
                                             setTimeout(() => setConfirmLogout(false), 3000);
                                         }
                                     }}
@@ -266,11 +435,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                 {/* AI Configuration Card */}
                 <div
-                    className="p-8 rounded-[32px] animate-scale-in opacity-0"
+                    className="p-8 rounded-[32px] animate-scale-in"
                     style={{
                         background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-                        animationDelay: '100ms'
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-8">
@@ -283,16 +451,19 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         >
                             <BrainCircuit size={24} />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-700">AI Intelligence</h2>
+                        <h2 className="text-2xl font-bold text-gray-700">AI Intelligence Providers</h2>
                     </div>
 
-                    {/* Provider Select */}
+                    {/* Provider Select Grid */}
                     <div className="mb-8">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Service Provider</label>
-                        <div className="grid grid-cols-3 gap-4">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Select AI Provider</label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {[
                                 { id: 'google', label: 'Google Gemini' },
+                                { id: 'openai', label: 'OpenAI' },
+                                { id: 'anthropic', label: 'Anthropic Claude' },
                                 { id: 'deepseek', label: 'DeepSeek' },
+                                { id: 'siliconflow', label: 'SiliconFlow Model Hub' },
                                 { id: 'openrouter', label: 'OpenRouter' }
                             ].map((p) => (
                                 <button
@@ -314,32 +485,27 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 </button>
                             ))}
                         </div>
-                        <div
-                            className="mt-4 p-4 rounded-2xl text-xs font-medium text-gray-500"
-                            style={{
-                                boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
-                            }}
-                        >
-                            {aiProvider === 'google' && <p>✅ <b>Recommended:</b> Native support for Gemini. Fast & Reliable.</p>}
-                            {aiProvider === 'deepseek' && <p>✅ <b>Optimized:</b> Requests are routed through local proxy to bypass CORS.</p>}
-                            {aiProvider === 'openrouter' && <p>✅ <b>Best Compatibility:</b> Access DeepSeek, Claude, and Llama.</p>}
-                        </div>
                     </div>
 
                     {/* API Key */}
                     <div className="mb-8">
                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">
-                            {aiProvider === 'google' ? 'Google AI Studio Key' : aiProvider === 'deepseek' ? 'DeepSeek API Key' : 'OpenRouter Key'}
+                            {aiProvider === 'google' && 'Google AI Studio API Key'}
+                            {aiProvider === 'openai' && 'OpenAI API Key'}
+                            {aiProvider === 'anthropic' && 'Anthropic API Key'}
+                            {aiProvider === 'deepseek' && 'DeepSeek API Key'}
+                            {aiProvider === 'siliconflow' && 'SiliconFlow API Key'}
+                            {aiProvider === 'openrouter' && 'OpenRouter API Key'}
                         </label>
                         <div className="flex gap-4">
                             <input
                                 type="password"
-                                value={apiKey}
+                                value={apiKeys[aiProvider] || ''}
                                 onChange={(e) => {
-                                    setApiKey(e.target.value);
+                                    handleKeyChange(e.target.value);
                                     setCheckStatus('idle');
                                 }}
-                                placeholder={aiProvider === 'google' ? "AIzaSy..." : "sk-..."}
+                                placeholder="sk-... / AIzaSy..."
                                 className="flex-1 p-4 rounded-2xl font-mono text-sm outline-none text-gray-700 bg-[#E0E5EC]"
                                 style={{
                                     boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
@@ -347,7 +513,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             />
                             <button
                                 onClick={checkConnection}
-                                disabled={!apiKey || checkStatus === 'checking'}
+                                disabled={!apiKeys[aiProvider] || checkStatus === 'checking'}
                                 className={`px-6 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 active:scale-95 ${checkStatus === 'success' ? 'text-green-500' : checkStatus === 'error' ? 'text-red-500' : 'text-gray-600'}`}
                                 style={{
                                     background: "#E0E5EC",
@@ -357,7 +523,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 {checkStatus === 'checking' ? <Activity className="animate-spin" size={18} /> :
                                     checkStatus === 'success' ? <Check size={18} /> :
                                         checkStatus === 'error' ? <AlertCircle size={18} /> :
-                                            "Check"}
+                                            "Test Connection"}
                             </button>
                         </div>
                         {statusMsg && (
@@ -367,148 +533,362 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         )}
                     </div>
 
-                    {/* Model Select */}
-                    <div>
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Model Selection</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            {/* Google Options */}
-                            {aiProvider === 'google' && (
-                                <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {[
-                                        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Recommended: Default fast & efficient', icon: Zap, color: 'text-yellow-500' },
-                                        { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', desc: 'Best for complex analysis & coding', icon: BrainCircuit, color: 'text-purple-500' },
-                                        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Next-gen low latency speed', icon: Zap, color: 'text-orange-500' },
-                                        { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Flash Thinking', desc: 'Thinking model for step-by-step analysis', icon: BrainCircuit, color: 'text-blue-500' },
-                                        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Legacy production model', icon: BrainCircuit, color: 'text-gray-500' },
-                                        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Legacy lightweight model', icon: Zap, color: 'text-gray-400' }
-                                    ].map((m) => (
-                                        <div
-                                            key={m.id}
-                                            onClick={() => setAiModel(m.id)}
-                                            className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600' : 'text-gray-600'}`}
-                                            style={{
-                                                background: "#E0E5EC",
-                                                boxShadow: aiModel === m.id
-                                                    ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                    : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                            }}
-                                        >
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="font-bold text-sm">{m.name}</span>
-                                                {aiModel === m.id && <CheckCircle2 size={16} />}
-                                            </div>
-                                            <div className="text-xs text-gray-400 flex items-center gap-1">
-                                                <m.icon size={10} className={m.color} /> {m.desc}
-                                            </div>
+                    {/* Standard Providers model selector (Google, DeepSeek, OpenAI, Anthropic, OpenRouter) */}
+                    {aiProvider !== 'siliconflow' && (
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Model Selection</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {aiProvider === 'google' && [
+                                    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Recommended: Default fast & efficient' },
+                                    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', desc: 'Best for complex analysis & reasoning' },
+                                    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Low latency speed and multimodal features' },
+                                    { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Flash Thinking', desc: 'Thinking model for step-by-step logic' }
+                                ].map((m) => (
+                                    <div
+                                        key={m.id}
+                                        onClick={() => setAiModel(m.id)}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === m.id
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm font-bold">{m.name}</span>
+                                            {aiModel === m.id && <CheckCircle2 size={16} />}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                        <div className="text-xs text-gray-400">{m.desc}</div>
+                                    </div>
+                                ))}
 
-                            {/* DeepSeek Options */}
-                            {aiProvider === 'deepseek' && (
-                                <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {[
-                                        { id: 'deepseek-v4-flash', name: 'DeepSeek v4 Flash', desc: 'Next-gen ultra-fast inference' },
-                                        { id: 'deepseek-v4-pro', name: 'DeepSeek v4 Pro', desc: 'Next-gen flagship pro capabilities' },
-                                        { id: 'deepseek-chat', name: 'DeepSeek V3 (Chat)', desc: 'Standard high-performance model' },
-                                        { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner)', desc: 'Specialized in logic & reasoning' }
-                                    ].map((m) => (
-                                        <div
-                                            key={m.id}
-                                            onClick={() => setAiModel(m.id)}
-                                            className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600' : 'text-gray-600'}`}
-                                            style={{
-                                                background: "#E0E5EC",
-                                                boxShadow: aiModel === m.id
-                                                    ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                    : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                            }}
-                                        >
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="font-bold text-sm">{m.name}</span>
-                                                {aiModel === m.id && <CheckCircle2 size={16} />}
-                                            </div>
-                                            <div className="text-xs text-gray-400">{m.desc}</div>
+                                {aiProvider === 'deepseek' && [
+                                    { id: 'deepseek-chat', name: 'DeepSeek V3 (Chat)', desc: 'Standard high-performance chat model' },
+                                    { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner)', desc: 'Specialized in logic, math, and coding reasoning' }
+                                ].map((m) => (
+                                    <div
+                                        key={m.id}
+                                        onClick={() => setAiModel(m.id)}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === m.id
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm font-bold">{m.name}</span>
+                                            {aiModel === m.id && <CheckCircle2 size={16} />}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                        <div className="text-xs text-gray-400">{m.desc}</div>
+                                    </div>
+                                ))}
 
-                            {/* OpenRouter Options */}
-                            {aiProvider === 'openrouter' && (
-                                <div className="col-span-full space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {[
-                                            { id: 'deepseek/deepseek-v4-pro', name: 'DeepSeek v4 Pro', provider: 'DeepSeek' },
-                                            { id: 'deepseek/deepseek-v4-flash', name: 'DeepSeek v4 Flash', provider: 'DeepSeek' },
-                                            { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic' },
-                                            { id: 'anthropic/claude-3.7-sonnet:thinking', name: 'Claude 3.7 Sonnet (Thinking)', provider: 'Anthropic' },
-                                            { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
-                                            { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek' },
-                                            { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Free)', provider: 'DeepSeek' },
-                                            { id: 'deepseek/deepseek-v3', name: 'DeepSeek V3', provider: 'DeepSeek' },
-                                            { id: 'deepseek/deepseek-v3:free', name: 'DeepSeek V3 (Free)', provider: 'DeepSeek' },
-                                            { id: 'openai/o3-mini', name: 'OpenAI o3-mini', provider: 'OpenAI' },
-                                            { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
-                                            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
-                                            { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B', provider: 'Meta' },
-                                            { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google' },
-                                            { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' }
-                                        ].map(m => (
-                                            <div
-                                                key={m.id}
-                                                onClick={() => setAiModel(m.id)}
-                                                className={`p-4 rounded-2xl cursor-pointer transition-all active:scale-95 ${aiModel === m.id ? 'text-purple-600' : 'text-gray-600 hover:text-gray-800'}`}
-                                                style={{
-                                                    background: "#E0E5EC",
-                                                    boxShadow: aiModel === m.id
-                                                        ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                        : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                                                }}
-                                            >
-                                                <div>
+                                {aiProvider === 'openai' && [
+                                    { id: 'gpt-4o', name: 'GPT-4o', desc: 'Flagship multimodal chat model' },
+                                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', desc: 'Fast, lightweight multimodal model' },
+                                    { id: 'o3-mini', name: 'o3-mini', desc: 'Reasoning model optimized for coding & logic' },
+                                    { id: 'o1', name: 'o1', desc: 'Flagship reasoning model for complex tasks' }
+                                ].map((m) => (
+                                    <div
+                                        key={m.id}
+                                        onClick={() => setAiModel(m.id)}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === m.id
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm font-bold">{m.name}</span>
+                                            {aiModel === m.id && <CheckCircle2 size={16} />}
+                                        </div>
+                                        <div className="text-xs text-gray-400">{m.desc}</div>
+                                    </div>
+                                ))}
+
+                                {aiProvider === 'anthropic' && [
+                                    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet', desc: 'State of the art model with hybrid reasoning' },
+                                    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', desc: 'Highly intelligent model, programming wizard' },
+                                    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', desc: 'Fast, cost-effective text intelligence' }
+                                ].map((m) => (
+                                    <div
+                                        key={m.id}
+                                        onClick={() => setAiModel(m.id)}
+                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
+                                        style={{
+                                            background: "#E0E5EC",
+                                            boxShadow: aiModel === m.id
+                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm font-bold">{m.name}</span>
+                                            {aiModel === m.id && <CheckCircle2 size={16} />}
+                                        </div>
+                                        <div className="text-xs text-gray-400">{m.desc}</div>
+                                    </div>
+                                ))}
+
+                                {aiProvider === 'openrouter' && (
+                                    <div className="col-span-full space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {[
+                                                { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek' },
+                                                { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic' },
+                                                { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' }
+                                            ].map(m => (
+                                                <div
+                                                    key={m.id}
+                                                    onClick={() => setAiModel(m.id)}
+                                                    className={`p-4 rounded-2xl cursor-pointer transition-all active:scale-95 ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
+                                                    style={{
+                                                        background: "#E0E5EC",
+                                                        boxShadow: aiModel === m.id
+                                                            ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                    }}
+                                                >
                                                     <div className="font-bold text-sm flex items-center justify-between">
                                                         {m.name}
                                                         {aiModel === m.id && <CheckCircle2 size={16} />}
                                                     </div>
-                                                    <div className="text-[10px] text-gray-400 font-medium">{m.provider}</div>
+                                                    <div className="text-[10px] text-gray-400">{m.provider}</div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <MessageSquare size={16} className="text-gray-400" />
+                                            ))}
                                         </div>
-                                        <input
-                                            className="w-full pl-10 p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
-                                            placeholder="Or enter custom Model ID (e.g. mistralai/mistral-large-latest)"
-                                            value={aiModel}
-                                            onChange={e => setAiModel(e.target.value)}
-                                            style={{
-                                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                            }}
-                                        />
-                                        <p className="text-[10px] text-gray-400 font-bold mt-2 ml-2 tracking-wide">
-                                            Copy ID from <a href="https://openrouter.ai/models" target="_blank" className="text-blue-500 underline decoration-blue-500/30">openrouter.ai/models</a>
-                                        </p>
+                                        <div className="relative">
+                                            <input
+                                                className="w-full p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                                placeholder="Or enter custom OpenRouter model ID"
+                                                value={aiModel}
+                                                onChange={e => setAiModel(e.target.value)}
+                                                style={{
+                                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                }}
+                                            />
+                                        </div>
                                     </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SiliconFlow Dynamic Model Hub */}
+                    {aiProvider === 'siliconflow' && (
+                        <div className="mt-8 border-t border-gray-300/40 pt-8">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2">
+                                        SiliconFlow Model Hub Catalog
+                                        {isLoadingModels && <Activity className="animate-spin text-purple-500" size={16} />}
+                                    </h3>
+                                    <p className="text-xs text-gray-400">Discover and switch models dynamically from SiliconFlow API</p>
+                                </div>
+                                <button
+                                    onClick={() => loadSiliconFlowModels(apiKeys.siliconflow, true)}
+                                    disabled={isLoadingModels || !apiKeys.siliconflow}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold bg-[#E0E5EC] hover:text-purple-600 transition flex items-center gap-2 active:scale-95"
+                                    style={{
+                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    }}
+                                >
+                                    <RefreshCw size={12} className={isLoadingModels ? 'animate-spin' : ''} />
+                                    Sync Models
+                                </button>
+                            </div>
+
+                            {modelError && (
+                                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-sm mb-6 flex items-center gap-2">
+                                    <AlertCircle size={16} />
+                                    {modelError}
                                 </div>
                             )}
+
+                            {/* Search & Filters Panel */}
+                            <div className="space-y-4 mb-6">
+                                {/* Search Bar */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        placeholder="Search by Model Name, Provider, Capability (e.g. qwen, deepseek, flux)..."
+                                        className="w-full pl-12 pr-4 py-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                        style={{
+                                            boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                        }}
+                                    />
+                                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                </div>
+
+                                {/* Filter Controls */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-[#E0E5EC]"
+                                     style={{ boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff" }}>
+                                    
+                                    {/* Capability Filter */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Capability</label>
+                                        <select
+                                            value={selectedCapability}
+                                            onChange={e => setSelectedCapability(e.target.value)}
+                                            className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                        >
+                                            <option value="all">All Capabilities</option>
+                                            <option value="chat">General Chat</option>
+                                            <option value="reasoning">Reasoning Models</option>
+                                            <option value="coding">Coding Models</option>
+                                            <option value="vision">Vision Models</option>
+                                            <option value="image">Image Generation</option>
+                                            <option value="video">Video Generation</option>
+                                            <option value="audio">Audio Processing</option>
+                                            <option value="embedding">Embeddings</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Sub-Provider Filter */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Sub-Provider</label>
+                                        <select
+                                            value={selectedSubProvider}
+                                            onChange={e => setSelectedSubProvider(e.target.value)}
+                                            className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                        >
+                                            <option value="all">All Sub-Providers</option>
+                                            <option value="deepseek">DeepSeek</option>
+                                            <option value="qwen">Qwen / Alibaba</option>
+                                            <option value="glm">GLM / THUDM</option>
+                                            <option value="meta">Meta Llama</option>
+                                            <option value="mistral">Mistral AI</option>
+                                            <option value="kimi">Kimi / Moonshot</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Context Length Filter */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Context Size</label>
+                                        <select
+                                            value={selectedContextLength}
+                                            onChange={e => setSelectedContextLength(e.target.value)}
+                                            className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                        >
+                                            <option value="all">Any Context Length</option>
+                                            <option value="32k">32K+ Tokens</option>
+                                            <option value="128k">128K+ Tokens</option>
+                                            <option value="256k">256K+ Tokens</option>
+                                            <option value="1m">1M+ Tokens</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Active Model Indicator */}
+                            <div className="mb-4 px-4 py-3 rounded-2xl bg-[#E0E5EC] flex justify-between items-center text-xs font-bold"
+                                 style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
+                                <span className="text-gray-400">Currently Active Model:</span>
+                                <span className="text-purple-600 font-mono">{aiModel || 'None Selected'}</span>
+                            </div>
+
+                            {/* Catalog Model List */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
+                                {sortedModels.length > 0 ? (
+                                    sortedModels.map((m) => {
+                                        const isSelected = aiModel === m.id;
+                                        const isFav = favorites.includes(m.id);
+                                        return (
+                                            <div
+                                                key={m.id}
+                                                className={`p-5 rounded-2xl transition-all relative flex flex-col justify-between border ${
+                                                    isSelected ? 'border-purple-300/60 shadow-clay-inner' : 'border-white/20'
+                                                }`}
+                                                style={{
+                                                    background: "#E0E5EC",
+                                                    boxShadow: isSelected
+                                                        ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                        : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                }}
+                                            >
+                                                {/* Card Header */}
+                                                <div>
+                                                    <div className="flex justify-between items-start gap-2 mb-2">
+                                                        <div className="flex-1">
+                                                            <h4 className="text-sm font-extrabold text-gray-800 leading-tight break-all">
+                                                                {m.name}
+                                                            </h4>
+                                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1 inline-block">
+                                                                {m.provider}
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleFavorite(m.id);
+                                                            }}
+                                                            className={`p-1.5 rounded-lg active:scale-95 transition-all text-amber-500`}
+                                                        >
+                                                            <Star size={16} fill={isFav ? "currentColor" : "none"} />
+                                                        </button>
+                                                    </div>
+
+                                                    <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+                                                        {m.description}
+                                                    </p>
+                                                </div>
+
+                                                {/* Card Footer */}
+                                                <div className="mt-4 pt-3 border-t border-gray-300/40 flex justify-between items-center">
+                                                    <div className="space-y-1">
+                                                        <span className="text-[9px] font-extrabold text-gray-400 uppercase block">Specs</span>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {m.context_length > 0 ? (
+                                                                <span className="text-[9px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
+                                                                    Context: {m.context_length >= 1048576 ? `${(m.context_length / 1048576).toFixed(0)}M` : `${(m.context_length / 1024).toFixed(0)}K`}
+                                                                </span>
+                                                            ) : null}
+                                                            {m.capabilities.map(cap => (
+                                                                <span key={cap} className="text-[9px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded uppercase">
+                                                                    {cap}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => setAiModel(m.id)}
+                                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                                                            isSelected ? 'bg-purple-600 text-white shadow-md' : 'bg-[#E0E5EC] text-gray-500 hover:text-purple-600'
+                                                        }`}
+                                                        style={!isSelected ? {
+                                                            boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                        } : {}}
+                                                    >
+                                                        {isSelected ? 'Active' : 'Select'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="col-span-full py-8 text-center text-gray-400 text-sm">
+                                        No models match your search/filter parameters.
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Obsidian Vault Integration Card */}
                 <div
-                    className="p-8 rounded-[32px] animate-scale-in opacity-0"
+                    className="p-8 rounded-[32px] animate-scale-in"
                     style={{
                         background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-                        animationDelay: '150ms'
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-8">
@@ -578,11 +958,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                 {/* Backup Card */}
                 <div
-                    className="p-8 rounded-[32px] animate-fade-in-up opacity-0"
+                    className="p-8 rounded-[32px] animate-scale-in"
                     style={{
                         background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-                        animationDelay: '200ms'
+                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-8">

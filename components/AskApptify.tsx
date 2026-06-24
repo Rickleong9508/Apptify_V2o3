@@ -310,6 +310,55 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<Message['pendingAction'] | null>(null);
 
+  // --- SiliconFlow Model Hub States ---
+  const [activeProvider, setActiveProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
+  const [activeModel, setActiveModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('app_ai_favorites') || '[]'); } catch (e) { return []; }
+  });
+  const [recentModels, setRecentModels] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('app_ai_recent') || '[]'); } catch (e) { return []; }
+  });
+  const [modelsList, setModelsList] = useState<any[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [showSwitcher, setShowSwitcher] = useState(false);
+  const [activeImagePreview, setActiveImagePreview] = useState<string | null>(null);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Capability UI States
+  // 1. Image
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [imageSize, setImageSize] = useState('1024x1024');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  
+  // 2. Video
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoSize, setVideoSize] = useState('1280x720');
+  const [videoTaskId, setVideoTaskId] = useState('');
+  const [videoTaskStatus, setVideoTaskStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+  const [videoProgressMsg, setVideoProgressMsg] = useState('');
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState('');
+
+  // 3. Embedding / RAG
+  const [embeddingQuery, setEmbeddingQuery] = useState('');
+  const [embeddingResults, setEmbeddingResults] = useState<any[]>([]);
+  const [isSyncingEmbeddings, setIsSyncingEmbeddings] = useState(false);
+  const [ragAnswer, setRagAnswer] = useState('');
+  const [isGeneratingRag, setIsGeneratingRag] = useState(false);
+
+  // 4. Audio
+  const [ttsText, setTtsText] = useState('');
+  const [ttsVoice, setTtsVoice] = useState('FunAudioLLM/CosyVoice2-0.5B:alex');
+  const [isGeneratingTts, setIsGeneratingTts] = useState(false);
+  const [generatedSpeechUrl, setGeneratedSpeechUrl] = useState('');
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionResult, setTranscriptionResult] = useState('');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   // --- Draggable Floating Button State & Logic ---
   const [position, setPosition] = useState({ x: 0, y: 0 }); // offset from bottom-right
   const [isDragging, setIsDragging] = useState(false);
@@ -406,6 +455,433 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Sync settings and models
+  useEffect(() => {
+    const syncSettings = () => {
+      setActiveProvider((localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
+      setActiveModel(localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+      try {
+        setFavorites(JSON.parse(localStorage.getItem('app_ai_favorites') || '[]'));
+        setRecentModels(JSON.parse(localStorage.getItem('app_ai_recent') || '[]'));
+      } catch (e) {}
+    };
+    window.addEventListener('storage', syncSettings);
+    window.addEventListener('apptify_settings_change', syncSettings);
+    return () => {
+      window.removeEventListener('storage', syncSettings);
+      window.removeEventListener('apptify_settings_change', syncSettings);
+    };
+  }, []);
+
+  const getProviderFromModelId = (modelId: string, currentProvider?: AIProvider): AIProvider => {
+    if (!modelId) return 'google';
+    if (modelId.startsWith('gemini-')) return 'google';
+    if (modelId.startsWith('gpt-') || modelId.startsWith('o1') || modelId.startsWith('o3-')) return 'openai';
+    if (modelId.startsWith('claude-')) return 'anthropic';
+    if (modelId === 'deepseek-chat' || modelId === 'deepseek-reasoner') return 'deepseek';
+    
+    try {
+      const sfCache = localStorage.getItem('app_siliconflow_models_cache');
+      if (sfCache) {
+        const sfModels: any[] = JSON.parse(sfCache);
+        if (sfModels.some(m => m.id === modelId)) {
+          return 'siliconflow';
+        }
+      }
+    } catch (e) {}
+
+    if (modelId === 'deepseek/deepseek-r1' || modelId === 'anthropic/claude-3.7-sonnet' || modelId === 'openai/gpt-4o') {
+      return 'openrouter';
+    }
+
+    if (modelId.includes('/')) {
+      return 'siliconflow';
+    }
+
+    return currentProvider || 'google';
+  };
+
+  const handleSelectModel = (modelId: string) => {
+    const provider = getProviderFromModelId(modelId, activeProvider);
+    
+    localStorage.setItem('app_global_ai_model', modelId);
+    localStorage.setItem('app_global_ai_provider', provider);
+    
+    const key = localStorage.getItem(`app_api_key_${provider}`) || localStorage.getItem('app_global_api_key') || '';
+    localStorage.setItem('app_global_api_key', key);
+    
+    setActiveModel(modelId);
+    setActiveProvider(provider);
+    
+    if (!recentModels.includes(modelId)) {
+      const updated = [modelId, ...recentModels.filter(id => id !== modelId).slice(0, 4)];
+      setRecentModels(updated);
+      localStorage.setItem('app_ai_recent', JSON.stringify(updated));
+    }
+    
+    setShowSwitcher(false);
+    window.dispatchEvent(new Event('apptify_settings_change'));
+  };
+
+  useEffect(() => {
+    const loadModels = async () => {
+      const apiKey = localStorage.getItem('app_global_api_key') || '';
+      if (!apiKey) return;
+      setIsLoadingModels(true);
+      try {
+        if (activeProvider === 'siliconflow') {
+          const cached = localStorage.getItem('app_siliconflow_models_cache');
+          if (cached) {
+            setModelsList(JSON.parse(cached));
+          } else {
+            const list = await aiService.getModels('siliconflow', apiKey);
+            setModelsList(list);
+            localStorage.setItem('app_siliconflow_models_cache', JSON.stringify(list));
+          }
+        } else {
+          const list = await aiService.getModels(activeProvider, apiKey);
+          setModelsList(list);
+        }
+      } catch (e) {
+        console.error("Failed to load models list for AskApptify:", e);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+    if (isOpen) {
+      loadModels();
+    }
+  }, [activeProvider, isOpen]);
+
+  // Video Polling Status
+  useEffect(() => {
+    if (!videoTaskId || videoTaskStatus !== 'processing') return;
+    let active = true;
+    const checkStatus = async () => {
+      try {
+        const apiKey = localStorage.getItem('app_global_api_key') || '';
+        const res = await fetch('/api/siliconflow/v1/video/status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({ requestId: videoTaskId })
+        });
+        if (!res.ok) throw new Error("Status query failed");
+        const data = await res.json();
+        
+        const status = data.status || data.data?.status;
+        const url = data.videoUrl || data.data?.videoUrl;
+        
+        if (!active) return;
+        
+        if (status === 'Success' && url) {
+          setGeneratedVideoUrl(url);
+          setVideoTaskStatus('success');
+          setVideoProgressMsg('Video generated successfully!');
+        } else if (status === 'Failed') {
+          setVideoTaskStatus('failed');
+          setVideoProgressMsg(data.reason || data.data?.reason || 'Video generation failed.');
+        } else {
+          setVideoProgressMsg(`Processing... status: ${status || 'In Progress'}`);
+        }
+      } catch (e) {
+        console.error("Video status polling failed:", e);
+      }
+    };
+    
+    const interval = setInterval(checkStatus, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [videoTaskId, videoTaskStatus]);
+
+  // Cosine Similarity
+  const cosineSimilarity = (vecA: number[], vecB: number[]) => {
+    let dotProduct = 0.0;
+    let normA = 0.0;
+    let normB = 0.0;
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+    if (normA === 0 || normB === 0) return 0;
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  };
+
+  // Vector Indexing & RAG
+  const buildEmbeddingIndex = async () => {
+    const apiKey = localStorage.getItem('app_global_api_key') || '';
+    if (!apiKey) {
+      alert("API Key is missing. Add it in settings.");
+      return;
+    }
+    setIsSyncingEmbeddings(true);
+    try {
+      let notes: any[] = [];
+      const kv = (window as any).__apptify_knowledgevault;
+      
+      if (kv && kv.vaultPath) {
+        const res = await fetch('/api/obsidian/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vaultPath: kv.vaultPath })
+        });
+        const data = await res.json();
+        if (res.ok && data.notes) {
+          notes = data.notes;
+        }
+      } else {
+        notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
+      }
+      
+      if (notes.length === 0) {
+        alert("No notes found in Knowledge Vault to index.");
+        setIsSyncingEmbeddings(false);
+        return;
+      }
+
+      const indexed: Record<string, { title: string; content: string; embedding: number[] }> = {};
+      
+      for (let i = 0; i < notes.length; i++) {
+        const note = notes[i];
+        const textToEmbed = `Title: ${note.title || ''}\nContent: ${note.content || ''}`;
+        
+        const vectors = await aiService.embeddings(activeProvider, activeModel, apiKey, textToEmbed);
+        if (vectors && vectors[0]) {
+          indexed[note.id] = {
+            title: note.title,
+            content: note.content,
+            embedding: vectors[0]
+          };
+        }
+      }
+      
+      localStorage.setItem('app_notes_embeddings', JSON.stringify(indexed));
+      alert(`Indexed ${Object.keys(indexed).length} notes successfully.`);
+    } catch (e: any) {
+      console.error(e);
+      alert("Failed to build index: " + e.message);
+    } finally {
+      setIsSyncingEmbeddings(false);
+    }
+  };
+
+  const semanticSearchVault = async () => {
+    if (!embeddingQuery.trim()) return;
+    const apiKey = localStorage.getItem('app_global_api_key') || '';
+    if (!apiKey) return;
+    
+    setIsGeneratingRag(true);
+    setRagAnswer('');
+    try {
+      const indexedStr = localStorage.getItem('app_notes_embeddings');
+      if (!indexedStr) {
+        alert("Build note vector index first.");
+        setIsGeneratingRag(false);
+        return;
+      }
+      
+      const indexed = JSON.parse(indexedStr);
+      const queryVector = await aiService.embeddings(activeProvider, activeModel, apiKey, embeddingQuery);
+      if (!queryVector || !queryVector[0]) {
+        throw new Error("Failed to embed query.");
+      }
+      
+      const scored = Object.keys(indexed).map(id => {
+        const note = indexed[id];
+        const score = cosineSimilarity(queryVector[0], note.embedding);
+        return { note, score };
+      });
+      
+      const matches = scored
+        .filter(item => item.score > 0.1)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+      
+      setEmbeddingResults(matches);
+
+      if (matches.length > 0) {
+        let context = "";
+        matches.forEach(item => {
+          context += `Note: ${item.note.title}\nContent: ${item.note.content}\n\n`;
+        });
+        
+        const systemPrompt = `You are a RAG assistant. Answer the question based on the provided context notes from their Second Brain vault. Cite the note titles.`;
+        const prompt = `Context Notes:\n${context}\nQuestion: ${embeddingQuery}`;
+        
+        let chatModel = activeModel;
+        let chatProvider = activeProvider;
+        if (activeModel.includes('embedding')) {
+          chatModel = 'gemini-2.5-flash';
+          chatProvider = 'google';
+        }
+        const fallbackKey = localStorage.getItem(`app_api_key_${chatProvider}`) || apiKey;
+        
+        const answer = await aiService.generate(chatProvider, chatModel, fallbackKey, prompt, systemPrompt);
+        setRagAnswer(answer);
+      } else {
+        setRagAnswer("No relevant notes match your query.");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert("RAG query failed: " + e.message);
+    } finally {
+      setIsGeneratingRag(false);
+    }
+  };
+
+  // Image attach handlers
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Audio recording handlers
+  const transcribeAudio = async (audioBlob: Blob) => {
+    setIsTranscribing(true);
+    setTranscriptionResult('Transcribing audio speech...');
+    try {
+      const apiKey = localStorage.getItem('app_global_api_key') || '';
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'speech.mp3');
+      formData.append('model', activeModel);
+
+      const res = await fetch('/api/siliconflow/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Transcription API error");
+      }
+      const data = await res.json();
+      const textResult = data.text || '';
+      setTranscriptionResult(textResult);
+      if (textResult.trim()) {
+        setInputText(textResult);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setTranscriptionResult(`Transcription error: ${e.message}`);
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const startAudioRecording = async () => {
+    audioChunksRef.current = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
+        transcribeAudio(audioBlob);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecordingAudio(true);
+    } catch (err) {
+      console.error("Recording start error", err);
+      alert("Microphone connection failed. Check permissions.");
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (mediaRecorderRef.current && isRecordingAudio) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecordingAudio(false);
+    }
+  };
+
+  // Generation triggers
+  const triggerImageGeneration = async () => {
+    if (!imagePrompt.trim()) return;
+    const apiKey = localStorage.getItem('app_global_api_key') || '';
+    if (!apiKey) {
+      alert("Add API Key in Settings.");
+      return;
+    }
+    setIsGeneratingImage(true);
+    try {
+      const urls = await aiService.image(activeProvider, activeModel, apiKey, imagePrompt, { image_size: imageSize });
+      if (urls && urls.length > 0) {
+        setGeneratedImages(prev => [urls[0], ...prev]);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'user',
+          content: `Generate image: "${imagePrompt}"`
+        }, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `Generated image successfully for prompt: "${imagePrompt}"`,
+          images: [urls[0]]
+        }]);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert("Image Generation failed: " + e.message);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const triggerVideoGeneration = async () => {
+    if (!videoPrompt.trim()) return;
+    const apiKey = localStorage.getItem('app_global_api_key') || '';
+    if (!apiKey) {
+      alert("Add API Key in Settings.");
+      return;
+    }
+    setGeneratedVideoUrl('');
+    setVideoTaskStatus('processing');
+    setVideoProgressMsg('Submitting video task to SiliconFlow...');
+    try {
+      const id = await aiService.video(activeProvider, activeModel, apiKey, videoPrompt, { image_size: videoSize });
+      setVideoTaskId(id);
+    } catch (e: any) {
+      console.error(e);
+      setVideoTaskStatus('failed');
+      setVideoProgressMsg(`Video Generation submission failed: ${e.message}`);
+    }
+  };
+
+  const triggerSpeechGeneration = async () => {
+    if (!ttsText.trim()) return;
+    const apiKey = localStorage.getItem('app_global_api_key') || '';
+    if (!apiKey) {
+      alert("Add API Key in Settings.");
+      return;
+    }
+    setIsGeneratingTts(true);
+    setGeneratedSpeechUrl('');
+    try {
+      const audioUrl = await aiService.audio(activeProvider, activeModel, apiKey, ttsText, { voice: ttsVoice });
+      setGeneratedSpeechUrl(audioUrl);
+    } catch (e: any) {
+      console.error(e);
+      alert("Speech synthesis failed: " + e.message);
+    } finally {
+      setIsGeneratingTts(false);
+    }
+  };
 
   // Scroll to bottom
   useEffect(() => {
@@ -1241,16 +1717,18 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
   const handleSend = async (text: string = inputText) => {
     if (!text.trim() || isProcessing) return;
 
-    // Add user message
+    // Add user message with image attachments if present
     const userMsgId = Date.now().toString();
-    const userMsg: Message = { id: userMsgId, role: 'user', content: text };
+    const imagesToSend = attachedImage ? [attachedImage] : undefined;
+    const userMsg: Message = { id: userMsgId, role: 'user', content: text, images: imagesToSend };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
+    setAttachedImage(null);
     setIsProcessing(true);
 
     const apiKey = localStorage.getItem('app_global_api_key');
-    const provider = (localStorage.getItem('app_global_ai_provider') as any) || 'google';
-    const model = localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash';
+    const provider = activeProvider;
+    const model = activeModel;
 
     if (!apiKey) {
       setMessages(prev => [...prev, {
@@ -1282,7 +1760,7 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
     const systemInstruction = buildSystemInstruction(skillRegistry, contextInfo);
 
     try {
-      const responseText = await aiService.generate(provider, model, apiKey, text, systemInstruction);
+      const responseText = await aiService.generate(provider, model, apiKey, text, systemInstruction, imagesToSend);
       const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       const action = JSON.parse(cleanJson);
 
@@ -1678,11 +2156,8 @@ Format your response in a clear and readable manner. Cite the note titles you us
         }}
         className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-4 rounded-[26px] bg-[#E0E5EC] text-gray-700 font-bold transition-all duration-300 ${isDragging ? 'scale-105' : 'hover:scale-105 active:scale-95'} group border border-white/40 select-none cursor-grab active:cursor-grabbing`}
       >
-        <div className="relative w-6 h-6 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md transition-transform group-hover:rotate-12 duration-300">
-          <span className="absolute w-full h-full rounded-full bg-blue-400 animate-ping opacity-20"></span>
-          <Sparkles size={13} className="fill-white" />
-        </div>
-        <span className="text-sm tracking-tight text-gray-800 font-bold">Ask Apptify</span>
+        <Sparkles className="text-purple-600" size={20} />
+        <span className="hidden md:inline">Ask Apptify</span>
       </button>
     );
   }
@@ -1694,6 +2169,16 @@ Format your response in a clear and readable manner. Cite the note titles you us
         className="absolute inset-0 bg-black/10 backdrop-blur-sm transition-opacity duration-300" 
         onClick={() => setIsOpen(false)}
       />
+
+      {/* Fullscreen Image Preview Lightbox */}
+      {activeImagePreview && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+          onClick={() => setActiveImagePreview(null)}
+        >
+          <img src={activeImagePreview} alt="Preview" className="max-w-full max-h-full rounded-2xl shadow-2xl object-contain animate-scale-in" />
+        </div>
+      )}
 
       {/* Floating Neumorphic Panel */}
       <div 
@@ -1716,15 +2201,23 @@ Format your response in a clear and readable manner. Cite the note titles you us
               <Sparkles size={18} className="fill-white" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-800 text-base flex items-center gap-1.5 leading-none">
+              <h3 className="font-bold text-gray-800 text-sm leading-none flex items-center gap-1">
                 Ask Apptify
               </h3>
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                Universal Command Layer
-              </p>
+              
+              {/* Quick Model Switcher Trigger */}
+              <div className="relative inline-block text-left mt-1">
+                <button
+                  onClick={() => setShowSwitcher(!showSwitcher)}
+                  className="text-[9px] font-extrabold uppercase tracking-wider text-purple-600 hover:text-purple-700 flex items-center gap-1 transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  Model: {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel} ▼
+                </button>
+              </div>
             </div>
           </div>
+          
           <button
             onClick={() => setIsOpen(false)}
             className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-500 hover:text-red-500 hover:scale-105 active:scale-95 transition-all shadow-clay-btn"
@@ -1733,150 +2226,536 @@ Format your response in a clear and readable manner. Cite the note titles you us
           </button>
         </div>
 
-        {/* Message Container */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar bg-[#E0E5EC]">
-          {messages.map((msg, i) => (
-            <div key={msg.id || i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div 
-                className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed border ${
-                  msg.role === 'user' 
-                    ? 'bg-[#E0E5EC] text-gray-800 rounded-tr-md border-white/20 shadow-clay-inner' 
-                    : msg.isError 
-                      ? 'bg-rose-50 border-rose-200 text-rose-700 rounded-tl-md shadow-clay-btn'
-                      : 'bg-[#E0E5EC] text-gray-800 rounded-tl-md border-white/30 shadow-clay-btn'
-                }`}
-              >
-                <div className="whitespace-pre-wrap font-medium">{msg.content}</div>
-
-                {/* Stock Analysis Card Widget */}
-                {msg.stockAnalysis && (
-                  <div className="mt-4 p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/40 space-y-4">
-                    <div className="flex justify-between items-center border-b border-gray-300/40 pb-2">
-                      <span className="font-extrabold text-blue-600 text-lg">{msg.stockAnalysis.symbol} Signal</span>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold text-white ${
-                        msg.stockAnalysis.signal.signal === 'BULLISH' ? 'bg-teal-500' : msg.stockAnalysis.signal.signal === 'BEARISH' ? 'bg-rose-500' : 'bg-amber-500'
-                      }`}>
-                        {msg.stockAnalysis.signal.signal}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-gray-600">
-                      <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
-                        <p className="text-[9px] text-gray-400 uppercase">Score</p>
-                        <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.score.toFixed(1)}/10</p>
-                      </div>
-                      <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
-                        <p className="text-[9px] text-gray-400 uppercase">Action</p>
-                        <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.action}</p>
-                      </div>
-                      <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
-                        <p className="text-[9px] text-gray-400 uppercase">Conviction</p>
-                        <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.conviction}</p>
-                      </div>
-                      <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
-                        <p className="text-[9px] text-gray-400 uppercase">Confidence</p>
-                        <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.confidence}</p>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => handleExportHtml(msg.stockAnalysis!.symbol, msg.stockAnalysis!.report, msg.stockAnalysis!.signal)}
-                      className="w-full py-2.5 rounded-xl bg-blue-500 text-white font-bold text-xs hover:bg-blue-600 transition shadow-md flex items-center justify-center gap-1.5"
-                    >
-                      <FileText size={14} /> Export HTML Research Report
-                    </button>
-                  </div>
-                )}
-
-                {/* Video Summary Card Widget */}
-                {msg.videoSummary && (
-                  <VideoSummaryWidget
-                    summary={msg.videoSummary}
-                    onSaveSuccess={(successMsg) => {
-                      setMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        role: 'assistant',
-                        content: `✅ ${successMsg}`
-                      }]);
-                    }}
-                    onSaveError={(errorMsg) => {
-                      setMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        role: 'assistant',
-                        content: `❌ ${errorMsg}`,
-                        isError: true
-                      }]);
-                    }}
-                  />
-                )}
-
-                {/* Pending Confirmation Buttons */}
-                {msg.pendingAction && (
-                  <div className="mt-4 flex gap-3">
+        {/* Model Switcher Dropdown */}
+        {showSwitcher && (
+          <div className="absolute left-5 right-5 top-20 bg-[#E0E5EC] rounded-2xl p-4 z-50 shadow-clay-inner border border-white/40 max-h-[300px] overflow-y-auto no-scrollbar">
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-300/40">
+              <span className="text-xs font-extrabold text-gray-500 uppercase">Quick Switch Model</span>
+              <button onClick={() => setShowSwitcher(false)} className="text-[10px] text-gray-400 hover:text-red-500 font-bold">Close</button>
+            </div>
+            
+            {/* Pinned Favorites */}
+            {favorites.length > 0 && (
+              <div className="mb-4">
+                <span className="text-[9px] font-extrabold text-amber-500 uppercase tracking-wider block mb-1">⭐ Pinned Favorites</span>
+                <div className="space-y-1">
+                  {favorites.map(id => (
                     <button
-                      onClick={() => handleConfirmAction(true)}
-                      className="flex-1 py-2 rounded-xl bg-teal-500 text-white font-bold text-xs hover:bg-teal-600 transition flex items-center justify-center gap-1"
+                      key={id}
+                      onClick={() => handleSelectModel(id)}
+                      className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === id ? 'text-purple-600' : 'text-gray-600'}`}
                     >
-                      <Check size={14} /> Confirm
+                      {id.includes('/') ? id.split('/').pop() : id}
                     </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recently Used */}
+            {recentModels.length > 0 && (
+              <div className="mb-4">
+                <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">🕒 Recently Used</span>
+                <div className="space-y-1">
+                  {recentModels.filter(id => !favorites.includes(id)).map(id => (
                     <button
-                      onClick={() => handleConfirmAction(false)}
-                      className="flex-1 py-2 rounded-xl bg-gray-400 text-white font-bold text-xs hover:bg-gray-500 transition flex items-center justify-center gap-1"
+                      key={id}
+                      onClick={() => handleSelectModel(id)}
+                      className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === id ? 'text-purple-600' : 'text-gray-600'}`}
                     >
-                      <X size={14} /> Cancel
+                      {id.includes('/') ? id.split('/').pop() : id}
                     </button>
-                  </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* All Retrieved Models */}
+            <div>
+              <span className="text-[9px] font-extrabold text-blue-500 uppercase tracking-wider block mb-1">📋 Retrieved Models</span>
+              <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                {modelsList.length > 0 ? (
+                  modelsList.map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => handleSelectModel(m.id)}
+                      className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === m.id ? 'text-purple-600' : 'text-gray-600'}`}
+                    >
+                      {m.name || (m.id.includes('/') ? m.id.split('/').pop() : m.id)}
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-[10px] text-gray-400 italic p-2">No models found in index.</p>
                 )}
               </div>
             </div>
-          ))}
-          {isProcessing && (
-            <div className="flex justify-start w-full">
-              <div className="bg-[#E0E5EC] p-5 rounded-[24px] rounded-tl-none shadow-clay-btn flex items-center gap-2 border border-white/40">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Dock */}
-        <div 
-          className="p-5 bg-[#E0E5EC]"
-          style={{ borderTop: "1px solid rgba(0, 0, 0, 0.05)" }}
-        >
-          <div className="relative flex items-center gap-2">
-            <button
-              onClick={toggleListening}
-              className={`p-3.5 rounded-2xl transition-all shadow-clay-btn ${
-                isListening 
-                  ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/30' 
-                  : 'bg-[#E0E5EC] text-gray-500 hover:text-blue-500'
-              }`}
-            >
-              <Mic size={20} />
-            </button>
-            <input
-              type="text"
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
-              placeholder="Record RM100, add task, analyze NVDA..."
-              className="flex-1 p-3.5 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-sm text-gray-700 placeholder-gray-400/80 shadow-clay-inner border border-white/10 focus:ring-2 focus:ring-blue-500/10 transition-all"
-              disabled={isProcessing}
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!inputText.trim() || isProcessing}
-              className="p-3.5 rounded-2xl text-white bg-gray-800 disabled:bg-gray-300 disabled:opacity-50 transition-all shadow-clay-btn"
-            >
-              <Send size={18} />
-            </button>
           </div>
-          {isListening && <p className="text-[10px] text-center text-rose-500 font-extrabold uppercase mt-2 animate-pulse tracking-wider">Voice Listener Active...</p>}
-        </div>
+        )}
+
+        {/* Dynamic Capability-Aware Content Panels */}
+        
+        {/* A. Image Generation Panel */}
+        {isImageModel && (
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
+            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest pl-1">Text-to-Image Generation</h4>
+              <textarea
+                value={imagePrompt}
+                onChange={e => setImagePrompt(e.target.value)}
+                placeholder="Describe what you want the model to generate..."
+                className="w-full p-4 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                rows={3}
+              />
+              
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex-1">
+                  <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1 pl-1">Size Option</label>
+                  <select
+                    value={imageSize}
+                    onChange={e => setImageSize(e.target.value)}
+                    className="w-full p-2 rounded-xl text-xs bg-[#E0E5EC] border border-gray-300/40 text-gray-600 outline-none"
+                  >
+                    <option value="1024x1024">Square (1:1)</option>
+                    <option value="1024x576">Landscape (16:9)</option>
+                    <option value="768x1024">Portrait (3:4)</option>
+                  </select>
+                </div>
+                <button
+                  onClick={triggerImageGeneration}
+                  disabled={isGeneratingImage || !imagePrompt.trim()}
+                  className="mt-4 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition shadow-lg flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isGeneratingImage ? <Activity className="animate-spin" size={14} /> : 'Generate'}
+                </button>
+              </div>
+            </div>
+
+            {generatedImages.length > 0 && (
+              <div className="space-y-4">
+                <h5 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider pl-1">Generated Output</h5>
+                <div className="grid grid-cols-1 gap-4">
+                  {generatedImages.map((img, idx) => (
+                    <div key={idx} className="p-4 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/20 space-y-3">
+                      <img
+                        src={img}
+                        alt="Generated"
+                        className="w-full rounded-2xl shadow-md cursor-pointer hover:opacity-95 object-contain"
+                        onClick={() => setActiveImagePreview(img)}
+                      />
+                      <a
+                        href={img}
+                        download={`Apptify_${Date.now()}.png`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-2 rounded-xl bg-gray-800 text-white font-bold text-xs text-center hover:bg-gray-900 transition block"
+                      >
+                        Open / Save Image
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* B. Video Generation Panel */}
+        {isVideoModel && (
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
+            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest pl-1">Text-to-Video Generation</h4>
+              <textarea
+                value={videoPrompt}
+                onChange={e => setVideoPrompt(e.target.value)}
+                placeholder="Describe video context, movements, camera panning..."
+                className="w-full p-4 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                rows={3}
+              />
+
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex-1">
+                  <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1 pl-1">Aspect Ratio</label>
+                  <select
+                    value={videoSize}
+                    onChange={e => setVideoSize(e.target.value)}
+                    className="w-full p-2 rounded-xl text-xs bg-[#E0E5EC] border border-gray-300/40 text-gray-600 outline-none"
+                  >
+                    <option value="1280x720">Landscape (16:9)</option>
+                    <option value="720x1280">Portrait (9:16)</option>
+                  </select>
+                </div>
+                <button
+                  onClick={triggerVideoGeneration}
+                  disabled={videoTaskStatus === 'processing' || !videoPrompt.trim()}
+                  className="mt-4 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition shadow-lg flex items-center gap-2 disabled:opacity-50"
+                >
+                  {videoTaskStatus === 'processing' ? <Activity className="animate-spin" size={14} /> : 'Generate'}
+                </button>
+              </div>
+
+              {videoProgressMsg && (
+                <div className="p-3.5 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10 text-xs font-bold flex items-center gap-2">
+                  {videoTaskStatus === 'processing' && <Activity className="animate-spin text-purple-500" size={14} />}
+                  <span>{videoProgressMsg}</span>
+                </div>
+              )}
+            </div>
+
+            {generatedVideoUrl && (
+              <div className="p-4 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/20 space-y-3">
+                <h5 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider pl-1">Video Output</h5>
+                <video src={generatedVideoUrl} controls className="w-full rounded-2xl shadow-md" />
+                <a
+                  href={generatedVideoUrl}
+                  download={`Apptify_${Date.now()}.mp4`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2 rounded-xl bg-gray-800 text-white font-bold text-xs text-center hover:bg-gray-900 transition block"
+                >
+                  Download Video
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* C. Embedding RAG Panel */}
+        {isEmbeddingModel && (
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
+            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Vector Embedding RAG</h4>
+                <button
+                  onClick={buildEmbeddingIndex}
+                  disabled={isSyncingEmbeddings}
+                  className="px-3 py-1.5 rounded-xl text-[9px] font-extrabold bg-[#E0E5EC] text-purple-600 hover:scale-105 active:scale-95 transition shadow-clay-btn flex items-center gap-1.5"
+                >
+                  {isSyncingEmbeddings ? <Activity className="animate-spin" size={10} /> : <RefreshCw size={10} />}
+                  Compute Embeddings
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                Generates vector indexes for Knowledge Vault notes locally so you can search semantically using cognitive match.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+              <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest pl-1">Cognitive Search</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={embeddingQuery}
+                  onChange={e => setEmbeddingQuery(e.target.value)}
+                  placeholder="Query note contents semantically..."
+                  onKeyDown={e => e.key === 'Enter' && semanticSearchVault()}
+                  className="w-full pl-4 pr-10 py-3 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                />
+                <button
+                  onClick={semanticSearchVault}
+                  disabled={isGeneratingRag || !embeddingQuery.trim()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-purple-600 text-white hover:scale-105 active:scale-95 transition"
+                >
+                  {isGeneratingRag ? <Activity className="animate-spin" size={12} /> : <Send size={12} />}
+                </button>
+              </div>
+
+              {ragAnswer && (
+                <div className="p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10 text-xs leading-relaxed space-y-2 text-gray-700">
+                  <span className="font-extrabold text-purple-600 uppercase text-[9px] block">RAG Synthesis Answer</span>
+                  <p className="whitespace-pre-wrap">{ragAnswer}</p>
+                </div>
+              )}
+
+              {embeddingResults.length > 0 && (
+                <div className="space-y-2">
+                  <span className="font-extrabold text-gray-400 uppercase text-[9px] block">Relevant Notes Matched</span>
+                  <div className="space-y-1.5">
+                    {embeddingResults.map((item, idx) => (
+                      <div key={idx} className="p-3 rounded-xl bg-[#E0E5EC] border border-white/10 flex justify-between items-center text-[10px] shadow-clay-btn">
+                        <span className="font-bold text-gray-700 truncate max-w-[75%]">📄 {item.note.title}</span>
+                        <span className="text-purple-600 font-extrabold">{(item.score * 100).toFixed(0)}% match</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* D. Audio / Speech Panel */}
+        {isAudioModel && (
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
+            {/* Speech synthesis */}
+            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Text-to-Speech synthesis</h4>
+              <textarea
+                value={ttsText}
+                onChange={e => setTtsText(e.target.value)}
+                placeholder="Enter sentences to render as voice audio playback..."
+                className="w-full p-4 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                rows={3}
+              />
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex-1">
+                  <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1 pl-1">Voice Profile</label>
+                  <select
+                    value={ttsVoice}
+                    onChange={e => setTtsVoice(e.target.value)}
+                    className="w-full p-2 rounded-xl text-xs bg-[#E0E5EC] border border-gray-300/40 text-gray-600 outline-none"
+                  >
+                    <option value="FunAudioLLM/CosyVoice2-0.5B:alex">Alex (CosyVoice Male)</option>
+                    <option value="FunAudioLLM/CosyVoice2-0.5B:bella">Bella (CosyVoice Female)</option>
+                  </select>
+                </div>
+                <button
+                  onClick={triggerSpeechGeneration}
+                  disabled={isGeneratingTts || !ttsText.trim()}
+                  className="mt-4 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition shadow-lg flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isGeneratingTts ? <Activity className="animate-spin" size={14} /> : 'Synthesize'}
+                </button>
+              </div>
+
+              {generatedSpeechUrl && (
+                <div className="mt-4 p-3 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10">
+                  <audio src={generatedSpeechUrl} controls className="w-full" />
+                </div>
+              )}
+            </div>
+
+            {/* Audio Speech to Text dictation */}
+            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Speech-to-Text Transcription</h4>
+              <div className="flex flex-col items-center justify-center p-4">
+                <button
+                  onClick={isRecordingAudio ? stopAudioRecording : startAudioRecording}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                    isRecordingAudio 
+                      ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/30' 
+                      : 'bg-[#E0E5EC] text-gray-500 shadow-clay-btn hover:text-blue-500 hover:scale-105 active:scale-95'
+                  }`}
+                  style={!isRecordingAudio ? {
+                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                  } : {}}
+                >
+                  <Mic size={24} />
+                </button>
+                <span className="text-[10px] font-extrabold text-gray-400 mt-3 uppercase tracking-wider">
+                  {isRecordingAudio ? 'Recording... click to stop' : 'Click to dictate audio'}
+                </span>
+              </div>
+
+              {(isTranscribing || transcriptionResult) && (
+                <div className="p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10 text-xs leading-relaxed text-gray-700">
+                  <span className="text-[9px] text-gray-400 uppercase tracking-wider block mb-1">Dictated Transcript</span>
+                  {isTranscribing ? (
+                    <span className="flex items-center gap-1 text-gray-400">
+                      <Activity className="animate-spin" size={12} /> Transcribing audio payload...
+                    </span>
+                  ) : (
+                    <p className="font-medium">{transcriptionResult}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* E. Chat / Vision Standard Assistant Panel */}
+        {isChatModel && (
+          <>
+            {/* Message Container */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar bg-[#E0E5EC]">
+              {messages.map((msg, i) => (
+                <div key={msg.id || i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div 
+                    className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed border ${
+                      msg.role === 'user' 
+                        ? 'bg-[#E0E5EC] text-gray-800 rounded-tr-md border-white/20 shadow-clay-inner' 
+                        : msg.isError 
+                          ? 'bg-rose-50 border-rose-200 text-rose-700 rounded-tl-md shadow-clay-btn'
+                          : 'bg-[#E0E5EC] text-gray-800 rounded-tl-md border-white/30 shadow-clay-btn'
+                    }`}
+                  >
+                    <div className="whitespace-pre-wrap font-medium">{msg.content}</div>
+
+                    {/* Inline Sent Images (for Vision) */}
+                    {msg.images && msg.images.map((img, idx) => (
+                      <img 
+                        key={idx} 
+                        src={img} 
+                        alt="Attached Preview" 
+                        className="mt-3 rounded-xl max-w-full max-h-[160px] object-cover cursor-pointer hover:opacity-95 shadow-md border border-white/30"
+                        onClick={() => setActiveImagePreview(img)}
+                      />
+                    ))}
+
+                    {/* Stock Analysis Card Widget */}
+                    {msg.stockAnalysis && (
+                      <div className="mt-4 p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/40 space-y-4">
+                        <div className="flex justify-between items-center border-b border-gray-300/40 pb-2">
+                          <span className="font-extrabold text-blue-600 text-lg">{msg.stockAnalysis.symbol} Signal</span>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold text-white ${
+                            msg.stockAnalysis.signal.signal === 'BULLISH' ? 'bg-teal-500' : msg.stockAnalysis.signal.signal === 'BEARISH' ? 'bg-rose-500' : 'bg-amber-500'
+                          }`}>
+                            {msg.stockAnalysis.signal.signal}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-gray-600">
+                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                            <p className="text-[9px] text-gray-400 uppercase">Score</p>
+                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.score.toFixed(1)}/10</p>
+                          </div>
+                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                            <p className="text-[9px] text-gray-400 uppercase">Action</p>
+                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.action}</p>
+                          </div>
+                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                            <p className="text-[9px] text-gray-400 uppercase">Conviction</p>
+                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.conviction}</p>
+                          </div>
+                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                            <p className="text-[9px] text-gray-400 uppercase">Confidence</p>
+                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.confidence}</p>
+                          </div>
+                        </div>
+
+                        <button 
+                          onClick={() => handleExportHtml(msg.stockAnalysis!.symbol, msg.stockAnalysis!.report, msg.stockAnalysis!.signal)}
+                          className="w-full py-2.5 rounded-xl bg-blue-500 text-white font-bold text-xs hover:bg-blue-600 transition shadow-md flex items-center justify-center gap-1.5"
+                        >
+                          <FileText size={14} /> Export HTML Research Report
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Video Summary Card Widget */}
+                    {msg.videoSummary && (
+                      <VideoSummaryWidget
+                        summary={msg.videoSummary}
+                        onSaveSuccess={(successMsg) => {
+                          setMessages(prev => [...prev, {
+                            id: Date.now().toString(),
+                            role: 'assistant',
+                            content: `✅ ${successMsg}`
+                          }]);
+                        }}
+                        onSaveError={(errorMsg) => {
+                          setMessages(prev => [...prev, {
+                            id: Date.now().toString(),
+                            role: 'assistant',
+                            content: `❌ ${errorMsg}`,
+                            isError: true
+                          }]);
+                        }}
+                      />
+                    )}
+
+                    {/* Pending Confirmation Buttons */}
+                    {msg.pendingAction && (
+                      <div className="mt-4 flex gap-3">
+                        <button
+                          onClick={() => handleConfirmAction(true)}
+                          className="flex-1 py-2 rounded-xl bg-teal-500 text-white font-bold text-xs hover:bg-teal-600 transition flex items-center justify-center gap-1"
+                        >
+                          <Check size={14} /> Confirm
+                        </button>
+                        <button
+                          onClick={() => handleConfirmAction(false)}
+                          className="flex-1 py-2 rounded-xl bg-gray-400 text-white font-bold text-xs hover:bg-gray-500 transition flex items-center justify-center gap-1"
+                        >
+                          <X size={14} /> Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isProcessing && (
+                <div className="flex justify-start w-full">
+                  <div className="bg-[#E0E5EC] p-5 rounded-[24px] rounded-tl-none shadow-clay-btn flex items-center gap-2 border border-white/40">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Dock */}
+            <div 
+              className="p-5 bg-[#E0E5EC]"
+              style={{ borderTop: "1px solid rgba(0, 0, 0, 0.05)" }}
+            >
+              {/* Thumbnail image attachments preview */}
+              {attachedImage && (
+                <div className="relative inline-block ml-4 mb-2 p-1.5 rounded-xl bg-[#E0E5EC] shadow-clay-inner border border-white/20">
+                  <img src={attachedImage} alt="Preview" className="h-12 rounded-lg object-contain" />
+                  <button 
+                    onClick={() => setAttachedImage(null)} 
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[8px] hover:bg-rose-600 transition"
+                  >
+                    <X size={8} />
+                  </button>
+                </div>
+              )}
+
+              <div className="relative flex items-center gap-2">
+                {/* Conditional Vision uploader */}
+                {supportsVision && (
+                  <>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-3.5 rounded-2xl transition-all shadow-clay-btn bg-[#E0E5EC] text-gray-500 hover:text-blue-500"
+                    >
+                      <Paperclip size={20} className="rotate-45" />
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleFileSelect} 
+                    />
+                  </>
+                )}
+
+                <button
+                  onClick={toggleListening}
+                  className={`p-3.5 rounded-2xl transition-all shadow-clay-btn ${
+                    isListening 
+                      ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/30' 
+                      : 'bg-[#E0E5EC] text-gray-500 hover:text-blue-500'
+                  }`}
+                >
+                  <Mic size={20} />
+                </button>
+                
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={e => setInputText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  placeholder={supportsVision ? "Type request or attach image..." : "Record RM100, add task..."}
+                  className="flex-1 p-3.5 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-sm text-gray-700 placeholder-gray-400/80 shadow-clay-inner border border-white/10 focus:ring-2 focus:ring-blue-500/10 transition-all"
+                  disabled={isProcessing}
+                />
+                
+                <button
+                  onClick={() => handleSend()}
+                  disabled={!inputText.trim() || isProcessing}
+                  className="p-3.5 rounded-2xl text-white bg-gray-800 disabled:bg-gray-300 disabled:opacity-50 transition-all shadow-clay-btn"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+              {isListening && <p className="text-[10px] text-center text-rose-500 font-extrabold uppercase mt-2 animate-pulse tracking-wider">Voice Listener Active...</p>}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
