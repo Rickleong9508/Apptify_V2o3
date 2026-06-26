@@ -246,26 +246,27 @@ const App: React.FC = () => {
   return (
     <>
       {currentApp !== 'launcher' && (
-        <div 
-          className="fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl z-50 flex items-center justify-between px-6 py-3 rounded-full bg-[#E0E5EC]/90 backdrop-blur-md border border-white/50 animate-fade-in-down animate-duration-300"
-          style={{
-            boxShadow: "9px 9px 16px rgb(163,177,198,0.3), -9px -9px 16px rgba(255,255,255, 0.8)"
-          }}
-        >
+        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none animate-fade-in-down animate-duration-300">
+          <div 
+            className="w-[95%] sm:w-[90%] max-w-4xl flex items-center justify-between px-3 py-2 sm:px-6 sm:py-3 rounded-full bg-[#E0E5EC]/90 backdrop-blur-md border border-white/50 pointer-events-auto"
+            style={{
+              boxShadow: "9px 9px 16px rgb(163,177,198,0.3), -9px -9px 16px rgba(255,255,255, 0.8)"
+            }}
+          >
           {/* Back to Launcher Button */}
           <button
             onClick={() => setCurrentApp('launcher')}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-gray-600 hover:text-blue-500 transition-all bg-[#E0E5EC] hover:scale-105 active:scale-95 border border-white/40"
+            className="flex items-center gap-1 px-2.5 py-1.5 sm:gap-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-bold text-gray-600 hover:text-blue-500 transition-all bg-[#E0E5EC] hover:scale-105 active:scale-95 border border-white/40"
             style={{
               boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
             }}
           >
             <ArrowLeft size={14} />
-            <span>Back</span>
+            <span className="hidden sm:inline">Back</span>
           </button>
 
           {/* Active App Title */}
-          <span className="font-extrabold text-xs text-gray-700 uppercase tracking-widest pl-2">
+          <span className="font-extrabold text-[10px] sm:text-xs text-gray-700 uppercase tracking-widest pl-1 sm:pl-2 truncate max-w-[100px] sm:max-w-none">
             {getAppTitle()}
           </span>
 
@@ -273,13 +274,13 @@ const App: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-extrabold text-purple-600 hover:text-purple-700 transition-all bg-[#E0E5EC] border border-white/40"
+              className="flex items-center gap-1 px-2.5 py-1.5 sm:gap-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold text-purple-600 hover:text-purple-700 transition-all bg-[#E0E5EC] border border-white/40"
               style={{
                 boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
               }}
             >
               <Cpu size={14} />
-              <span className="max-w-[120px] truncate">
+              <span className="max-w-[60px] sm:max-w-[120px] truncate">
                 {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}
               </span>
               <ChevronDown size={14} />
@@ -292,7 +293,7 @@ const App: React.FC = () => {
                 
                 {/* Dropdown Card */}
                 <div 
-                  className="absolute right-0 mt-2.5 w-64 rounded-2xl p-4 bg-[#E0E5EC] border border-white/50 z-50 shadow-2xl max-h-[320px] overflow-y-auto no-scrollbar"
+                  className="absolute right-0 mt-2.5 w-56 sm:w-64 rounded-2xl p-3 sm:p-4 bg-[#E0E5EC] border border-white/50 z-50 shadow-2xl max-h-[320px] overflow-y-auto no-scrollbar"
                   style={{
                     boxShadow: "10px 10px 20px rgb(163,177,198,0.4), -10px -10px 20px rgba(255,255,255, 0.8)"
                   }}
@@ -364,6 +365,7 @@ const App: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
       )}
       <div className={currentApp !== 'launcher' ? 'pt-24' : ''}>
         {renderSubApp()}

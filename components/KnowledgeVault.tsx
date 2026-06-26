@@ -274,9 +274,23 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
     };
 
     // Shared state for API
-    const [aiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
-    const [apiKey] = useState(() => localStorage.getItem('app_global_api_key') || '');
-    const [aiModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+    const [aiProvider, setAiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('app_global_api_key') || '');
+    const [aiModel, setAiModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+
+    useEffect(() => {
+        const sync = () => {
+            setAiProvider((localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
+            setApiKey(localStorage.getItem('app_global_api_key') || '');
+            setAiModel(localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+        };
+        window.addEventListener('apptify_settings_change', sync);
+        window.addEventListener('storage', sync);
+        return () => {
+            window.removeEventListener('apptify_settings_change', sync);
+            window.removeEventListener('storage', sync);
+        };
+    }, []);
 
     // --- Focus Timer State ---
     const [focusTimeLeft, setFocusTimeLeft] = useState(25 * 60);
@@ -980,7 +994,7 @@ ${retrievedNotesContext}`;
     ];
 
     return (
-        <div className="flex h-screen overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-blue-500/20 transition-colors duration-300 relative">
+        <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-blue-500/20 transition-colors duration-300 relative">
 
             {/* Main Content Area */}
             <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
@@ -988,26 +1002,15 @@ ${retrievedNotesContext}`;
 
                     {/* Header aka Dynamic Island Area */}
                     <div className="sticky top-4 z-30 mb-8 flex justify-between items-center px-2">
-                        <div
-                            onClick={onExit}
-                            className="flex items-center gap-3 pl-2 opacity-60 hover:opacity-100 transition-all cursor-pointer group px-4 py-2 rounded-[20px]"
-                            style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                            }}
-                        >
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-gray-600 shadow-inner group-hover:scale-110 transition-transform">
-                                <Triangle size={10} fill="currentColor" className="rotate-180" />
-                            </div>
-                            <span className="font-semibold text-sm tracking-tight text-gray-700">Knowledge Vault</span>
-                        </div>
-
                         {/* Sync Status & Manual Trigger */}
-                        <div className="flex items-center gap-4 mr-auto ml-4">
+                        <div className="flex items-center gap-4 flex-1">
                             <button
                                 onClick={handleManualSync}
                                 disabled={isSyncing}
-                                className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium text-gray-500 hover:text-blue-600 hover:bg-white/50 transition-all border border-transparent hover:border-blue-100"
+                                className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-gray-500 hover:text-blue-600 hover:bg-white/50 transition-all border border-transparent shadow-clay-btn bg-[#E0E5EC]"
+                                style={{
+                                    boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                }}
                                 title="Force Cloud Sync"
                             >
                                 <RefreshCw size={12} className={isSyncing ? "animate-spin text-blue-500" : ""} />
@@ -1025,7 +1028,7 @@ ${retrievedNotesContext}`;
                         {/* Global AI Trigger */}
                         <button
                             onClick={() => setIsGlobalChatOpen(true)}
-                            className="text-gray-700 px-5 py-2.5 rounded-[20px] flex items-center gap-2 transition-all active:scale-95 group hover:text-blue-600"
+                            className="hidden md:flex text-gray-700 px-5 py-2.5 rounded-[20px] items-center gap-2 transition-all active:scale-95 group hover:text-blue-600"
                             style={{
                                 background: "#E0E5EC",
                                 boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
@@ -1590,9 +1593,23 @@ const NotesView: React.FC<{
     vaultPath: string
 }> = ({ notes, setNotes, openGlobalChat, targetNoteId, setTargetNoteId, vaultPath }) => {
     // Shared state like global settings
-    const [aiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
-    const [apiKey] = useState(() => localStorage.getItem('app_global_api_key') || '');
-    const [aiModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+    const [aiProvider, setAiProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('app_global_api_key') || '');
+    const [aiModel, setAiModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+
+    useEffect(() => {
+        const sync = () => {
+            setAiProvider((localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
+            setApiKey(localStorage.getItem('app_global_api_key') || '');
+            setAiModel(localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+        };
+        window.addEventListener('apptify_settings_change', sync);
+        window.addEventListener('storage', sync);
+        return () => {
+            window.removeEventListener('apptify_settings_change', sync);
+            window.removeEventListener('storage', sync);
+        };
+    }, []);
 
     const [isEditing, setIsEditing] = useState(false);
     const [interactionMode, setInteractionMode] = useState<'VIEW' | 'EDIT'>('VIEW');

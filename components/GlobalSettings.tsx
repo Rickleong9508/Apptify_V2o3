@@ -92,6 +92,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
         localStorage.setItem('app_global_ai_provider', aiProvider);
         const currentKey = apiKeys[aiProvider] || '';
         localStorage.setItem('app_global_api_key', currentKey);
+        window.dispatchEvent(new Event('apptify_settings_change'));
     }, [aiProvider, apiKeys]);
 
     useEffect(() => {
@@ -101,10 +102,12 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
             setRecentModels(updated);
             localStorage.setItem('app_ai_recent', JSON.stringify(updated));
         }
+        window.dispatchEvent(new Event('apptify_settings_change'));
     }, [aiModel]);
 
     useEffect(() => {
         localStorage.setItem('app_ai_favorites', JSON.stringify(favorites));
+        window.dispatchEvent(new Event('apptify_settings_change'));
     }, [favorites]);
 
     useEffect(() => {
@@ -333,6 +336,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 });
                 setFavorites(JSON.parse(localStorage.getItem('app_ai_favorites') || '[]'));
                 setRecentModels(JSON.parse(localStorage.getItem('app_ai_recent') || '[]'));
+                window.dispatchEvent(new Event('apptify_settings_change'));
 
                 alert("Restore Successful! Please restart applications to sync properly.");
             } catch (err) {
@@ -793,7 +797,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                                                 <h4 className="text-sm font-extrabold text-gray-800 leading-tight break-all">
                                                                     {m.name}
                                                                 </h4>
-                                                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1 inline-block">
+                                                                <p className="text-[10px] text-gray-400 font-mono mt-0.5 break-all">
+                                                                    {m.id}
+                                                                </p>
+                                                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1.5 inline-block">
                                                                     {m.provider}
                                                                 </span>
                                                             </div>

@@ -408,26 +408,9 @@ Please run the framework and output the research report with the Signal Block at
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-gray-300 transition-colors duration-300 relative">
+        <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-gray-300 transition-colors duration-300 relative">
             <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
                 <div className="max-w-4xl mx-auto p-6 md:p-12 pb-40 animate-fade-in">
-
-                    {/* Exit Header */}
-                    <div
-                        onClick={onExit}
-                        className="flex items-center gap-2 mb-12 pl-1 opacity-60 hover:opacity-100 transition-opacity w-fit select-none cursor-pointer group"
-                    >
-                        <div
-                            className="w-10 h-10 rounded-[12px] flex items-center justify-center text-gray-600 transition-transform active:scale-95 group-hover:scale-105"
-                            style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                              }}
-                        >
-                            <Triangle size={12} fill="currentColor" className="rotate-180" />
-                        </div>
-                        <span className="font-bold text-lg tracking-tight text-gray-700">InvestSkill OS</span>
-                    </div>
 
                     {/* Hero Title */}
                     <div className="flex flex-col items-center mb-12">

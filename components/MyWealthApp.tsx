@@ -574,7 +574,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-gray-300 transition-colors duration-300 relative">
+    <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-gray-300 transition-colors duration-300 relative">
 
       {/* Main Content Area */}
       <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
@@ -582,26 +582,15 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         <div className="max-w-5xl mx-auto p-6 md:p-12 pb-40">
 
 
-          {/* Minimal Header Branding & Auth */}
+          {/* Minimal Header Sync Status */}
           <div className="flex items-center justify-between mb-8 animate-fade-in-down">
-            <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity w-fit select-none cursor-pointer group" onClick={onExit}>
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-700 transition-transform active:scale-95 group-hover:scale-105"
-                style={{
-                  background: "#E0E5EC",
-                  boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                }}
-              >
-                <Triangle size={14} fill="currentColor" className="rotate-180" />
-              </div>
-              <span className="font-bold text-lg tracking-tight text-gray-700">MyWealth</span>
-            </div>
-
-            {/* Sync Status Only */}
             <div className="flex items-center gap-4">
               {/* Sync Status Indicator */}
               <div
-                className="flex items-center gap-1 text-xs font-medium cursor-pointer hover:bg-black/5 rounded px-2 py-1 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer hover:bg-white/50 bg-[#E0E5EC] rounded-full px-4 py-2 border border-transparent shadow-clay-btn transition-colors"
+                style={{
+                  boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                }}
                 onClick={fetchData}
                 title="Click to force sync"
               >
@@ -613,7 +602,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
                 ) : (
                   <div className="flex items-center gap-1 text-gray-400 hover:text-blue-500 transition-colors">
                     <Cloud size={14} />
-                    <span>Cloud</span>
+                    <span>Sync Cloud</span>
                   </div>
                 )}
               </div>

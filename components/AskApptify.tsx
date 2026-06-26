@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Mic, Send, X, ChevronRight, Check, AlertTriangle, Play, RefreshCw, BarChart2, FileText, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { Sparkles, Mic, Send, X, ChevronRight, Check, AlertTriangle, Play, RefreshCw, BarChart2, FileText, ArrowRight, TrendingUp, TrendingDown, Activity, Paperclip } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { supabase } from '../services/supabaseClient';
-import { aiService } from '../services/aiService';
+import { aiService, AIProvider } from '../services/aiService';
 import { stockService } from '../services/stockService';
 import { investSkillService, InvestmentSignal } from '../services/investSkillService';
 import { Account, Expense, Loan, Stock, MonthlyData } from '../types';
@@ -295,6 +295,87 @@ ${contextInfo}
 `;
 };
 
+const getModelCapabilities = (modelId: string, provider: string) => {
+  const caps = {
+    isChatModel: false,
+    isImageModel: false,
+    isVideoModel: false,
+    isAudioModel: false,
+    isEmbeddingModel: false,
+    supportsVision: false
+  };
+
+  if (!modelId) return caps;
+
+  const lower = modelId.toLowerCase();
+
+  if (provider === 'siliconflow') {
+    try {
+      const cached = localStorage.getItem('app_siliconflow_models_cache');
+      if (cached) {
+        const models: any[] = JSON.parse(cached);
+        const found = models.find(m => m.id === modelId);
+        if (found && found.capabilities) {
+          const c = found.capabilities;
+          return {
+            isChatModel: c.includes('chat') || c.includes('coding') || c.includes('reasoning'),
+            isImageModel: c.includes('image'),
+            isVideoModel: c.includes('video'),
+            isAudioModel: c.includes('audio'),
+            isEmbeddingModel: c.includes('embedding'),
+            supportsVision: c.includes('vision')
+          };
+        }
+      }
+    } catch (e) {}
+
+    if (lower.includes('embedding') || lower.includes('bge') || lower.includes('text2vec')) {
+      caps.isEmbeddingModel = true;
+    } else if (lower.includes('stable-diffusion') || lower.includes('flux') || lower.includes('sdxl') || lower.includes('image') || lower.includes('diff') || lower.includes('kolors') || lower.includes('cogview')) {
+      caps.isImageModel = true;
+    } else if (lower.includes('video') || lower.includes('cogvideo') || lower.includes('luma') || lower.includes('wan2.')) {
+      caps.isVideoModel = true;
+    } else if (lower.includes('audio') || lower.includes('speech') || lower.includes('tts') || lower.includes('whisper') || lower.includes('voice') || lower.includes('sensevoice')) {
+      caps.isAudioModel = true;
+    } else {
+      caps.isChatModel = true;
+    }
+
+    if (lower.includes('-vl') || lower.includes('vision') || lower.includes('multimodal')) {
+      caps.supportsVision = true;
+    }
+    return caps;
+  }
+
+  if (provider === 'google') {
+    caps.isChatModel = true;
+    caps.supportsVision = true;
+    return caps;
+  }
+
+  if (provider === 'openai') {
+    caps.isChatModel = true;
+    if (lower.includes('gpt-4o')) {
+      caps.supportsVision = true;
+    }
+    return caps;
+  }
+
+  if (provider === 'anthropic') {
+    caps.isChatModel = true;
+    if (lower.includes('sonnet') || lower.includes('claude-3-7')) {
+      caps.supportsVision = true;
+    }
+    return caps;
+  }
+
+  caps.isChatModel = true;
+  if (lower.includes('vision') || lower.includes('vl') || lower.includes('sonnet') || lower.includes('gpt-4o')) {
+    caps.supportsVision = true;
+  }
+  return caps;
+};
+
 const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) => {
   const { session, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -313,6 +394,14 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
   // --- SiliconFlow Model Hub States ---
   const [activeProvider, setActiveProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
   const [activeModel, setActiveModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
+
+  const caps = getModelCapabilities(activeModel, activeProvider);
+  const isChatModel = caps.isChatModel;
+  const isImageModel = caps.isImageModel;
+  const isVideoModel = caps.isVideoModel;
+  const isAudioModel = caps.isAudioModel;
+  const isEmbeddingModel = caps.isEmbeddingModel;
+  const supportsVision = caps.supportsVision;
   const [favorites, setFavorites] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('app_ai_favorites') || '[]'); } catch (e) { return []; }
   });
@@ -508,7 +597,7 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
     localStorage.setItem('app_global_ai_model', modelId);
     localStorage.setItem('app_global_ai_provider', provider);
     
-    const key = localStorage.getItem(`app_api_key_${provider}`) || localStorage.getItem('app_global_api_key') || '';
+    const key = localStorage.getItem('app_api_key_' + provider) || localStorage.getItem('app_global_api_key') || '';
     localStorage.setItem('app_global_api_key', key);
     
     setActiveModel(modelId);
@@ -720,7 +809,7 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
           chatModel = 'gemini-2.5-flash';
           chatProvider = 'google';
         }
-        const fallbackKey = localStorage.getItem(`app_api_key_${chatProvider}`) || apiKey;
+        const fallbackKey = localStorage.getItem('app_api_key_' + chatProvider) || apiKey;
         
         const answer = await aiService.generate(chatProvider, chatModel, fallbackKey, prompt, systemPrompt);
         setRagAnswer(answer);

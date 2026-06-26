@@ -282,28 +282,12 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-[#E0E5EC] text-[#4A4A4A] flex flex-col font-sans">
+        <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] flex-col font-sans">
 
             {/* Header */}
             <div className="flex items-center justify-between px-4 md:px-6 py-4 bg-[#E0E5EC] z-10 sticky top-0"
                 style={{ boxShadow: "0 4px 6px -1px rgba(163,177,198,0.3)" }}>
-                <button
-                    onClick={onExit}
-                    className="p-3 rounded-full hover:scale-105 active:scale-95 transition-all text-gray-600"
-                    style={{
-                        background: "#E0E5EC",
-                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                    }}
-                >
-                    <ArrowLeft size={20} />
-                </button>
-
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-700 hidden md:block">NewsHub Beta</h1>
-
-                    {/* Mobile Title (visible only on small screens) */}
-                    <h1 className="text-lg font-bold tracking-tight text-gray-700 block md:hidden">NewsHub</h1>
-
+                <div className="flex items-center gap-4 flex-1">
                     {/* Language Toggle */}
                     <div className="flex items-center p-1 rounded-full bg-[#E0E5EC]"
                         style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
