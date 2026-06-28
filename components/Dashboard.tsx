@@ -277,7 +277,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
             {/* Optional: Liability Summary if debts exist */}
             {loans.length > 0 && (
                 <div
-                    className="p-6 rounded-[32px] flex items-center justify-between animate-fade-in-up opacity-0"
+                    className="p-6 rounded-[32px] flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between animate-fade-in-up opacity-0"
                     style={{
                         background: "#E0E5EC",
                         boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
@@ -285,17 +285,17 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
                     }}
                 >
                     <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-red-500" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                        <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center text-red-500" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
                             <TrendingDown size={24} />
                         </div>
                         <div>
                             <p className="font-bold text-red-600 text-xl">Outstanding Debts</p>
-                            <p className="text-red-400 text-sm">You have {loans.length} active loan accounts.</p>
+                            <p className="text-red-400 text-sm font-medium">You have {loans.length} active loan accounts.</p>
                         </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right pl-2 sm:pl-0">
                         <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Total Principal</p>
-                        <p className="text-3xl font-bold text-red-600">RM {totalLiabilities.toLocaleString()}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-red-600">RM {totalLiabilities.toLocaleString()}</p>
                     </div>
                 </div>
             )}
@@ -355,14 +355,14 @@ const MonthlyHistory: React.FC<{ accounts: Account[], fixedExpenses: Expense[] }
             </div>
 
             <div
-                className="rounded-[32px] overflow-hidden p-6"
+                className="rounded-[32px] overflow-hidden p-4 sm:p-6"
                 style={{
                     background: "#E0E5EC",
                     boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
                 }}
             >
-                <div className="overflow-x-auto">
-                    <table className="w-full">
+                <div className="overflow-x-auto no-scrollbar">
+                    <table className="w-full min-w-[460px]">
                         <thead>
                             <tr className="text-[10px] text-gray-400 font-bold uppercase tracking-wider border-b border-gray-300">
                                 <th className="pb-3 pl-2 text-left">Month</th>

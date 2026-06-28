@@ -2659,7 +2659,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
               {messages.map((msg, i) => (
                 <div key={msg.id || i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div 
-                    className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed border ${
+                    className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed border break-all sm:break-words ${
                       msg.role === 'user' 
                         ? 'bg-[#E0E5EC] text-gray-800 rounded-tr-md border-white/20 shadow-clay-inner' 
                         : msg.isError 
@@ -2667,7 +2667,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                           : 'bg-[#E0E5EC] text-gray-800 rounded-tl-md border-white/30 shadow-clay-btn'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap font-medium">{msg.content}</div>
+                    <div className="whitespace-pre-wrap font-medium break-all sm:break-words">{msg.content}</div>
 
                     {/* Inline Sent Images (for Vision) */}
                     {msg.images && msg.images.map((img, idx) => (
