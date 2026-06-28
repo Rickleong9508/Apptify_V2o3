@@ -453,7 +453,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
                     let finalData = existing?.data || {};
                     finalData.getnote = {
-                        notes: vaultPath ? [] : notes, // do not upload local obsidian files
+                        notes: vaultPath ? (finalData.getnote?.notes || []) : notes, // preserve cloud notes if using local vault
                         todos,
                         lastUpdated: new Date().toISOString()
                     };
