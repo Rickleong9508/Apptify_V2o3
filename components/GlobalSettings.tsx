@@ -184,12 +184,18 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ vaultPath: obsidianPath })
             });
+
+            const contentType = res.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                throw new Error('Obsidian folders can only be accessed when running Apptify locally. Please open http://localhost:3001 on your MacBook.');
+            }
+            
             const data = await res.json();
             if (res.ok && data.success) {
                 setObsidianStatus('success');
                 setObsidianStatusMsg('Successfully connected to local Obsidian vault.');
             } else {
-                throw new Error(data.error || 'Failed to verify folder.');
+                throw new Error(data.error || 'Path verification failed');
             }
         } catch (e: any) {
             setObsidianStatus('error');
