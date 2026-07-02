@@ -70,6 +70,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   // --- Load Data (Local then Cloud) ---
   // --- Ref for Timestamp Protection ---
   const lastLocalUpdateRef = React.useRef<number>(0);
+  const isIncomingSyncRef = React.useRef<boolean>(false);
 
 
 
@@ -194,6 +195,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           if (cloudTime > localTime) {
             console.log(`Sync: Cloud (${cloudTime}) > Local (${localTime}). Applying update...`);
             const processedAccounts = checkAndApplyInterest(cloudApp.accounts || []);
+            isIncomingSyncRef.current = true;
             setAccounts(processedAccounts);
             setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
             setBudgetHistory(cloudApp.budgetHistory || []);
@@ -241,7 +243,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     const channel = supabase.channel(`mywealth_sync_${user.id}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'user_data', filter: `user_id=eq.${user.id}` },
+        { event: 'UPDATE', schema: 'public', table: 'user_data' },
         (payload) => {
           console.log("Realtime event received:", payload);
           const newData = payload.new as any;
@@ -253,6 +255,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             if (cloudTime > localTime) {
               console.log(`Realtime: Cloud (${cloudTime}) > Local (${localTime}). Updating...`);
               const processedAccounts = checkAndApplyInterest(cloudApp.accounts || []);
+              isIncomingSyncRef.current = true;
               setAccounts(processedAccounts);
               setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
               setBudgetHistory(cloudApp.budgetHistory || []);
@@ -282,6 +285,27 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   // --- Save Data (Local & Cloud) ---
   useEffect(() => {
     if (!isDataLoaded) return;
+
+    if (isIncomingSyncRef.current) {
+      console.log("Sync: State change was from remote sync. Skipping cloud push.");
+      
+      // Save locally but retain the remote lastUpdated time
+      const dataToSave = { 
+        accounts, 
+        monthlyData, 
+        budgetHistory, 
+        fixedExpenses, 
+        loans, 
+        stocks, 
+        cash, 
+        exchangeRate, 
+        lastUpdated: new Date(lastLocalUpdateRef.current).toISOString() 
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      
+      isIncomingSyncRef.current = false; // Reset the flag
+      return;
+    }
 
     const now = new Date();
     const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: now.toISOString() };

@@ -312,6 +312,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
     const [isSyncing, setIsSyncing] = useState(false);
     const [showSyncSuccess, setShowSyncSuccess] = useState(false);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
+    const isIncomingSyncRef = React.useRef<boolean>(false);
 
     // --- Load Data (Local then Cloud / Obsidian) ---
     const fetchData = async () => {
@@ -372,6 +373,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
                         if (cloudTime > localTime) {
                             console.log("Sync: Cloud (GetNote) is newer, applying...");
+                            isIncomingSyncRef.current = true;
                             setNotes(cloudApp.notes || []);
                             setTodos(cloudApp.todos || []);
 
@@ -406,13 +408,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
         const channel = supabase.channel(`getnote_sync_${user.id}`)
             .on(
                 'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'user_data', filter: `user_id=eq.${user.id}` },
+                { event: 'UPDATE', schema: 'public', table: 'user_data' },
                 (payload) => {
                     const newData = payload.new as any;
                     if (newData && newData.data && newData.data.getnote) {
                         const cloudApp = newData.data.getnote;
                         console.log("Realtime: Remote update received (GetNote)", cloudApp);
 
+                        isIncomingSyncRef.current = true;
                         setNotes(cloudApp.notes || []);
                         setTodos(cloudApp.todos || []);
 
@@ -432,6 +435,12 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
     // --- Save Data (Local & Cloud) ---
     useEffect(() => {
         if (!isDataLoaded) return;
+
+        if (isIncomingSyncRef.current) {
+            console.log("Sync: State change was from remote sync. Skipping cloud push.");
+            isIncomingSyncRef.current = false; // Reset the flag
+            return;
+        }
 
         // Save Local
         try {
