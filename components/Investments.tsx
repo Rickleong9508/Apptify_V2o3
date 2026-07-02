@@ -459,8 +459,8 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
         });
 
         // Cash
-        const hkdRate = cash.hkdRate || 0.58; // Default to 0.58 if not set
-        const cashMYR = (cash.myr || 0) + ((cash.usd || 0) * exchangeRate) + ((cash.hkd || 0) * hkdRate);
+        const hkdRate = Number(cash.hkdRate || 0.58); // Default to 0.58 if not set
+        const cashMYR = Number(cash.myr || 0) + (Number(cash.usd || 0) * exchangeRate) + (Number(cash.hkd || 0) * hkdRate);
         totalValueMYR += cashMYR;
         totalCostMYR += cashMYR;
 

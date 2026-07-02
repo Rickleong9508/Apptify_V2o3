@@ -31,8 +31,8 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
             return sum + (s.currentPrice * s.quantity * rate);
         }, 0);
 
-        const hkdRate = cash.hkdRate || 0.58;
-        const cashValue = (cash.myr || 0) + ((cash.usd || 0) * exchangeRate) + ((cash.hkd || 0) * hkdRate);
+        const hkdRate = Number(cash.hkdRate || 0.58);
+        const cashValue = Number(cash.myr || 0) + (Number(cash.usd || 0) * exchangeRate) + (Number(cash.hkd || 0) * hkdRate);
 
         return stocksValue + cashValue;
     }, [stocks, exchangeRate, cash]);
