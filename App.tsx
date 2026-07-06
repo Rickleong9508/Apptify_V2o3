@@ -367,7 +367,7 @@ const App: React.FC = () => {
         </div>
       </div>
       )}
-      <div className={currentApp !== 'launcher' ? 'pt-24' : ''}>
+      <div className={currentApp !== 'launcher' ? 'pt-24 bg-[#E0E5EC] min-h-screen' : ''}>
         {renderSubApp()}
       </div>
       <AskApptify currentApp={currentApp} setCurrentApp={setCurrentApp} />

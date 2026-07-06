@@ -641,9 +641,9 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
           {/* Component Render */}
           <div key={activeTab} className="animate-fade-in-up">
-            {activeTab === 'dashboard' && <Dashboard accounts={accounts} monthlyData={monthlyData} fixedExpenses={fixedExpenses} loans={loans} stocks={stocks} exchangeRate={exchangeRate} cash={cash} />}
+            {activeTab === 'dashboard' && <Dashboard accounts={accounts} monthlyData={monthlyData} fixedExpenses={fixedExpenses} loans={loans} stocks={stocks} exchangeRate={exchangeRate} cash={cash} budgetHistory={budgetHistory} />}
             {activeTab === 'accounts' && <Accounts accounts={accounts} setAccounts={setAccounts} />}
-            {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} budgetHistory={budgetHistory} onArchiveMonth={handleArchiveMonth} />}
+            {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} budgetHistory={budgetHistory} onArchiveMonth={handleArchiveMonth} accounts={accounts} />}
             {activeTab === 'loans' && <Loans loans={loans} setLoans={setLoans} />}
             {activeTab === 'investments' && <Investments stocks={stocks} setStocks={setStocks} cash={cash} setCash={setCash} exchangeRate={exchangeRate} setExchangeRate={setExchangeRate} />}
           </div>

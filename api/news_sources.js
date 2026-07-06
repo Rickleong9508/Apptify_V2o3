@@ -1,6 +1,10 @@
 
 import * as cheerio from 'cheerio';
 
+// In-memory cache for news feeds
+const cache = {};
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+
 // Helper for fetching
 async function fetchHtml(url) {
     const response = await fetch(url, {
@@ -87,12 +91,27 @@ const sources = {
     }
 };
 
-export async function getNews(sourceId, url) {
+export async function getNews(sourceId, url, forceRefresh = false) {
     if (!sources[sourceId]) {
         throw new Error(`Source '${sourceId}' not found`);
     }
+
+    const cacheKey = url ? `${sourceId}:${url}` : sourceId;
+    const cached = cache[cacheKey];
+
+    if (!forceRefresh && cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+        console.log(`[Cache Hit] Returning cached news for ${cacheKey}`);
+        return cached.data;
+    }
+
     try {
-        return await sources[sourceId](url);
+        console.log(`[Cache Miss] Fetching news from source for ${cacheKey}`);
+        const data = await sources[sourceId](url);
+        cache[cacheKey] = {
+            timestamp: Date.now(),
+            data: data
+        };
+        return data;
     } catch (error) {
         console.error(`Error fetching ${sourceId}:`, error);
         throw error;

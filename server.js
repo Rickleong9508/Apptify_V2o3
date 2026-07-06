@@ -33,9 +33,9 @@ async function createServer() {
     // NewsHub API Route
     app.post('/api/news', express.json(), async (req, res) => {
         try {
-            const { source, url } = req.body;
-            console.log(`Fetching news for source: ${source} ${url ? '(' + url + ')' : ''}`);
-            const news = await getNews(source, url);
+            const { source, url, forceRefresh } = req.body;
+            console.log(`Fetching news for source: ${source} ${url ? '(' + url + ')' : ''} (forceRefresh: ${!!forceRefresh})`);
+            const news = await getNews(source, url, forceRefresh);
             res.json(news);
         } catch (e) {
             console.error("News API Error", e);

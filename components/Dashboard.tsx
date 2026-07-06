@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Account, MonthlyData, Loan, Stock, Expense, CashHolding } from '../types';
+import React, { useMemo, useState } from 'react';
+import { Account, MonthlyData, Loan, Stock, Expense, CashHolding, BudgetHistoryItem } from '../types';
 import { Wallet, TrendingUp, TrendingDown, DollarSign, Activity, ArrowUpRight, ArrowDownLeft, PieChart, Lock, Unlock } from 'lucide-react';
 
 interface DashboardProps {
@@ -10,9 +10,10 @@ interface DashboardProps {
     stocks: Stock[];
     exchangeRate: number;
     cash: CashHolding;
+    budgetHistory: BudgetHistoryItem[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, cash }) => {
+const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpenses, loans, stocks, exchangeRate, cash, budgetHistory }) => {
 
     // 1. Calculate Total Assets (Cash + Stock Value)
     const totalCash = useMemo(() => accounts.reduce((sum, acc) => sum + acc.balance, 0), [accounts]);
@@ -272,7 +273,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
             </div>
 
             {/* MONTHLY HISTORY SECTION */}
-            <MonthlyHistory accounts={accounts} fixedExpenses={fixedExpenses} />
+            <MonthlyHistory accounts={accounts} fixedExpenses={fixedExpenses} monthlyData={monthlyData} budgetHistory={budgetHistory} />
 
             {/* Optional: Liability Summary if debts exist */}
             {loans.length > 0 && (
@@ -304,40 +305,103 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, monthlyData, fixedExpen
 };
 
 // --- Monthly History Component ---
-const MonthlyHistory: React.FC<{ accounts: Account[], fixedExpenses: Expense[] }> = ({ accounts, fixedExpenses }) => {
-    const [showAll, setShowAll] = React.useState(false);
+interface MonthlyHistoryProps {
+    accounts: Account[];
+    fixedExpenses: Expense[];
+    monthlyData: MonthlyData;
+    budgetHistory: BudgetHistoryItem[];
+}
+
+const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses, monthlyData, budgetHistory }) => {
+    const [showAll, setShowAll] = useState(false);
+    const [viewMode, setViewMode] = useState<'actual' | 'budget'>('actual');
 
     // Derive History Data
     const historyData = useMemo(() => {
-        const monthlyStats: Record<string, { income: number, oneTime: number, recurring: number }> = {};
-        const fixedNames = new Set(fixedExpenses ? fixedExpenses.map(e => e.name.toLowerCase()) : []);
+        const months = new Set<string>();
 
-        accounts.forEach(acc => {
-            acc.history.forEach(tx => {
-                const month = tx.date.slice(0, 7); // YYYY-MM
-                if (!monthlyStats[month]) monthlyStats[month] = { income: 0, oneTime: 0, recurring: 0 };
+        // Add current budget month
+        if (monthlyData && monthlyData.targetDate) {
+            months.add(monthlyData.targetDate);
+        }
 
-                if (tx.type === 'IN') {
-                    monthlyStats[month].income += tx.amount;
-                } else {
-                    // Check if recurring
-                    if (fixedNames.has(tx.description.toLowerCase())) {
-                        monthlyStats[month].recurring += tx.amount;
-                    } else {
-                        monthlyStats[month].oneTime += tx.amount;
-                    }
+        // Add budget history months
+        if (budgetHistory) {
+            budgetHistory.forEach(h => {
+                if (h.month) months.add(h.month);
+            });
+        }
+
+        // Add transaction history months
+        if (accounts) {
+            accounts.forEach(acc => {
+                if (acc.history) {
+                    acc.history.forEach(tx => {
+                        if (tx.date) {
+                            months.add(tx.date.slice(0, 7)); // YYYY-MM
+                        }
+                    });
                 }
             });
-        });
+        }
 
-        return Object.entries(monthlyStats)
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .map(([month, stats]) => ({
+        // Sort months descending (newest first)
+        const sortedMonths = Array.from(months).sort((a, b) => b.localeCompare(a));
+
+        return sortedMonths.map(month => {
+            // Calculate Actual (Wallets) stats
+            let actualIn = 0;
+            let actualOut = 0;
+            if (accounts) {
+                accounts.forEach(acc => {
+                    if (acc.history) {
+                        acc.history.forEach(tx => {
+                            if (tx.date && tx.date.startsWith(month)) {
+                                if (tx.type === 'IN') {
+                                    actualIn += tx.amount;
+                                } else if (tx.type === 'OUT') {
+                                    actualOut += tx.amount;
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+            const actualBalance = actualIn - actualOut;
+
+            // Calculate Budget (Planned) stats
+            let budgetIn = 0;
+            let budgetOut = 0;
+
+            if (monthlyData && monthlyData.targetDate === month) {
+                budgetIn = monthlyData.income;
+                const currentVariableExpenses = monthlyData.expenses || [];
+                const allExp = [...(fixedExpenses || []), ...currentVariableExpenses];
+                budgetOut = allExp.reduce((sum, item) => sum + item.amount, 0);
+            } else {
+                const histItem = budgetHistory?.find(h => h.month === month);
+                if (histItem) {
+                    budgetIn = histItem.income;
+                    budgetOut = histItem.totalExpenses;
+                }
+            }
+            const budgetBalance = budgetIn - budgetOut;
+
+            return {
                 month,
-                ...stats,
-                netFlow: stats.income - (stats.oneTime + stats.recurring)
-            }));
-    }, [accounts, fixedExpenses]);
+                actual: {
+                    totalIn: actualIn,
+                    totalOut: actualOut,
+                    balance: actualBalance
+                },
+                budget: {
+                    totalIn: budgetIn,
+                    totalOut: budgetOut,
+                    balance: budgetBalance
+                }
+            };
+        });
+    }, [accounts, fixedExpenses, monthlyData, budgetHistory]);
 
     const displayData = showAll ? historyData : historyData.slice(0, 6);
 
@@ -345,13 +409,36 @@ const MonthlyHistory: React.FC<{ accounts: Account[], fixedExpenses: Expense[] }
 
     return (
         <div className="w-full flex flex-col gap-6 animate-fade-in-up pb-8 opacity-0" style={{ animationDelay: '500ms' }}>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h3 className="font-bold text-lg text-gray-700 flex items-center gap-2">
                     <div className="p-1.5 rounded-lg text-gray-500" style={{ background: "#E0E5EC", boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff" }}>
                         <Activity size={16} />
                     </div>
                     Monthly History
                 </h3>
+
+                {/* Neumorphic Toggle Selector */}
+                <div 
+                    className="flex p-1 rounded-full bg-[#E0E5EC] w-fit"
+                    style={{
+                        boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                    }}
+                >
+                    <button
+                        onClick={() => setViewMode('actual')}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${viewMode === 'actual' ? 'text-blue-600 shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff]' : 'text-gray-400 hover:text-gray-600'}`}
+                        style={viewMode === 'actual' ? { background: "#E0E5EC" } : {}}
+                    >
+                        Actual (Wallets)
+                    </button>
+                    <button
+                        onClick={() => setViewMode('budget')}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${viewMode === 'budget' ? 'text-blue-600 shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff]' : 'text-gray-400 hover:text-gray-600'}`}
+                        style={viewMode === 'budget' ? { background: "#E0E5EC" } : {}}
+                    >
+                        Budget (Planned)
+                    </button>
+                </div>
             </div>
 
             <div
@@ -366,26 +453,27 @@ const MonthlyHistory: React.FC<{ accounts: Account[], fixedExpenses: Expense[] }
                         <thead>
                             <tr className="text-[10px] text-gray-400 font-bold uppercase tracking-wider border-b border-gray-300">
                                 <th className="pb-3 pl-2 text-left">Month</th>
-                                <th className="pb-3 text-right">Income</th>
-                                <th className="pb-3 text-right">Recurring</th>
-                                <th className="pb-3 text-right">One-Time</th>
-                                <th className="pb-3 text-right pr-2">Net Flow</th>
+                                <th className="pb-3 text-right">Total In</th>
+                                <th className="pb-3 text-right">Total Out</th>
+                                <th className="pb-3 text-right pr-2">Balance</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {displayData.map((item) => (
-                                <tr key={item.month} className="group hover:bg-white/30 transition-colors text-sm font-medium text-gray-600">
-                                    <td className="py-3 pl-2 font-bold text-gray-700 text-left">
-                                        {new Date(item.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
-                                    </td>
-                                    <td className="py-3 text-right text-green-600">+ {item.income.toLocaleString()}</td>
-                                    <td className="py-3 text-right text-orange-500">- {item.recurring.toLocaleString()}</td>
-                                    <td className="py-3 text-right text-red-500">- {item.oneTime.toLocaleString()}</td>
-                                    <td className={`py-3 text-right pr-2 font-bold ${item.netFlow >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                        {item.netFlow >= 0 ? '+' : ''} {item.netFlow.toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
+                            {displayData.map((item) => {
+                                const data = viewMode === 'actual' ? item.actual : item.budget;
+                                return (
+                                    <tr key={item.month} className="group hover:bg-white/30 transition-colors text-sm font-medium text-gray-600">
+                                        <td className="py-3 pl-2 font-bold text-gray-700 text-left">
+                                            {new Date(item.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
+                                        </td>
+                                        <td className="py-3 text-right text-green-600 font-bold">+ RM {data.totalIn.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                        <td className="py-3 text-right text-red-500 font-bold">- RM {data.totalOut.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                        <td className={`py-3 text-right pr-2 font-extrabold ${data.balance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                            {data.balance >= 0 ? '+' : ''} RM {data.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

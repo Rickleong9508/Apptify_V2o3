@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MonthlyData, Expense, ExpenseCategory, BudgetHistoryItem } from '../types';
+import { MonthlyData, Expense, ExpenseCategory, BudgetHistoryItem, Account } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Plus, X, Calculator, ArrowRight, Repeat, Clock, TrendingUp, Wallet, ArrowDown, ArrowUp, History, Archive } from 'lucide-react';
 
@@ -10,6 +10,7 @@ interface BudgetProps {
     setFixedExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
     budgetHistory: BudgetHistoryItem[];
     onArchiveMonth: () => void;
+    accounts: Account[];
 }
 
 // Gradient Definitions Configuration (Used for Category Accents)
@@ -81,8 +82,95 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ item, isFixedList, onRemove }
     </div>
 );
 
-const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpenses, setFixedExpenses, budgetHistory, onArchiveMonth }) => {
+const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpenses, setFixedExpenses, budgetHistory, onArchiveMonth, accounts }) => {
     const [incomeInput, setIncomeInput] = useState(monthlyData.income.toString());
+    const [historyViewMode, setHistoryViewMode] = useState<'actual' | 'budget'>('actual');
+
+    const historyData = useMemo(() => {
+        const months = new Set<string>();
+
+        // Add current budget month
+        if (monthlyData && monthlyData.targetDate) {
+            months.add(monthlyData.targetDate);
+        }
+
+        // Add budget history months
+        if (budgetHistory) {
+            budgetHistory.forEach(h => {
+                if (h.month) months.add(h.month);
+            });
+        }
+
+        // Add transaction history months
+        if (accounts) {
+            accounts.forEach(acc => {
+                if (acc.history) {
+                    acc.history.forEach(tx => {
+                        if (tx.date) {
+                            months.add(tx.date.slice(0, 7)); // YYYY-MM
+                        }
+                    });
+                }
+            });
+        }
+
+        // Sort months descending (newest first)
+        const sortedMonths = Array.from(months).sort((a, b) => b.localeCompare(a));
+
+        return sortedMonths.map(month => {
+            // Calculate Actual (Wallets) stats
+            let actualIn = 0;
+            let actualOut = 0;
+            if (accounts) {
+                accounts.forEach(acc => {
+                    if (acc.history) {
+                        acc.history.forEach(tx => {
+                            if (tx.date && tx.date.startsWith(month)) {
+                                if (tx.type === 'IN') {
+                                    actualIn += tx.amount;
+                                } else if (tx.type === 'OUT') {
+                                    actualOut += tx.amount;
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+            const actualBalance = actualIn - actualOut;
+
+            // Calculate Budget (Planned) stats
+            let budgetIn = 0;
+            let budgetOut = 0;
+
+            if (monthlyData && monthlyData.targetDate === month) {
+                budgetIn = monthlyData.income;
+                const currentVariableExpenses = monthlyData.expenses || [];
+                const allExp = [...(fixedExpenses || []), ...currentVariableExpenses];
+                budgetOut = allExp.reduce((sum, item) => sum + item.amount, 0);
+            } else {
+                const histItem = budgetHistory?.find(h => h.month === month);
+                if (histItem) {
+                    budgetIn = histItem.income;
+                    budgetOut = histItem.totalExpenses;
+                }
+            }
+            const budgetBalance = budgetIn - budgetOut;
+
+            return {
+                month,
+                actual: {
+                    totalIn: actualIn,
+                    totalOut: actualOut,
+                    balance: actualBalance
+                },
+                budget: {
+                    totalIn: budgetIn,
+                    totalOut: budgetOut,
+                    balance: budgetBalance
+                }
+            };
+        });
+    }, [accounts, fixedExpenses, monthlyData, budgetHistory]);
 
     // Form State
     const [newExpName, setNewExpName] = useState('');
@@ -559,7 +647,7 @@ const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpen
                 </div>
             </div>
 
-            {/* 6. Monthly History - New Section */}
+            {/* 6. Monthly History - Redesigned Section */}
             <div
                 className="p-6 rounded-[32px] flex flex-col animate-fade-in-up opacity-0"
                 style={{
@@ -568,36 +656,66 @@ const Budget: React.FC<BudgetProps> = ({ monthlyData, setMonthlyData, fixedExpen
                     animationDelay: '500ms'
                 }}
             >
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 text-purple-600 rounded-xl" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
-                        <History size={14} />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 text-purple-600 rounded-xl" style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}>
+                            <History size={14} />
+                        </div>
+                        <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Monthly History</h3>
                     </div>
-                    <h3 className="font-bold text-xs text-gray-700 uppercase tracking-wider">Monthly History</h3>
+
+                    {/* Neumorphic Toggle Selector */}
+                    <div 
+                        className="flex p-1 rounded-full bg-[#E0E5EC] w-fit"
+                        style={{
+                            boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                        }}
+                    >
+                        <button
+                            onClick={() => setHistoryViewMode('actual')}
+                            className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${historyViewMode === 'actual' ? 'text-blue-600 shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff]' : 'text-gray-400 hover:text-gray-600'}`}
+                            style={historyViewMode === 'actual' ? { background: "#E0E5EC" } : {}}
+                        >
+                            Actual (Wallets)
+                        </button>
+                        <button
+                            onClick={() => setHistoryViewMode('budget')}
+                            className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${historyViewMode === 'budget' ? 'text-blue-600 shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff]' : 'text-gray-400 hover:text-gray-600'}`}
+                            style={historyViewMode === 'budget' ? { background: "#E0E5EC" } : {}}
+                        >
+                            Budget (Planned)
+                        </button>
+                    </div>
                 </div>
 
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                    {budgetHistory.length > 0 ? (
-                        budgetHistory.map(item => (
-                            <div key={item.id} className="p-4 rounded-2xl flex items-center justify-between group hover:bg-white/40 transition-colors" style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
-                                <div>
-                                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">{item.month}</p>
-                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                                        <span>In: RM{item.income.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                                        <span>•</span>
-                                        <span className="text-red-500">Out: RM{item.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    {historyData.length > 0 ? (
+                        historyData.map(item => {
+                            const data = historyViewMode === 'actual' ? item.actual : item.budget;
+                            return (
+                                <div key={item.month} className="p-4 rounded-2xl flex items-center justify-between group hover:bg-white/40 transition-colors" style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                            {new Date(item.month + '-01').toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold">
+                                            <span className="text-green-600">In: RM {data.totalIn.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                            <span>•</span>
+                                            <span className="text-red-500">Out: RM {data.totalOut.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`font-bold text-sm ${data.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {data.balance >= 0 ? '+' : ''}RM {data.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Balance</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className={`font-bold text-sm ${item.savings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {item.savings >= 0 ? '+' : ''}RM {item.savings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                    </p>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Saved</p>
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="text-center py-6 text-gray-400 text-xs italic">
-                            No history yet. Click "End Month" to save current stats.
+                            No history data available for this view.
                         </div>
                     )}
                 </div>
