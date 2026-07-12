@@ -130,8 +130,7 @@
       --app-bg-gradient: radial-gradient(at 0% 0%, rgba(215, 237, 255, 0.6) 0px, transparent 50%), 
                          radial-gradient(at 50% 0%, rgba(253, 219, 253, 0.6) 0px, transparent 50%), 
                          radial-gradient(at 100% 0%, rgba(255, 227, 227, 0.6) 0px, transparent 50%), 
-                         radial-gradient(at 50% 100%, rgba(220, 245, 220, 0.4) 0px, transparent 50%), 
-                         #f5f5f7;
+                         radial-gradient(at 50% 100%, rgba(220, 245, 220, 0.4) 0px, transparent 50%);
     }
 
     /* System Dark Mode OR Manual Dark Mode (.dark class) */
@@ -175,8 +174,7 @@
 
         --app-bg-gradient: radial-gradient(at 0% 0%, rgba(10, 50, 100, 0.35) 0px, transparent 50%), 
                            radial-gradient(at 100% 0%, rgba(60, 20, 80, 0.35) 0px, transparent 50%), 
-                           radial-gradient(at 50% 100%, rgba(15, 30, 20, 0.2) 0px, transparent 50%), 
-                           #0d0d11;
+                           radial-gradient(at 50% 100%, rgba(15, 30, 20, 0.2) 0px, transparent 50%);
       }
     }
     
@@ -219,15 +217,14 @@
 
       --app-bg-gradient: radial-gradient(at 0% 0%, rgba(10, 50, 100, 0.35) 0px, transparent 50%), 
                          radial-gradient(at 100% 0%, rgba(60, 20, 80, 0.35) 0px, transparent 50%), 
-                         radial-gradient(at 50% 100%, rgba(15, 30, 20, 0.2) 0px, transparent 50%), 
-                         #0d0d11;
+                         radial-gradient(at 50% 100%, rgba(15, 30, 20, 0.2) 0px, transparent 50%);
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
       background-image: var(--app-bg-gradient) !important;
       background-attachment: fixed !important;
-      background-color: var(--color-background) !important;
+      background-color: rgb(var(--color-background)) !important;
       color: rgb(var(--color-text-main));
       -webkit-font-smoothing: antialiased;
       transition: background-image 0.5s ease, background-color 0.5s ease, color 0.3s ease;

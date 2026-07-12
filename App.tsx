@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, NotebookPen, ArrowRight, Sparkles, Settings, Cpu, ArrowLeft, ChevronDown } from 'lucide-react';
+import { Wallet, NotebookPen, ArrowRight, Sparkles, Settings, Cpu, ArrowLeft, ChevronDown, Sun, Moon } from 'lucide-react';
 import MyWealthApp from './components/MyWealthApp';
 import KnowledgeVault from './components/KnowledgeVault';
 import GlobalSettings from './components/GlobalSettings';
@@ -131,6 +131,22 @@ const LauncherRobot: React.FC = () => {
 
 const App: React.FC = () => {
   const [currentApp, setCurrentApp] = useState<AppMode>('launcher');
+
+  // Global theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('mw_theme', theme);
+    window.dispatchEvent(new Event('apptify_theme_change'));
+  }, [theme]);
 
   // Global settings sync states
   const [activeProvider, setActiveProvider] = useState<string>(() => localStorage.getItem('app_global_ai_provider') || 'google');
@@ -296,7 +312,17 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-start pt-16 md:pt-24 p-6 transition-all duration-500 font-sans selection:bg-gray-300">
         <div className="max-w-md w-full flex flex-col items-center gap-8 translate-y-[-20px] md:translate-y-[-40px]">
           {/* Header */}
-          <div className="text-center space-y-2 animate-fade-in-down w-full relative">
+          <div className="text-center space-y-2 animate-fade-in-down w-full relative flex flex-col items-center justify-center">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="absolute top-0 right-2 p-2.5 rounded-full text-gray-600 dark:text-gray-300 bg-[#E0E5EC] hover:scale-105 active:scale-95 transition-all border border-white/40 shadow-sm"
+              style={{
+                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+              }}
+            >
+              {theme === 'dark' ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-indigo-600" />}
+            </button>
             <h1 className="text-6xl font-bold tracking-tight text-[#444] drop-shadow-sm">
               Apptify
             </h1>
@@ -392,8 +418,21 @@ const App: React.FC = () => {
             {getAppTitle()}
           </span>
 
-          {/* Global AI Model Dropdown Selection */}
-          <div className="relative">
+          {/* Right actions container */}
+          <div className="flex items-center gap-2">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="flex items-center justify-center p-1.5 sm:p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-blue-500 transition-all bg-[#E0E5EC] border border-white/40"
+              style={{
+                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+              }}
+            >
+              {theme === 'dark' ? <Sun size={14} className="text-amber-500" /> : <Moon size={14} className="text-indigo-600" />}
+            </button>
+
+            {/* Global AI Model Dropdown Selection */}
+            <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center gap-1 px-2.5 py-1.5 sm:gap-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold text-purple-600 hover:text-purple-700 transition-all bg-[#E0E5EC] border border-white/40"
@@ -485,6 +524,7 @@ const App: React.FC = () => {
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       </div>

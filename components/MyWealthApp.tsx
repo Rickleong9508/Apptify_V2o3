@@ -40,19 +40,21 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   const [showSyncSuccess, setShowSyncSuccess] = useState(false);
 
   // --- Theme State ---
-  // Note: Theme is still handled locally for rendering, but storage is available to backup
-  const [theme] = useState<'light' | 'dark'>(() => {
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light';
   });
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [theme]);
+    const syncTheme = () => {
+      setThemeState((localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light');
+    };
+    window.addEventListener('apptify_theme_change', syncTheme);
+    window.addEventListener('storage', syncTheme);
+    return () => {
+      window.removeEventListener('apptify_theme_change', syncTheme);
+      window.removeEventListener('storage', syncTheme);
+    };
+  }, []);
 
   // --- Data State ---
   const [accounts, setAccounts] = useState<Account[]>(INITIAL_ACCOUNTS_DEFAULT);
