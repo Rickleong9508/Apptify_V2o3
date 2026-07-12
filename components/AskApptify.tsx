@@ -432,6 +432,22 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
 
   // 3. Embedding / RAG
   const [embeddingQuery, setEmbeddingQuery] = useState('');
+
+  // Dynamic trigger event from launcher robot
+  useEffect(() => {
+    const handleOpen = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsOpen(true);
+      if (customEvent.detail && customEvent.detail.query) {
+        setInputText(customEvent.detail.query);
+        setTimeout(() => {
+          handleSend(customEvent.detail.query);
+        }, 150);
+      }
+    };
+    window.addEventListener('open_ask_apptify', handleOpen);
+    return () => window.removeEventListener('open_ask_apptify', handleOpen);
+  }, [activeProvider, activeModel, currentApp, isProcessing, attachedImage]);
   const [embeddingResults, setEmbeddingResults] = useState<any[]>([]);
   const [isSyncingEmbeddings, setIsSyncingEmbeddings] = useState(false);
   const [ragAnswer, setRagAnswer] = useState('');

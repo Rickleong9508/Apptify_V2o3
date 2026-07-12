@@ -10,6 +10,125 @@ import AskApptify from './components/AskApptify';
 
 type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'autocount' | 'newshub';
 
+const LauncherRobot: React.FC = () => {
+  const [posX, setPosX] = useState(50); // percentage position (25% - 75%)
+  const [direction, setDirection] = useState<'left' | 'right'>('right');
+  const [isWalking, setIsWalking] = useState(true);
+
+  // Animate walking around
+  useEffect(() => {
+    if (!isWalking) return;
+    const interval = setInterval(() => {
+      setPosX(prev => {
+        let next = prev;
+        if (direction === 'right') {
+          next += 0.4;
+          if (next >= 75) {
+            setDirection('left');
+          }
+        } else {
+          next -= 0.4;
+          if (next <= 25) {
+            setDirection('right');
+          }
+        }
+        return next;
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, [direction, isWalking]);
+
+  const handleInteraction = () => {
+    // Open Ask Apptify with custom welcome detail
+    const event = new CustomEvent('open_ask_apptify', {
+      detail: { 
+        query: `你好！请帮我分析一下我的财务与笔记状况。`
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
+  return (
+    <div className="w-full h-20 flex items-center relative select-none">
+      {/* Neumorphic Interactive Card */}
+      <div 
+        onClick={handleInteraction}
+        onMouseEnter={() => setIsWalking(false)}
+        onMouseLeave={() => setIsWalking(true)}
+        className="w-[185px] h-[64px] rounded-[24px] bg-[#E0E5EC] p-3 flex items-center gap-3 cursor-pointer select-none transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] absolute top-1/2 -translate-y-1/2"
+        style={{
+          left: `calc(${posX}% - 92.5px)`,
+          boxShadow: "6px 6px 12px rgb(163,177,198,0.6), -6px -6px 12px rgba(255,255,255, 0.5)",
+          transition: 'left 0.1s linear, transform 0.2s ease-out'
+        }}
+      >
+        {/* SVG Robot Drawing */}
+        <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+          <svg 
+            width="40" 
+            height="40" 
+            viewBox="0 0 64 64" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className={`animate-bounce-soft duration-[2s] ${direction === 'left' ? 'scale-x-[-1]' : ''}`}
+          >
+            {/* Head Antenna */}
+            <path d="M32 14V8" stroke="#1082FF" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="32" cy="7" r="3" fill="#BF5AF2" className="animate-pulse" />
+
+            {/* Ears */}
+            <rect x="8" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
+            <rect x="52" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
+
+            {/* Body */}
+            <rect x="16" y="26" width="32" height="24" rx="8" fill="url(#robotBodyGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" className="backdrop-blur-md" />
+            
+            {/* Head */}
+            <rect x="20" y="14" width="24" height="18" rx="6" fill="url(#robotHeadGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+
+            {/* Screen / Face */}
+            <rect x="23" y="17" width="18" height="12" rx="3" fill="#1C1C1E" />
+            
+            {/* Eyes - Blinking */}
+            <circle cx="28" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
+            <circle cx="36" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
+
+            {/* Cheeks */}
+            <circle cx="25" cy="27" r="1" fill="#FF453A" />
+            <circle cx="39" cy="27" r="1" fill="#FF453A" />
+
+            {/* Hands */}
+            <path d="M12 34C12 34 8 36 8 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
+            <path d="M52 34C52 34 56 36 56 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
+
+            {/* Legs */}
+            <rect x="24" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} />
+            <rect x="36" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} style={{ animationDelay: '0.2s' }} />
+
+            {/* Gradients */}
+            <defs>
+              <linearGradient id="robotHeadGrad" x1="20" y1="14" x2="44" y2="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.75)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0.45)" />
+              </linearGradient>
+              <linearGradient id="robotBodyGrad" x1="16" y1="26" x2="48" y2="50" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0.55)" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        {/* Card Text Content */}
+        <div className="flex flex-col justify-center min-w-0">
+          <span className="text-xs font-extrabold text-gray-700 leading-tight">Ask Apptify</span>
+          <span className="text-[9px] text-gray-500 font-bold mt-0.5 leading-none truncate">点击与 AI 助手对话</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [currentApp, setCurrentApp] = useState<AppMode>('launcher');
 
@@ -183,6 +302,9 @@ const App: React.FC = () => {
             </h1>
             <p className="text-sm font-medium text-gray-500 uppercase tracking-widest">Next Gen Personal OS</p>
           </div>
+
+          {/* Interactive walking robot */}
+          <LauncherRobot />
 
           {/* 2x2 Grid Layout */}
           <div className="grid grid-cols-2 gap-6 w-full px-2">

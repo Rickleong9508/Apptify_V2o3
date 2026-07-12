@@ -11,7 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      // darkMode: 'class',
+      darkMode: 'media',
       theme: {
         extend: {
           colors: {
@@ -24,6 +24,18 @@
             'text-muted': 'rgb(var(--color-text-muted) / <alpha-value>)',
             'border-color': 'rgb(var(--color-border) / <alpha-value>)',
             'input-bg': 'rgb(var(--color-input-bg) / <alpha-value>)',
+            gray: {
+              50: 'var(--color-gray-50)',
+              100: 'var(--color-gray-100)',
+              200: 'var(--color-gray-200)',
+              300: 'var(--color-gray-300)',
+              400: 'var(--color-gray-400)',
+              500: 'var(--color-gray-500)',
+              600: 'var(--color-gray-600)',
+              700: 'var(--color-gray-700)',
+              800: 'var(--color-gray-800)',
+              900: 'var(--color-gray-900)',
+            }
           },
           fontFamily: {
             sans: ['"SF Pro Display"', '"SF Pro Text"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -32,9 +44,9 @@
             'apple': '0 4px 24px rgba(0,0,0,0.04)',
             'apple-hover': '0 8px 32px rgba(0,0,0,0.08)',
             'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
-            'clay-card': '9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)',
-            'clay-inner': 'inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff',
-            'clay-btn': '5px 5px 10px #b8b9be, -5px -5px 10px #ffffff',
+            'clay-card': 'var(--glass-card-shadow)',
+            'clay-inner': 'var(--glass-input-shadow)',
+            'clay-btn': 'var(--glass-btn-shadow)',
           },
           animation: {
             'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
@@ -77,36 +89,149 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Light Mode (Apple Inspired) */
-      --color-primary: 0 113 227;
-      /* #0071e3 */
+      /* Light Mode (Apple Inspired Glassmorphism) */
+      --color-primary: 0 113 227; /* Apple Blue */
       --color-secondary: 29 29 31;
-      /* #1d1d1f */
       --color-accent: 245 99 0;
-      /* #f56300 */
       --color-background: 245 245 247;
-      /* #f5f5f7 */
       --color-surface: 255 255 255;
-      /* #ffffff */
       --color-text-main: 29 29 31;
-      /* #1d1d1f */
       --color-text-muted: 134 134 139;
-      /* #86868b */
       --color-border: 229 229 229;
-      /* #e5e5e5 */
       --color-input-bg: 249 250 251;
-      /* #f9fafb (gray-50) */
+
+      /* Glassmorphism Styles */
+      --glass-card-bg: rgba(255, 255, 255, 0.55);
+      --glass-card-border: rgba(255, 255, 255, 0.4);
+      --glass-card-shadow: 0 10px 30px 0 rgba(31, 38, 135, 0.05);
+      
+      --glass-btn-bg: rgba(255, 255, 255, 0.7);
+      --glass-btn-border: rgba(255, 255, 255, 0.5);
+      --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
+      
+      --glass-input-bg: rgba(255, 255, 255, 0.45);
+      --glass-input-border: rgba(255, 255, 255, 0.35);
+      --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+      --glass-input-focus-border: rgba(0, 113, 227, 0.4);
+
+      /* Tailwind grey overrides for light mode */
+      --color-gray-50: #f9f9fa;
+      --color-gray-100: #f2f2f7;
+      --color-gray-200: #e5e5ea;
+      --color-gray-300: #d1d1d6;
+      --color-gray-400: #c7c7cc;
+      --color-gray-500: #8e8e93;
+      --color-gray-600: #48484a;
+      --color-gray-700: #3a3a3c;
+      --color-gray-800: #2c2c2e;
+      --color-gray-900: #1c1c1e;
+
+      /* Fluid gradient wallpaper for background */
+      --app-bg-gradient: radial-gradient(at 0% 0%, rgba(215, 237, 255, 0.6) 0px, transparent 50%), 
+                         radial-gradient(at 50% 0%, rgba(253, 219, 253, 0.6) 0px, transparent 50%), 
+                         radial-gradient(at 100% 0%, rgba(255, 227, 227, 0.6) 0px, transparent 50%), 
+                         radial-gradient(at 50% 100%, rgba(220, 245, 220, 0.4) 0px, transparent 50%), 
+                         #f5f5f7;
     }
 
+    /* System Dark Mode OR Manual Dark Mode (.dark class) */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-primary: 10 132 255; /* Apple Dark Blue */
+        --color-secondary: 245 245 247;
+        --color-accent: 255 159 10;
+        --color-background: 28 28 30;
+        --color-surface: 44 44 46;
+        --color-text-main: 245 245 247;
+        --color-text-muted: 142 142 147;
+        --color-border: 58 58 60;
+        --color-input-bg: 44 44 46;
 
-    /* Dark Mode Removed */
+        /* Glassmorphism Styles */
+        --glass-card-bg: rgba(28, 28, 30, 0.65);
+        --glass-card-border: rgba(255, 255, 255, 0.08);
+        --glass-card-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4);
+        
+        --glass-btn-bg: rgba(255, 255, 255, 0.08);
+        --glass-btn-border: rgba(255, 255, 255, 0.05);
+        --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.2);
+        
+        --glass-input-bg: rgba(0, 0, 0, 0.25);
+        --glass-input-border: rgba(255, 255, 255, 0.08);
+        --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.15);
+        --glass-input-focus-border: rgba(10, 132, 255, 0.4);
+
+        /* Tailwind grey overrides for dark mode */
+        --color-gray-50: #1c1c1e;
+        --color-gray-100: #2c2c2e;
+        --color-gray-200: #3a3a3c;
+        --color-gray-300: #48484a;
+        --color-gray-400: #636366;
+        --color-gray-500: #8e8e93;
+        --color-gray-600: #a1a1aa;
+        --color-gray-700: #d1d1d6;
+        --color-gray-800: #e5e5ea;
+        --color-gray-900: #f5f5f7;
+
+        --app-bg-gradient: radial-gradient(at 0% 0%, rgba(10, 50, 100, 0.35) 0px, transparent 50%), 
+                           radial-gradient(at 100% 0%, rgba(60, 20, 80, 0.35) 0px, transparent 50%), 
+                           radial-gradient(at 50% 100%, rgba(15, 30, 20, 0.2) 0px, transparent 50%), 
+                           #0d0d11;
+      }
+    }
+    
+    html.dark {
+      --color-primary: 10 132 255; /* Apple Dark Blue */
+      --color-secondary: 245 245 247;
+      --color-accent: 255 159 10;
+      --color-background: 28 28 30;
+      --color-surface: 44 44 46;
+      --color-text-main: 245 245 247;
+      --color-text-muted: 142 142 147;
+      --color-border: 58 58 60;
+      --color-input-bg: 44 44 46;
+
+      /* Glassmorphism Styles */
+      --glass-card-bg: rgba(28, 28, 30, 0.65);
+      --glass-card-border: rgba(255, 255, 255, 0.08);
+      --glass-card-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4);
+      
+      --glass-btn-bg: rgba(255, 255, 255, 0.08);
+      --glass-btn-border: rgba(255, 255, 255, 0.05);
+      --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.2);
+      
+      --glass-input-bg: rgba(0, 0, 0, 0.25);
+      --glass-input-border: rgba(255, 255, 255, 0.08);
+      --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.15);
+      --glass-input-focus-border: rgba(10, 132, 255, 0.4);
+
+      /* Tailwind grey overrides for dark mode */
+      --color-gray-50: #1c1c1e;
+      --color-gray-100: #2c2c2e;
+      --color-gray-200: #3a3a3c;
+      --color-gray-300: #48484a;
+      --color-gray-400: #636366;
+      --color-gray-500: #8e8e93;
+      --color-gray-600: #a1a1aa;
+      --color-gray-700: #d1d1d6;
+      --color-gray-800: #e5e5ea;
+      --color-gray-900: #f5f5f7;
+
+      --app-bg-gradient: radial-gradient(at 0% 0%, rgba(10, 50, 100, 0.35) 0px, transparent 50%), 
+                         radial-gradient(at 100% 0%, rgba(60, 20, 80, 0.35) 0px, transparent 50%), 
+                         radial-gradient(at 50% 100%, rgba(15, 30, 20, 0.2) 0px, transparent 50%), 
+                         #0d0d11;
+    }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-      background-color: rgb(var(--color-background));
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      background-image: var(--app-bg-gradient) !important;
+      background-attachment: fixed !important;
+      background-color: var(--color-background) !important;
       color: rgb(var(--color-text-main));
       -webkit-font-smoothing: antialiased;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      transition: background-image 0.5s ease, background-color 0.5s ease, color 0.3s ease;
+      min-height: 100vh;
     }
 
     /* Hide scrollbar for clean UI */
@@ -120,12 +245,12 @@
     }
 
     .glass {
-      background: rgba(255, 255, 255, 0.7);
+      background: var(--glass-card-bg);
+      border: 1px solid var(--glass-card-border);
+      box-shadow: var(--glass-card-shadow);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
-
-
 
     .card-hover {
       transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -134,6 +259,294 @@
     .card-hover:hover {
       transform: translateY(-2px);
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Class-level overrides for Neumorphism utility colors and styles */
+    .bg-\[\#E0E5EC\] {
+      background: var(--glass-card-bg) !important;
+      border: 1px solid var(--glass-card-border) !important;
+      box-shadow: var(--glass-card-shadow) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+    }
+
+    /* Outer min-h-screen container wrapper should be transparent to let the gradient show through */
+    div.min-h-screen.bg-\[\#E0E5EC\] {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    
+    /* Global screen container */
+    div.pt-24.bg-\[\#E0E5EC\].min-h-screen {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    /* Buttons with neumorphic colors should look like glass buttons */
+    button.bg-\[\#E0E5EC\], a.bg-\[\#E0E5EC\] {
+      background: var(--glass-btn-bg) !important;
+      border: 1px solid var(--glass-btn-border) !important;
+      box-shadow: var(--glass-btn-shadow) !important;
+      backdrop-filter: blur(10px) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+    }
+    button.bg-\[\#E0E5EC\]:hover, a.bg-\[\#E0E5EC\]:hover {
+      opacity: 0.9;
+    }
+
+    /* Input fields and inner areas with neumorphic background should look like glass inputs */
+    input.bg-\[\#E0E5EC\], textarea.bg-\[\#E0E5EC\], select.bg-\[\#E0E5EC\], input[type="text"].bg-\[\#E0E5EC\], input[type="password"].bg-\[\#E0E5EC\], input[type="email"].bg-\[\#E0E5EC\], input[type="number"].bg-\[\#E0E5EC\] {
+      background: var(--glass-input-bg) !important;
+      border: 1px solid var(--glass-input-border) !important;
+      box-shadow: var(--glass-input-shadow) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      color: rgb(var(--color-text-main)) !important;
+    }
+    input.bg-\[\#E0E5EC\]:focus, textarea.bg-\[\#E0E5EC\]:focus, select.bg-\[\#E0E5EC\]:focus {
+      border-color: var(--glass-input-focus-border) !important;
+    }
+
+    /* --- ATTRIBUTE SELECTOR OVERRIDES FOR INLINE STYLES --- */
+    
+    /* Cards styled with inline shadow */
+    [style*="9px 9px 16px"], [style*="10px 10px 20px"] {
+      background: var(--glass-card-bg) !important;
+      border: 1px solid var(--glass-card-border) !important;
+      box-shadow: var(--glass-card-shadow) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+    }
+
+    /* Icons containers styled with neumorphism background */
+    [style*="background: #E0E5EC"] {
+      background: var(--glass-btn-bg) !important;
+    }
+    [style*="background: rgb(224, 229, 236)"] {
+      background: var(--glass-btn-bg) !important;
+    }
+
+    /* Buttons styled with inline button shadow */
+    [style*="5px 5px 10px"], [style*="3px 3px 6px"] {
+      background: var(--glass-btn-bg) !important;
+      border: 1px solid var(--glass-btn-border) !important;
+      box-shadow: var(--glass-btn-shadow) !important;
+      backdrop-filter: blur(10px) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+    }
+
+    /* Inset inputs or toggles styled with inset neumorphic shadow */
+    [style*="inset 5px 5px 10px"], [style*="inset 6px 6px 12px"], [style*="inset 3px 3px 6px"] {
+      background: var(--glass-input-bg) !important;
+      border: 1px solid var(--glass-input-border) !important;
+      box-shadow: var(--glass-input-shadow) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    /* --- SPECIFIC FIXES FOR TEXT AND UI CONTRAST --- */
+    
+    /* Adjust text colors for gray text in dark mode */
+    .text-gray-900 { color: var(--color-gray-900) !important; }
+    .text-gray-800 { color: var(--color-gray-800) !important; }
+    .text-gray-700 { color: var(--color-gray-700) !important; }
+    .text-gray-600 { color: var(--color-gray-600) !important; }
+    .text-gray-500 { color: var(--color-gray-500) !important; }
+    .text-gray-400 { color: var(--color-gray-400) !important; }
+    .text-gray-300 { color: var(--color-gray-300) !important; }
+    .text-gray-200 { color: var(--color-gray-200) !important; }
+    .text-gray-100 { color: var(--color-gray-100) !important; }
+    .text-gray-50 { color: var(--color-gray-50) !important; }
+    
+    /* Hardcoded background colors that block glass theme */
+    .bg-white {
+      background-color: var(--glass-card-bg) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border: 1px solid var(--glass-card-border) !important;
+    }
+    .bg-gray-50 {
+      background-color: var(--glass-input-bg) !important;
+    }
+    .bg-gray-100 {
+      background-color: var(--glass-btn-bg) !important;
+    }
+    .bg-gray-200 {
+      background-color: var(--glass-input-bg) !important;
+    }
+    
+    /* Border overrides to adapt dynamically */
+    .border-gray-100 { border-color: var(--color-gray-100) !important; }
+    .border-gray-200 { border-color: var(--color-gray-200) !important; }
+    .border-gray-300 { border-color: var(--color-gray-300) !important; }
+    .border-gray-400 { border-color: var(--color-gray-400) !important; }
+    
+    /* Charts dynamic styling */
+    svg [stroke="#E0E5EC"] {
+      stroke: var(--glass-card-border) !important;
+    }
+    svg [stroke="#b8b9be"] {
+      stroke: var(--color-gray-400) !important;
+    }
+    svg [stroke="#4A4A4A"] {
+      stroke: var(--color-gray-800) !important;
+    }
+    svg [fill="#E0E5EC"] {
+      fill: var(--glass-card-bg) !important;
+    }
+
+    /* Custom Sleek Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--glass-btn-border);
+      border-radius: 99px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-gray-400);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    /* Premium Heading Gradient Styling */
+    h1, .premium-title {
+      background: linear-gradient(135deg, var(--color-gray-900) 0%, var(--color-gray-600) 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+      letter-spacing: -0.03em !important;
+    }
+
+    /* Dynamic Animated Background Glowing Orbs */
+    .bg-orb {
+      position: fixed;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(140px);
+      z-index: 0;
+      opacity: 0.45;
+      mix-blend-mode: plus-lighter;
+      transition: opacity 1s ease;
+    }
+
+    .bg-orb-1 {
+      top: -10%;
+      left: -10%;
+      background: radial-gradient(circle, rgba(10, 132, 255, 0.45) 0%, rgba(130, 201, 30, 0) 70%);
+      animation: float-orb-1 25s infinite alternate ease-in-out;
+    }
+
+    .bg-orb-2 {
+      bottom: -10%;
+      right: -10%;
+      background: radial-gradient(circle, rgba(191, 90, 242, 0.4) 0%, rgba(255, 69, 58, 0) 70%);
+      animation: float-orb-2 30s infinite alternate ease-in-out;
+    }
+
+    @keyframes float-orb-1 {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+      50% {
+        transform: translate(150px, 80px) scale(1.15);
+      }
+      100% {
+        transform: translate(50px, 200px) scale(0.9);
+      }
+    }
+
+    @keyframes float-orb-2 {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+      50% {
+        transform: translate(-100px, -120px) scale(0.9);
+      }
+      100% {
+        transform: translate(-180px, 50px) scale(1.1);
+      }
+    }
+
+    /* Tactile Noise/Grain Overlay */
+    .bg-grain {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.05;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    /* Glass card lifting with hover border lighting and shadow glow */
+    .card-hover, [style*="9px 9px 16px"], [style*="10px 10px 20px"] {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                   box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                   border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    
+    .card-hover:hover, [style*="9px 9px 16px"]:hover, [style*="10px 10px 20px"]:hover {
+      transform: translateY(-4px) scale(1.015) !important;
+      border-color: rgba(255, 255, 255, 0.7) !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), 
+                   0 0 25px rgba(10, 132, 255, 0.12) !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .bg-orb {
+        opacity: 0.35;
+        mix-blend-mode: screen;
+      }
+      .bg-orb-1 {
+        background: radial-gradient(circle, rgba(10, 132, 255, 0.3) 0%, rgba(0,0,0,0) 70%);
+      }
+      .bg-orb-2 {
+        background: radial-gradient(circle, rgba(191, 90, 242, 0.25) 0%, rgba(0,0,0,0) 70%);
+      }
+      .bg-grain {
+        opacity: 0.08;
+      }
+      .card-hover:hover, [style*="9px 9px 16px"]:hover, [style*="10px 10px 20px"]:hover {
+        border-color: rgba(255, 255, 255, 0.18) !important;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45), 
+                     0 0 30px rgba(10, 132, 255, 0.2) !important;
+      }
+    }
+
+    html.dark .bg-orb {
+      opacity: 0.35;
+      mix-blend-mode: screen;
+    }
+    html.dark .bg-orb-1 {
+      background: radial-gradient(circle, rgba(10, 132, 255, 0.3) 0%, rgba(0,0,0,0) 70%);
+    }
+    html.dark .bg-orb-2 {
+      background: radial-gradient(circle, rgba(191, 90, 242, 0.25) 0%, rgba(0,0,0,0) 70%);
+    }
+    html.dark .bg-grain {
+      opacity: 0.08;
+    }
+    html.dark .card-hover:hover, html.dark [style*="9px 9px 16px"]:hover, html.dark [style*="10px 10px 20px"]:hover {
+      border-color: rgba(255, 255, 255, 0.18) !important;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45), 
+                   0 0 30px rgba(10, 132, 255, 0.2) !important;
     }
   </style>
   <script type="importmap">
@@ -151,6 +564,13 @@
 </head>
 
 <body>
+  <!-- Dynamic Aura Background Orbs -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  
+  <!-- Tactile Glass Noise Overlay -->
+  <div class="bg-grain"></div>
+
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
