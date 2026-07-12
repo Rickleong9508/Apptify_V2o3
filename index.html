@@ -333,7 +333,7 @@
     }
 
     /* Buttons styled with inline button shadow */
-    [style*="5px 5px 10px"], [style*="3px 3px 6px"] {
+    [style*="5px 5px 10px"], [style*="3px 3px 6px"], [style*="6px 6px 12px"] {
       background: var(--glass-btn-bg) !important;
       border: 1px solid var(--glass-btn-border) !important;
       box-shadow: var(--glass-btn-shadow) !important;
@@ -363,6 +363,14 @@
     .text-gray-200 { color: var(--color-gray-200) !important; }
     .text-gray-100 { color: var(--color-gray-100) !important; }
     .text-gray-50 { color: var(--color-gray-50) !important; }
+    
+    /* Custom hardcoded colors mapped dynamically in dark mode */
+    .text-\[\#4A4A4A\] {
+      color: var(--color-gray-700) !important;
+    }
+    .text-\[\#444\] {
+      color: var(--color-gray-800) !important;
+    }
     
     /* Hardcoded background colors that block glass theme */
     .bg-white {
