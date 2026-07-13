@@ -552,7 +552,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Recommended: Default fast & efficient' },
                                     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', desc: 'Best for complex analysis & reasoning' },
                                     { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Low latency speed and multimodal features' },
-                                    { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Flash Thinking', desc: 'Thinking model for step-by-step logic' }
+                                    { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Flash Thinking', desc: 'Thinking model for step-by-step logic' },
+                                    { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro (Exp)', desc: 'Next-gen experimental Pro model for complex logic' },
+                                    { id: 'gemini-2.0-flash-lite-preview-02-05', name: 'Gemini 2.0 Flash Lite', desc: 'Next-gen lightweight, cost-effective multimodal' }
                                 ].map((m) => (
                                     <div
                                         key={m.id}
@@ -650,8 +652,13 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             {[
                                                 { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek' },
+                                                { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek' },
+                                                { id: 'deepseek/deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Llama-70B', provider: 'DeepSeek' },
+                                                { id: 'deepseek/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Qwen-32B', provider: 'DeepSeek' },
                                                 { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic' },
-                                                { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' }
+                                                { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
+                                                { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
+                                                { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'Alibaba' }
                                             ].map(m => (
                                                 <div
                                                     key={m.id}

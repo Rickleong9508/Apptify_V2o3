@@ -74,6 +74,22 @@ export const GeminiProvider: AIProviderInstance = {
                 capabilities: ['chat', 'vision', 'reasoning', 'coding']
             },
             {
+                id: 'gemini-2.0-pro-exp-02-05',
+                name: 'Gemini 2.0 Pro (Exp)',
+                provider: 'Google',
+                description: 'Next-gen experimental Pro model for complex logic and analytical tasks.',
+                context_length: 2097152,
+                capabilities: ['chat', 'vision', 'coding', 'reasoning', 'tool_calling', 'function_calling']
+            },
+            {
+                id: 'gemini-2.0-flash-lite-preview-02-05',
+                name: 'Gemini 2.0 Flash Lite',
+                provider: 'Google',
+                description: 'Next-gen experimental lightweight, cost-effective multimodal model.',
+                context_length: 1048576,
+                capabilities: ['chat', 'vision', 'coding', 'tool_calling', 'function_calling']
+            },
+            {
                 id: 'gemini-1.5-pro',
                 name: 'Gemini 1.5 Pro (Legacy)',
                 provider: 'Google',
@@ -332,9 +348,14 @@ export const AnthropicProvider: AIProviderInstance = {
 export const OpenRouterProvider: AIProviderInstance = {
     async getModels(apiKey: string): Promise<ModelMetadata[]> {
         return [
-            { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek', description: 'DeepSeek R1 via OpenRouter.', context_length: 128000, capabilities: ['chat', 'reasoning'] },
+            { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek', description: 'DeepSeek R1 (Full 671B model) featuring chain-of-thought reasoning.', context_length: 128000, capabilities: ['chat', 'reasoning', 'coding'] },
+            { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek', description: 'Flagship general-purpose chat model from DeepSeek.', context_length: 64000, capabilities: ['chat', 'coding'] },
+            { id: 'deepseek/deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Llama-70B', provider: 'DeepSeek', description: 'DeepSeek R1 distilled on Meta Llama-3 70B.', context_length: 128000, capabilities: ['chat', 'reasoning', 'coding'] },
+            { id: 'deepseek/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Qwen-32B', provider: 'DeepSeek', description: 'DeepSeek R1 distilled on Alibaba Qwen-2.5 32B.', context_length: 128000, capabilities: ['chat', 'reasoning', 'coding'] },
             { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic', description: 'Claude 3.7 Sonnet via OpenRouter.', context_length: 200000, capabilities: ['chat', 'coding', 'vision'] },
-            { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'GPT-4o via OpenRouter.', context_length: 128000, capabilities: ['chat', 'vision'] }
+            { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'GPT-4o via OpenRouter.', context_length: 128000, capabilities: ['chat', 'vision'] },
+            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', description: 'GPT-4o Mini via OpenRouter.', context_length: 128000, capabilities: ['chat', 'vision'] },
+            { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'Alibaba', description: 'Qwen 2.5 72B Instruct via OpenRouter.', context_length: 128000, capabilities: ['chat', 'coding'] }
         ];
     },
 

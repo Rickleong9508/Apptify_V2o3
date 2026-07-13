@@ -596,7 +596,7 @@ const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) =>
       }
     } catch (e) {}
 
-    if (modelId === 'deepseek/deepseek-r1' || modelId === 'anthropic/claude-3.7-sonnet' || modelId === 'openai/gpt-4o') {
+    if (modelId.startsWith('deepseek/') || modelId.startsWith('anthropic/') || modelId.startsWith('openai/') || modelId.startsWith('qwen/')) {
       return 'openrouter';
     }
 

@@ -173,7 +173,7 @@ const App: React.FC = () => {
       }
     } catch (e) {}
 
-    if (modelId === 'deepseek/deepseek-r1' || modelId === 'anthropic/claude-3.7-sonnet' || modelId === 'openai/gpt-4o') {
+    if (modelId.startsWith('deepseek/') || modelId.startsWith('anthropic/') || modelId.startsWith('openai/') || modelId.startsWith('qwen/')) {
       return 'openrouter';
     }
 
@@ -233,6 +233,8 @@ const App: React.FC = () => {
           { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
           { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
           { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Flash Thinking' },
+          { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro (Exp)' },
+          { id: 'gemini-2.0-flash-lite-preview-02-05', name: 'Gemini 2.0 Flash Lite' },
           { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
           { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' }
         ]);
@@ -257,8 +259,13 @@ const App: React.FC = () => {
       } else if (currentProvider === 'openrouter') {
         setModelsList([
           { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1' },
+          { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3' },
+          { id: 'deepseek/deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Llama-70B' },
+          { id: 'deepseek/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Qwen-32B' },
           { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
-          { id: 'openai/gpt-4o', name: 'GPT-4o' }
+          { id: 'openai/gpt-4o', name: 'GPT-4o' },
+          { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' },
+          { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B' }
         ]);
       } else {
         setModelsList([]);
