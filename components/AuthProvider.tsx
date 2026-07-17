@@ -44,6 +44,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Clear Local Data on Logout to prevent leakage
         localStorage.removeItem('gn_notes');
         localStorage.removeItem('gn_todos');
+        localStorage.removeItem('gn_meta');
+        localStorage.removeItem('app_notes_embeddings');
         localStorage.removeItem('mw_data_main');
         // Optional: clear theme or settings if desired, but maybe keep for device preference
         // localStorage.removeItem('mw_theme'); 

@@ -73,6 +73,18 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   // --- Ref for Timestamp Protection ---
   const lastLocalUpdateRef = React.useRef<number>(0);
   const isIncomingSyncRef = React.useRef<boolean>(false);
+  const isSyncInitializedRef = React.useRef<boolean>(false);
+  const prevUserRef = React.useRef<any>(null);
+
+  // Sync auth state changes synchronously during render
+  if (user?.id !== prevUserRef.current?.id) {
+    prevUserRef.current = user;
+    if (user) {
+      isSyncInitializedRef.current = false;
+    } else {
+      isSyncInitializedRef.current = true;
+    }
+  }
 
 
 
@@ -144,6 +156,13 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
   // --- Load Data (Local then Cloud) ---
   const fetchData = async () => {
+    // Reset sync status during login phase
+    if (session && user) {
+      isSyncInitializedRef.current = false;
+    } else {
+      isSyncInitializedRef.current = true;
+    }
+
     // 1. Load Local
     const savedJSON = localStorage.getItem(STORAGE_KEY);
     let localData: any = null;
@@ -197,7 +216,12 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           if (cloudTime > localTime) {
             console.log(`Sync: Cloud (${cloudTime}) > Local (${localTime}). Applying update...`);
             const processedAccounts = checkAndApplyInterest(cloudApp.accounts || []);
+            
             isIncomingSyncRef.current = true;
+            setTimeout(() => {
+              isIncomingSyncRef.current = false;
+            }, 100);
+
             setAccounts(processedAccounts);
             setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
             setBudgetHistory(cloudApp.budgetHistory || []);
@@ -219,6 +243,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         setIsSyncing(false);
       }
     }
+    isSyncInitializedRef.current = true;
     setIsDataLoaded(true);
   };
 
@@ -257,7 +282,12 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             if (cloudTime > localTime) {
               console.log(`Realtime: Cloud (${cloudTime}) > Local (${localTime}). Updating...`);
               const processedAccounts = checkAndApplyInterest(cloudApp.accounts || []);
+              
               isIncomingSyncRef.current = true;
+              setTimeout(() => {
+                isIncomingSyncRef.current = false;
+              }, 100);
+
               setAccounts(processedAccounts);
               setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
               setBudgetHistory(cloudApp.budgetHistory || []);
@@ -286,7 +316,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
   // --- Save Data (Local & Cloud) ---
   useEffect(() => {
-    if (!isDataLoaded) return;
+    if (!isDataLoaded || !isSyncInitializedRef.current) return;
 
     if (isIncomingSyncRef.current) {
       console.log("Sync: State change was from remote sync. Skipping cloud push.");
@@ -304,8 +334,6 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         lastUpdated: new Date(lastLocalUpdateRef.current).toISOString() 
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-      
-      isIncomingSyncRef.current = false; // Reset the flag
       return;
     }
 

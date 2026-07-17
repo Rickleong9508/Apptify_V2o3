@@ -91,6 +91,7 @@ interface Message {
     data: any;
     message: string;
   };
+  images?: string[];
 }
 
 interface VideoSummaryWidgetProps {

@@ -313,9 +313,28 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
     const [showSyncSuccess, setShowSyncSuccess] = useState(false);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const isIncomingSyncRef = React.useRef<boolean>(false);
+    const isSyncInitializedRef = React.useRef<boolean>(false);
+    const prevUserRef = React.useRef<any>(null);
+
+    // Sync auth state changes synchronously during render
+    if (user?.id !== prevUserRef.current?.id) {
+        prevUserRef.current = user;
+        if (user) {
+            isSyncInitializedRef.current = false;
+        } else {
+            isSyncInitializedRef.current = true;
+        }
+    }
 
     // --- Load Data (Local then Cloud / Obsidian) ---
     const fetchData = async () => {
+        // Reset sync status during login phase
+        if (session && user) {
+            isSyncInitializedRef.current = false;
+        } else {
+            isSyncInitializedRef.current = true;
+        }
+
         setIsDataLoaded(false);
         
         // 1. Load Todos from Local first
@@ -347,12 +366,16 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             const savedNotes = localStorage.getItem('gn_notes');
             let localTime = 0;
 
-            if (savedNotes) setNotes(JSON.parse(savedNotes));
-
-            // Try to find local timestamp if we stored it
-            const savedMeta = localStorage.getItem('gn_meta');
-            if (savedMeta) {
-                localTime = new Date(JSON.parse(savedMeta).lastUpdated).getTime();
+            if (savedNotes !== null) {
+                setNotes(JSON.parse(savedNotes));
+                // Try to find local timestamp if we stored it
+                const savedMeta = localStorage.getItem('gn_meta');
+                if (savedMeta) {
+                    localTime = new Date(JSON.parse(savedMeta).lastUpdated).getTime();
+                }
+            } else {
+                // If savedNotes is null (e.g. cleared on logout), force localTime to 0 to sync from cloud
+                localTime = 0;
             }
 
             // 2. Sync Cloud if Logged In
@@ -373,7 +396,12 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
                         if (cloudTime > localTime) {
                             console.log("Sync: Cloud (GetNote) is newer, applying...");
+                            
                             isIncomingSyncRef.current = true;
+                            setTimeout(() => {
+                                isIncomingSyncRef.current = false;
+                            }, 100);
+
                             setNotes(cloudApp.notes || []);
                             setTodos(cloudApp.todos || []);
 
@@ -390,6 +418,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 }
             }
         }
+        isSyncInitializedRef.current = true;
         setIsDataLoaded(true);
     };
 
@@ -416,6 +445,10 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                         console.log("Realtime: Remote update received (GetNote)", cloudApp);
 
                         isIncomingSyncRef.current = true;
+                        setTimeout(() => {
+                            isIncomingSyncRef.current = false;
+                        }, 100);
+
                         setNotes(cloudApp.notes || []);
                         setTodos(cloudApp.todos || []);
 
@@ -434,11 +467,10 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
     // --- Save Data (Local & Cloud) ---
     useEffect(() => {
-        if (!isDataLoaded) return;
+        if (!isDataLoaded || !isSyncInitializedRef.current) return;
 
         if (isIncomingSyncRef.current) {
             console.log("Sync: State change was from remote sync. Skipping cloud push.");
-            isIncomingSyncRef.current = false; // Reset the flag
             return;
         }
 

@@ -14,6 +14,30 @@ const LauncherRobot: React.FC = () => {
   const [posX, setPosX] = useState(50); // percentage position (25% - 75%)
   const [direction, setDirection] = useState<'left' | 'right'>('right');
   const [isWalking, setIsWalking] = useState(true);
+  const [timeStr, setTimeStr] = useState('');
+  const [showChat, setShowChat] = useState(false);
+  const [chatQuery, setChatQuery] = useState('');
+  const [chatResponse, setChatResponse] = useState('');
+  const [isRobotReplying, setIsRobotReplying] = useState(false);
+
+  // Update date and time dynamically every second
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const date = now.getDate();
+      const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      const day = days[now.getDay()];
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      setTimeStr(`${year}年${month}月${date}日 ${day} ${hours}:${minutes}:${seconds}`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Animate walking around
   useEffect(() => {
@@ -39,90 +63,192 @@ const LauncherRobot: React.FC = () => {
   }, [direction, isWalking]);
 
   const handleInteraction = () => {
-    // Open Ask Apptify with custom welcome detail
-    const event = new CustomEvent('open_ask_apptify', {
-      detail: { 
-        query: `你好！请帮我分析一下我的财务与笔记状况。`
-      }
+    setShowChat(prev => {
+      const next = !prev;
+      setIsWalking(!next);
+      return next;
     });
-    window.dispatchEvent(event);
+  };
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatQuery.trim()) return;
+
+    setIsRobotReplying(true);
+    setChatResponse(`🤖 收到指令: "${chatQuery}"，正在帮您发送至 AI 助理执行...`);
+    
+    const queryToSend = chatQuery;
+    setChatQuery('');
+
+    setTimeout(() => {
+      setIsRobotReplying(false);
+      setShowChat(false);
+      setIsWalking(true);
+      setChatResponse('');
+
+      // Dispatch event to open Ask Apptify with custom query
+      const event = new CustomEvent('open_ask_apptify', {
+        detail: { 
+          query: queryToSend
+        }
+      });
+      window.dispatchEvent(event);
+    }, 1200);
   };
 
   return (
-    <div className="w-full h-20 flex items-center relative select-none">
-      {/* Neumorphic Interactive Card */}
+    <div className="w-full h-44 flex items-center relative select-none">
+      {/* Centered Walking/Interactive Entity */}
       <div 
-        onClick={handleInteraction}
         onMouseEnter={() => setIsWalking(false)}
-        onMouseLeave={() => setIsWalking(true)}
-        className="w-[185px] h-[64px] rounded-[24px] bg-[#E0E5EC] p-3 flex items-center gap-3 cursor-pointer select-none transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] absolute top-1/2 -translate-y-1/2"
+        onMouseLeave={() => { if (!showChat) setIsWalking(true); }}
+        className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-300"
         style={{
-          left: `calc(${posX}% - 92.5px)`,
-          boxShadow: "6px 6px 12px rgb(163,177,198,0.6), -6px -6px 12px rgba(255,255,255, 0.5)",
-          transition: 'left 0.1s linear, transform 0.2s ease-out'
+          left: `calc(${posX}% - 112px)`, // centered: half of w-56 (224px) is 112px
+          transition: 'left 0.1s linear, transform 0.2s ease-out',
+          width: '224px',
+          zIndex: showChat ? 30 : 10
         }}
       >
-        {/* SVG Robot Drawing */}
-        <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
-          <svg 
-            width="40" 
-            height="40" 
-            viewBox="0 0 64 64" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-            className={`animate-bounce-soft duration-[2s] ${direction === 'left' ? 'scale-x-[-1]' : ''}`}
+        {/* Dynamic speech bubble */}
+        {!showChat ? (
+          <div 
+            onClick={handleInteraction}
+            className="mb-2 px-3 py-1.5 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-md flex flex-col items-center gap-0.5 text-center w-56 relative cursor-pointer transform hover:scale-105 active:scale-95 transition-all duration-300 animate-bounce-soft"
+            style={{
+              boxShadow: "0 6px 20px rgba(0, 0, 0, 0.05)",
+            }}
           >
-            {/* Head Antenna */}
-            <path d="M32 14V8" stroke="#1082FF" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="32" cy="7" r="3" fill="#BF5AF2" className="animate-pulse" />
-
-            {/* Ears */}
-            <rect x="8" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
-            <rect x="52" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
-
-            {/* Body */}
-            <rect x="16" y="26" width="32" height="24" rx="8" fill="url(#robotBodyGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" className="backdrop-blur-md" />
+            <span className="text-[9px] text-blue-500 font-extrabold uppercase tracking-wider">今日时刻</span>
+            <span className="text-[11px] font-extrabold text-gray-800 dark:text-gray-100">{timeStr}</span>
+            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium leading-none mt-1">🤖 点我开启 AI 互动</span>
             
-            {/* Head */}
-            <rect x="20" y="14" width="24" height="18" rx="6" fill="url(#robotHeadGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-
-            {/* Screen / Face */}
-            <rect x="23" y="17" width="18" height="12" rx="3" fill="#1C1C1E" />
+            {/* Arrow */}
+            <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-white/90 dark:border-t-zinc-900/90" />
+          </div>
+        ) : (
+          /* Mini Chat Dialogue Overlay */
+          <div 
+            className="mb-2 flex flex-col gap-2 w-56 p-3 rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg relative"
+            onClick={(e) => e.stopPropagation()} // Prevent propagation from triggering handleInteraction again
+            style={{
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+            }}
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-zinc-800">
+              <span className="text-[10px] font-bold text-blue-500">Apptify 智能助手</span>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowChat(false); setIsWalking(true); }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
             
-            {/* Eyes - Blinking */}
-            <circle cx="28" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
-            <circle cx="36" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
+            <div className="text-[10px] text-gray-600 dark:text-gray-400 text-left font-medium leading-normal">
+              <p className="font-extrabold text-blue-600 dark:text-blue-400 mb-1">⏰ {timeStr}</p>
+              <p>{chatResponse || "您可以对我说：“帮我存100块到钱包” 或 “帮我做理财分析”。"}</p>
+            </div>
+            
+            {!isRobotReplying ? (
+              <form onSubmit={handleChatSubmit} className="flex gap-1.5 mt-1">
+                <input
+                  type="text"
+                  placeholder="输入对话或指令..."
+                  value={chatQuery}
+                  onChange={(e) => setChatQuery(e.target.value)}
+                  className="flex-1 px-2 py-1 text-[11px] rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 outline-none text-gray-800 dark:text-gray-100 focus:border-blue-500"
+                />
+                <button 
+                  type="submit"
+                  className="px-2.5 py-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-[10px] font-bold rounded-lg transition-all"
+                >
+                  发送
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center gap-1.5 justify-center py-1.5">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+              </div>
+            )}
 
-            {/* Cheeks */}
-            <circle cx="25" cy="27" r="1" fill="#FF453A" />
-            <circle cx="39" cy="27" r="1" fill="#FF453A" />
+            {/* Arrow */}
+            <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-white/95 dark:border-t-zinc-900/95" />
+          </div>
+        )}
 
-            {/* Hands */}
-            <path d="M12 34C12 34 8 36 8 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
-            <path d="M52 34C52 34 56 36 56 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
+        {/* Neumorphic Interactive Card */}
+        <div 
+          onClick={handleInteraction}
+          className="w-[185px] h-[64px] rounded-[24px] bg-[#E0E5EC] p-3 flex items-center gap-3 cursor-pointer select-none transition-all duration-300 hover:scale-[1.03] active:scale-[0.97]"
+          style={{
+            boxShadow: "6px 6px 12px rgb(163,177,198,0.6), -6px -6px 12px rgba(255,255,255, 0.5)",
+          }}
+        >
+          {/* SVG Robot Drawing */}
+          <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+            <svg 
+              width="40" 
+              height="40" 
+              viewBox="0 0 64 64" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              className={`animate-bounce-soft duration-[2s] ${direction === 'left' ? 'scale-x-[-1]' : ''}`}
+            >
+              {/* Head Antenna */}
+              <path d="M32 14V8" stroke="#1082FF" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="32" cy="7" r="3" fill="#BF5AF2" className="animate-pulse" />
 
-            {/* Legs */}
-            <rect x="24" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} />
-            <rect x="36" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} style={{ animationDelay: '0.2s' }} />
+              {/* Ears */}
+              <rect x="8" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
+              <rect x="52" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
 
-            {/* Gradients */}
-            <defs>
-              <linearGradient id="robotHeadGrad" x1="20" y1="14" x2="44" y2="32" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.75)" />
-                <stop offset="100%" stopColor="rgba(255,255,255,0.45)" />
-              </linearGradient>
-              <linearGradient id="robotBodyGrad" x1="16" y1="26" x2="48" y2="50" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
-                <stop offset="100%" stopColor="rgba(255,255,255,0.55)" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
+              {/* Body */}
+              <rect x="16" y="26" width="32" height="24" rx="8" fill="url(#robotBodyGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" className="backdrop-blur-md" />
+              
+              {/* Head */}
+              <rect x="20" y="14" width="24" height="18" rx="6" fill="url(#robotHeadGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
 
-        {/* Card Text Content */}
-        <div className="flex flex-col justify-center min-w-0">
-          <span className="text-xs font-extrabold text-gray-700 leading-tight">Ask Apptify</span>
-          <span className="text-[9px] text-gray-500 font-bold mt-0.5 leading-none truncate">点击与 AI 助手对话</span>
+              {/* Screen / Face */}
+              <rect x="23" y="17" width="18" height="12" rx="3" fill="#1C1C1E" />
+              
+              {/* Eyes - Blinking */}
+              <circle cx="28" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
+              <circle cx="36" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
+
+              {/* Cheeks */}
+              <circle cx="25" cy="27" r="1" fill="#FF453A" />
+              <circle cx="39" cy="27" r="1" fill="#FF453A" />
+
+              {/* Hands */}
+              <path d="M12 34C12 34 8 36 8 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
+              <path d="M52 34C52 34 56 36 56 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
+
+              {/* Legs */}
+              <rect x="24" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} />
+              <rect x="36" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} style={{ animationDelay: '0.2s' }} />
+
+              {/* Gradients */}
+              <defs>
+                <linearGradient id="robotHeadGrad" x1="20" y1="14" x2="44" y2="32" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.75)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0.45)" />
+                </linearGradient>
+                <linearGradient id="robotBodyGrad" x1="16" y1="26" x2="48" y2="50" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0.55)" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          {/* Card Text Content */}
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-xs font-extrabold text-gray-700 leading-tight">Ask Apptify</span>
+            <span className="text-[9px] text-gray-500 font-bold mt-0.5 leading-none truncate">点击与 AI 助手对话</span>
+          </div>
         </div>
       </div>
     </div>
