@@ -9,13 +9,12 @@ import {
     Activity,
     BarChart3,
     AlertCircle,
-    Triangle,
+    ChevronLeft,
     Sparkles,
     Loader2,
     DollarSign,
     ArrowRight,
     Calculator,
-    Scale,
     Target,
     Briefcase,
     LineChart,
@@ -52,13 +51,11 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
     const aiProvider = (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google';
     const aiModel = localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash';
 
-    // Load available frameworks list on mount
     useEffect(() => {
         const loadPrompts = async () => {
             try {
                 const list = await investSkillService.listPrompts();
                 setPromptsList(list);
-                // Set default to stock-eval if present
                 if (list.some(p => p.id === 'stock-eval')) {
                     setSelectedPromptId('stock-eval');
                 } else if (list.length > 0) {
@@ -71,7 +68,6 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
         loadPrompts();
     }, []);
 
-    // Expose methods to window for Ask Apptify orchestration
     useEffect(() => {
         (window as any).__apptify_autocount = {
             symbol,
@@ -87,7 +83,6 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
         };
     }, [symbol, stockData, generatingReport, reportMarkdown, parsedSignal]);
 
-    // Handle stock symbol search
     const handleSearch = async (searchSymbol?: string) => {
         const activeSymbol = searchSymbol || symbol;
         if (!activeSymbol.trim()) return;
@@ -111,7 +106,6 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
         }
     };
 
-    // Run selected InvestSkill analysis using AI
     const handleRunAnalysis = async (customStockData?: DetailedStockData) => {
         const activeStockData = customStockData || stockData;
         if (!activeStockData || !apiKey) return;
@@ -122,10 +116,8 @@ const AutoCount: React.FC<AutoCountProps> = ({ onExit }) => {
         setParsedSignal(null);
 
         try {
-            // 1. Fetch prompt content
             const promptTemplate = await investSkillService.readPrompt(selectedPromptId);
             
-            // 2. Format detailed financials context
             const financials = activeStockData.valuationFields || {};
             const revenueBillions = financials.revenueTtm ? (financials.revenueTtm / 1e9).toFixed(3) + 'B' : 'N/A';
             const netIncomeBillions = financials.netIncomeTtm ? (financials.netIncomeTtm / 1e9).toFixed(3) + 'B' : 'N/A';
@@ -194,11 +186,8 @@ Please run the framework and output the research report with the Signal Block at
 `;
 
             const response = await aiService.generate(aiProvider, aiModel, apiKey, finalPrompt, systemInstruction);
-            
-            // Set Markdown report
             setReportMarkdown(response);
             
-            // Parse Investment Signal
             const parsed = investSkillService.parseInvestmentSignal(response);
             setParsedSignal(parsed);
             return { report: response, signal: parsed };
@@ -212,15 +201,13 @@ Please run the framework and output the research report with the Signal Block at
         }
     };
 
-    // Save report as local HTML
     const handleSaveReport = async () => {
         if (!stockData || !reportMarkdown || !parsedSignal) return;
 
         try {
             const dateStr = new Date().toISOString().split('T')[0];
             const fileName = `${stockData.symbol}_InvestReport_${selectedPromptId}_${dateStr}.html`;
-
-            const scoreColor = parsedSignal.signal === 'BULLISH' ? '#319795' : (parsedSignal.signal === 'BEARISH' ? '#E53E3E' : '#D69E2E');
+            const scoreColor = parsedSignal.signal === 'BULLISH' ? '#10B981' : (parsedSignal.signal === 'BEARISH' ? '#EF4444' : '#F59E0B');
             
             const htmlContent = `
 <!DOCTYPE html>
@@ -229,12 +216,12 @@ Please run the framework and output the research report with the Signal Block at
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${stockData.symbol} - ${selectedPromptId.toUpperCase()} InvestReport</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #E0E5EC;
-            color: #4A4A4A;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0F172A;
+            color: #F8FAFC;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             margin: 0;
             padding: 40px 20px;
             display: flex;
@@ -243,103 +230,83 @@ Please run the framework and output the research report with the Signal Block at
         .container {
             max-width: 900px;
             width: 100%;
-            background: #E0E5EC;
+            background: #1E293B;
             padding: 40px;
-            border-radius: 40px;
-            box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
         h1 {
-            color: #2D3748;
-            font-size: 32px;
-            font-weight: 700;
+            color: #FFFFFF;
+            font-size: 28px;
+            font-weight: 800;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 8px;
         }
         .header-meta {
             text-align: center;
-            font-size: 14px;
-            color: #718096;
-            margin-bottom: 40px;
+            font-size: 13px;
+            color: #94A3B8;
+            margin-bottom: 32px;
         }
         .signal-grid {
             display: grid;
-            grid-template-cols: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 15px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 36px;
         }
         .signal-card {
-            background: #E0E5EC;
-            padding: 15px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 16px;
             border-radius: 20px;
             text-align: center;
-            box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .signal-val {
             font-size: 18px;
             font-weight: 700;
-            margin-top: 5px;
-            color: #2D3748;
+            margin-top: 6px;
+            color: #FFFFFF;
         }
         .signal-label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
-            color: #718096;
+            color: #94A3B8;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
         .score-card {
-            background: #E0E5EC;
-            box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff;
+            background: rgba(59, 130, 246, 0.1);
             border: 2px solid ${scoreColor};
         }
         .score-val {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
             color: ${scoreColor};
-            margin-top: 5px;
+            margin-top: 4px;
         }
         .report-content {
             line-height: 1.8;
-            font-size: 15px;
-            color: #2D3748;
-            border-top: 2px solid rgba(0,0,0,0.05);
-            padding-top: 30px;
+            font-size: 14px;
+            color: #E2E8F0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 28px;
         }
         .report-content h2, .report-content h3 {
-            color: #2B6CB0;
-            margin-top: 30px;
-            margin-bottom: 15px;
+            color: #38BDF8;
+            margin-top: 24px;
+            margin-bottom: 12px;
         }
         .report-content p {
-            margin-bottom: 20px;
-        }
-        .report-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            box-shadow: inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .report-content th, .report-content td {
-            padding: 12px 15px;
-            text-align: left;
-        }
-        .report-content th {
-            background-color: rgba(0,0,0,0.03);
-            color: #4A5568;
-            font-weight: 600;
-        }
-        .report-content td {
-            border-bottom: 1px solid rgba(0,0,0,0.02);
+            margin-bottom: 16px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>${stockData.symbol} InvestReport (${selectedPromptId.toUpperCase()})</h1>
+        <h1>${stockData.symbol} Institutional Research Report</h1>
         <div class="header-meta">
-            Generated: ${new Date().toLocaleString()} | Framework: yennanliu/InvestSkill
+            Generated: ${new Date().toLocaleString()} | Framework: ${selectedPromptId.toUpperCase()}
         </div>
         
         <div class="signal-grid">
@@ -386,11 +353,9 @@ Please run the framework and output the research report with the Signal Block at
 
             try {
                 const savedPath = await investSkillService.saveReport(fileName, htmlContent);
-                alert(`Report saved to workspace!\nPath: ${savedPath}`);
+                alert(`Report successfully saved!\nLocation: ${savedPath}`);
             } catch (apiError: any) {
-                console.warn("Workspace save failed, falling back to browser download:", apiError);
-                
-                // Browser direct download fallback (works on mobile & deployed environments)
+                console.warn("Workspace save failed, downloading directly:", apiError);
                 const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -408,279 +373,270 @@ Please run the framework and output the research report with the Signal Block at
     };
 
     return (
-        <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-gray-300 transition-colors duration-300 relative">
-            <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
-                <div className="max-w-4xl mx-auto p-6 md:p-12 pb-40 animate-fade-in">
+        <div className="min-h-screen pb-24 animate-fade-in text-[var(--ios-label-primary)]">
+            <div className="max-w-4xl mx-auto space-y-6">
+                {/* Header & Back Button */}
+                <div className="flex items-center justify-between">
+                    <button
+                        onClick={onExit}
+                        className="flex items-center gap-1.5 text-blue-500 font-semibold text-sm tap-scale"
+                    >
+                        <ChevronLeft size={20} />
+                        <span>Back to Launcher</span>
+                    </button>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ios-label-secondary)] bg-[var(--ios-fill-tertiary)] px-3 py-1 rounded-full">
+                        <BookOpen size={13} className="text-blue-500" />
+                        <span>InvestSkill Framework Hub</span>
+                    </div>
+                </div>
 
-                    {/* Hero Title */}
-                    <div className="flex flex-col items-center mb-12">
-                        <h1 className="text-4xl md:text-5xl font-bold text-center mb-2 tracking-tight text-gray-700 flex items-center gap-3">
-                            <BookOpen className="text-blue-500 fill-blue-500" size={36} /> InvestSkill
+                {/* Hero Search Box */}
+                <div className="ios-card p-6 sm:p-8 text-center space-y-5">
+                    <div>
+                        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--ios-label-primary)]">
+                            AutoCount & InvestSkill
                         </h1>
-                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-8">
-                            US Stock Investment Analysis Frameworks
+                        <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] mt-1.5 max-w-md mx-auto">
+                            25 institutional analysis frameworks applied to real-time US equity data
                         </p>
+                    </div>
 
-                        {/* Search Input Bar */}
-                        <div className="w-full max-w-lg relative group z-20 mb-6">
-                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400">
-                                <Search size={24} />
+                    <div className="max-w-md mx-auto relative">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-[var(--ios-label-tertiary)]">
+                            <Search size={18} />
+                        </div>
+                        <input
+                            type="text"
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder="Enter US Ticker (e.g. AAPL, PLTR, NVDA)"
+                            className="ios-input pl-11 pr-14 py-3.5 text-base sm:text-lg font-bold tracking-wide uppercase"
+                        />
+                        <button
+                            onClick={() => handleSearch()}
+                            disabled={loading || !symbol.trim()}
+                            className="absolute right-2 top-2 bottom-2 px-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-40 text-white rounded-xl flex items-center justify-center tap-scale transition-colors shadow-sm"
+                        >
+                            {loading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+                        </button>
+                    </div>
+
+                    {error && (
+                        <div className="flex items-center justify-center gap-2 text-xs text-rose-500 bg-rose-500/10 py-2.5 px-4 rounded-xl max-w-md mx-auto">
+                            <AlertCircle size={15} />
+                            <span>{error}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Main UI layout once stock is loaded */}
+                {stockData && (
+                    <div className="space-y-6 animate-slide-up">
+                        {/* Live Price Quote Card */}
+                        <div className="ios-card p-6 sm:p-8 text-center relative overflow-hidden">
+                            <span className="text-xs font-bold text-[var(--ios-label-tertiary)] uppercase tracking-widest">
+                                {stockData.symbol}
+                            </span>
+                            <div className="flex items-center justify-center gap-3 mt-2">
+                                <span className="text-4xl sm:text-6xl font-extrabold text-[var(--ios-label-primary)] tracking-tight">
+                                    ${stockData.price.toFixed(2)}
+                                </span>
                             </div>
-                            <input
-                                type="text"
-                                value={symbol}
-                                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder="Enter US Ticker (e.g. AAPL, PLTR, TSLA)"
-                                className="w-full text-xl font-bold py-6 pl-14 pr-16 rounded-[24px] outline-none transition-all placeholder:text-gray-300 text-gray-700 uppercase"
-                                style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff"
-                                }}
-                            />
-                            <div className="absolute inset-y-0 right-3 flex items-center">
+                            <div className="mt-2.5 flex items-center justify-center">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
+                                    stockData.changePercent >= 0 ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'
+                                }`}>
+                                    {stockData.changePercent >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                    <span>{stockData.changePercent.toFixed(2)}% Today</span>
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-[var(--ios-separator)]">
+                                <div className="p-2">
+                                    <span className="text-[10px] font-semibold uppercase text-[var(--ios-label-tertiary)]">P/E Ratio</span>
+                                    <p className="font-bold text-base sm:text-lg text-[var(--ios-label-primary)] mt-0.5">
+                                        {stockData.peRatio ? stockData.peRatio.toFixed(1) : 'N/A'}
+                                    </p>
+                                </div>
+                                <div className="p-2">
+                                    <span className="text-[10px] font-semibold uppercase text-[var(--ios-label-tertiary)]">FCF (TTM)</span>
+                                    <p className="font-bold text-base sm:text-lg text-[var(--ios-label-primary)] mt-0.5">
+                                        {stockData.valuationFields?.obsFreeCashFlowTtm ? `$${(stockData.valuationFields.obsFreeCashFlowTtm / 1e9).toFixed(2)}B` : 'N/A'}
+                                    </p>
+                                </div>
+                                <div className="p-2">
+                                    <span className="text-[10px] font-semibold uppercase text-[var(--ios-label-tertiary)]">Market Cap</span>
+                                    <p className="font-bold text-base sm:text-lg text-[var(--ios-label-primary)] mt-0.5">
+                                        ${(stockData.marketCap / 1e9).toFixed(2)}B
+                                    </p>
+                                </div>
+                                <div className="p-2">
+                                    <span className="text-[10px] font-semibold uppercase text-[var(--ios-label-tertiary)]">Volume Signal</span>
+                                    <p className={`font-bold text-base sm:text-lg mt-0.5 ${
+                                        stockData.volumeSignal === 'Bullish' ? 'text-emerald-500' : stockData.volumeSignal === 'Bearish' ? 'text-rose-500' : 'text-[var(--ios-label-primary)]'
+                                    }`}>
+                                        {stockData.volumeSignal}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Framework Selection Grid */}
+                        <div className="ios-card p-6 sm:p-8 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Sliders size={18} className="text-blue-500" />
+                                <h3 className="font-bold text-base text-[var(--ios-label-primary)]">
+                                    Select Investment Framework ({promptsList.length})
+                                </h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                                {promptsList.map((prompt) => {
+                                    const isSelected = selectedPromptId === prompt.id;
+                                    return (
+                                        <button
+                                            key={prompt.id}
+                                            onClick={() => setSelectedPromptId(prompt.id)}
+                                            className={`p-3 rounded-2xl text-left transition-all tap-scale flex flex-col justify-between ${
+                                                isSelected
+                                                    ? 'bg-blue-500 text-white shadow-sm ring-2 ring-blue-500/50'
+                                                    : 'bg-[var(--ios-fill-tertiary)] hover:bg-[var(--ios-fill-secondary)] text-[var(--ios-label-primary)]'
+                                            }`}
+                                        >
+                                            <span className="text-xs font-bold leading-snug line-clamp-1">{prompt.title}</span>
+                                            <span className={`text-[10px] font-mono mt-1 ${isSelected ? 'text-white/80' : 'text-[var(--ios-label-tertiary)]'}`}>
+                                                {prompt.id}.md
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="pt-2">
                                 <button
-                                    onClick={handleSearch}
-                                    disabled={loading || !symbol}
-                                    className="w-12 h-12 rounded-xl flex items-center justify-center text-gray-600 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
-                                    style={{
-                                        background: "#E0E5EC",
-                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                                    }}
+                                    onClick={() => handleRunAnalysis()}
+                                    disabled={generatingReport || !apiKey}
+                                    className="w-full ios-button-primary py-4 text-sm font-semibold flex items-center justify-center gap-2 tap-scale disabled:opacity-40"
                                 >
-                                    {loading ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} />}
+                                    {generatingReport ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            <span>Running Framework Analysis...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles size={18} />
+                                            <span>Execute Analysis with AI</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
 
-                        {error && (
-                            <div className="mt-6 flex items-center gap-2 text-red-500 bg-red-100 px-4 py-2 rounded-xl shadow-sm">
-                                <AlertCircle size={18} />
-                                <span className="font-medium text-sm">{error}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Main UI layout once stock is loaded */}
-                    {stockData && (
-                        <div className="space-y-8 animate-slide-up">
-
-                            {/* Stock Ticker Summary */}
-                            <div
-                                className="p-8 rounded-[32px] relative overflow-hidden text-center"
-                                style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                }}
-                            >
-                                <p className="text-gray-400 font-bold tracking-widest text-xs uppercase mb-2">
-                                    {stockData.symbol}
-                                </p>
-                                
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                    <h2 className="text-5xl md:text-6xl font-bold text-gray-800 tracking-tighter">
-                                        ${stockData.price.toFixed(2)}
-                                    </h2>
-                                    <div className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center shadow-inner ${stockData.changePercent > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                                        {stockData.changePercent > 0 ? <TrendingUp size={16} className="mr-1" /> : <TrendingDown size={16} className="mr-1" />}
-                                        {stockData.changePercent.toFixed(2)}%
+                        {/* Parsed Signal & Research Report */}
+                        {parsedSignal && (
+                            <div className="space-y-6 animate-slide-up">
+                                {/* Signal Dashboard Card */}
+                                <div className="ios-card p-6 sm:p-8 space-y-6">
+                                    <div className="flex items-center justify-between pb-3 border-b border-[var(--ios-separator)]">
+                                        <h3 className="font-bold text-base text-[var(--ios-label-primary)]">
+                                            Institutional Signal
+                                        </h3>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${
+                                            parsedSignal.signal === 'BULLISH' ? 'bg-emerald-500' : (parsedSignal.signal === 'BEARISH' ? 'bg-rose-500' : 'bg-amber-500')
+                                        }`}>
+                                            {parsedSignal.signal}
+                                        </span>
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-gray-300/40">
-                                    <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase">PE Ratio</p>
-                                        <p className="text-lg font-bold text-gray-700">{stockData.peRatio ? stockData.peRatio.toFixed(1) : 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase">FCF (TTM)</p>
-                                        <p className="text-lg font-bold text-gray-700">
-                                            {stockData.valuationFields?.obsFreeCashFlowTtm ? `$${(stockData.valuationFields.obsFreeCashFlowTtm / 1e9).toFixed(2)}B` : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Market Cap</p>
-                                        <p className="text-lg font-bold text-gray-700">${(stockData.marketCap / 1e9).toFixed(2)}B</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Volume Signal</p>
-                                        <p className="text-lg font-bold text-gray-700">{stockData.volumeSignal}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Framework Prompts Selection Card */}
-                            <div
-                                className="p-8 rounded-[32px] relative overflow-hidden"
-                                style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                }}
-                            >
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 bg-gray-200 text-gray-600 rounded-xl flex items-center justify-center shadow-sm">
-                                        <Sliders size={20} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-gray-700">Select InvestSkill Framework</h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {promptsList.map((prompt) => (
-                                        <button
-                                            key={prompt.id}
-                                            onClick={() => setSelectedPromptId(prompt.id)}
-                                            className={`p-4 rounded-2xl text-left transition-all duration-300 ${selectedPromptId === prompt.id ? 'text-blue-600 font-bold' : 'text-gray-600'}`}
-                                            style={{
-                                                background: "#E0E5EC",
-                                                boxShadow: selectedPromptId === prompt.id 
-                                                    ? "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff" 
-                                                    : "4px 4px 8px #b8b9be, -4px -4px 8px #ffffff"
-                                            }}
-                                        >
-                                            <p className="text-sm">{prompt.title}</p>
-                                            <p className="text-[9px] text-gray-400 mt-1 font-mono">{prompt.id}.md</p>
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="flex justify-center pt-8">
-                                    <button
-                                        onClick={handleRunAnalysis}
-                                        disabled={generatingReport || !apiKey}
-                                        className="w-full max-w-md py-5 px-8 rounded-3xl text-lg font-bold text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all active:scale-95 shadow-md"
-                                    >
-                                        {generatingReport ? (
-                                            <>
-                                                <Loader2 size={24} className="animate-spin" />
-                                                <span>Running Framework Analysis...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles size={24} className="fill-white" />
-                                                <span>Run InvestSkill Analysis</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Investment Signal Dashboard */}
-                            {parsedSignal && (
-                                <div className="space-y-8 animate-slide-up">
-                                    
-                                    {/* Signal block metrics */}
-                                    <div
-                                        className="p-8 rounded-[32px]"
-                                        style={{
-                                            background: "#E0E5EC",
-                                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-300/40">
-                                            <h3 className="text-xl font-bold text-gray-700">Parsed Investment Signal</h3>
-                                            <span className={`px-4 py-1.5 rounded-full text-xs font-bold text-white shadow-sm ${
-                                                parsedSignal.signal === 'BULLISH' ? 'bg-teal-500' : (parsedSignal.signal === 'BEARISH' ? 'bg-rose-500' : 'bg-amber-500')
-                                            }`}>
-                                                {parsedSignal.signal}
+                                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                                        {/* Score Gauge */}
+                                        <div className="w-28 h-28 rounded-3xl bg-[var(--ios-fill-tertiary)] flex flex-col items-center justify-center shrink-0 border border-[var(--ios-separator)]">
+                                            <span className="text-3xl font-extrabold text-blue-500">
+                                                {parsedSignal.score.toFixed(1)}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-[var(--ios-label-tertiary)] uppercase mt-0.5">
+                                                Score / 10
                                             </span>
                                         </div>
 
-                                        <div className="flex flex-col md:flex-row gap-8 items-center justify-between">
-                                            
-                                            {/* Score gauge */}
-                                            <div className="relative w-36 h-36 flex items-center justify-center rounded-full shadow-inner bg-[#E0E5EC]">
-                                                <div className="absolute inset-2 rounded-full bg-[#E0E5EC]" style={{ boxShadow: "6px 6px 12px #b8b9be, -6px -6px 12px #ffffff" }} />
-                                                <div className="relative z-10 text-center">
-                                                    <span className="text-4xl font-extrabold text-blue-600">{parsedSignal.score.toFixed(1)}</span>
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Score</p>
-                                                </div>
+                                        {/* Grid Attributes */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full">
+                                            <div className="p-3 rounded-2xl bg-[var(--ios-fill-tertiary)] text-center">
+                                                <span className="text-[9px] font-semibold text-[var(--ios-label-tertiary)] uppercase">Action</span>
+                                                <p className="font-bold text-sm text-[var(--ios-label-primary)] mt-0.5">{parsedSignal.action}</p>
                                             </div>
-
-                                            {/* Attributes cards */}
-                                            <div className="flex-1 grid grid-cols-2 gap-4 w-full">
-                                                <div className="p-3.5 rounded-xl text-center" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
-                                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Action</p>
-                                                    <p className="text-sm font-bold text-gray-700 mt-1">{parsedSignal.action}</p>
-                                                </div>
-                                                <div className="p-3.5 rounded-xl text-center" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
-                                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Conviction</p>
-                                                    <p className="text-sm font-bold text-gray-700 mt-1">{parsedSignal.conviction}</p>
-                                                </div>
-                                                <div className="p-3.5 rounded-xl text-center" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
-                                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Confidence</p>
-                                                    <p className="text-sm font-bold text-gray-700 mt-1">{parsedSignal.confidence}</p>
-                                                </div>
-                                                <div className="p-3.5 rounded-xl text-center" style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
-                                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Horizon</p>
-                                                    <p className="text-sm font-bold text-gray-700 mt-1">{parsedSignal.horizon}</p>
-                                                </div>
+                                            <div className="p-3 rounded-2xl bg-[var(--ios-fill-tertiary)] text-center">
+                                                <span className="text-[9px] font-semibold text-[var(--ios-label-tertiary)] uppercase">Conviction</span>
+                                                <p className="font-bold text-sm text-[var(--ios-label-primary)] mt-0.5">{parsedSignal.conviction}</p>
+                                            </div>
+                                            <div className="p-3 rounded-2xl bg-[var(--ios-fill-tertiary)] text-center">
+                                                <span className="text-[9px] font-semibold text-[var(--ios-label-tertiary)] uppercase">Confidence</span>
+                                                <p className="font-bold text-sm text-[var(--ios-label-primary)] mt-0.5">{parsedSignal.confidence}</p>
+                                            </div>
+                                            <div className="p-3 rounded-2xl bg-[var(--ios-fill-tertiary)] text-center">
+                                                <span className="text-[9px] font-semibold text-[var(--ios-label-tertiary)] uppercase">Horizon</span>
+                                                <p className="font-bold text-sm text-[var(--ios-label-primary)] mt-0.5">{parsedSignal.horizon}</p>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Full Markdown Report */}
-                                    <div
-                                        className="p-8 rounded-[32px] relative overflow-hidden"
-                                        style={{
-                                            background: "#E0E5EC",
-                                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center mb-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-gray-200 text-gray-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                    <FileText size={20} />
-                                                </div>
-                                                <h3 className="text-xl font-bold text-gray-700">Detailed Research Report</h3>
-                                            </div>
-                                            <button
-                                                onClick={handleSaveReport}
-                                                className="px-4 py-2 rounded-xl text-xs font-bold text-blue-600 flex items-center gap-1.5 transition-all hover:scale-102"
-                                                style={{
-                                                    background: "#E0E5EC",
-                                                    boxShadow: "4px 4px 8px #b8b9be, -4px -4px 8px #ffffff"
-                                                }}
-                                            >
-                                                <Download size={14} /> Export HTML
-                                            </button>
-                                        </div>
-
-                                        <div className="prose max-w-none text-gray-700 space-y-4 leading-relaxed font-sans text-sm">
-                                            {reportMarkdown.split('\n').map((line, index) => {
-                                                if (line.startsWith('###')) {
-                                                    return <h4 key={index} className="text-base font-bold text-gray-800 mt-6 mb-2">{line.replace('###', '')}</h4>;
-                                                }
-                                                if (line.startsWith('##') || line.startsWith('#')) {
-                                                    return <h3 key={index} className="text-lg font-bold text-blue-600 mt-8 mb-4 border-b border-gray-300 pb-2">{line.replace('##', '').replace('#', '')}</h3>;
-                                                }
-                                                if (line.trim().startsWith('-')) {
-                                                    return <li key={index} className="ml-4 list-disc text-gray-600">{line.replace('-', '').trim()}</li>;
-                                                }
-                                                if (line.trim() === '') {
-                                                    return null;
-                                                }
-                                                return <p key={index} className="text-gray-600">{line}</p>;
-                                            })}
-                                        </div>
-                                    </div>
-
                                 </div>
-                            )}
 
+                                {/* Full Report Card */}
+                                <div className="ios-card p-6 sm:p-8 space-y-4">
+                                    <div className="flex items-center justify-between pb-3 border-b border-[var(--ios-separator)]">
+                                        <div className="flex items-center gap-2">
+                                            <FileText size={18} className="text-blue-500" />
+                                            <h3 className="font-bold text-base text-[var(--ios-label-primary)]">
+                                                Detailed Research Report
+                                            </h3>
+                                        </div>
+                                        <button
+                                            onClick={handleSaveReport}
+                                            className="ios-button-secondary text-xs flex items-center gap-1.5 py-1.5 px-3 tap-scale"
+                                        >
+                                            <Download size={14} />
+                                            <span>Export HTML</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="prose max-w-none text-xs sm:text-sm text-[var(--ios-label-primary)] space-y-3 leading-relaxed">
+                                        {reportMarkdown.split('\n').map((line, index) => {
+                                            if (line.startsWith('###')) {
+                                                return <h4 key={index} className="text-sm sm:text-base font-bold text-[var(--ios-label-primary)] mt-4 mb-1">{line.replace('###', '')}</h4>;
+                                            }
+                                            if (line.startsWith('##') || line.startsWith('#')) {
+                                                return <h3 key={index} className="text-base sm:text-lg font-bold text-blue-500 mt-5 mb-2 border-b border-[var(--ios-separator)] pb-1">{line.replace('##', '').replace('#', '')}</h3>;
+                                            }
+                                            if (line.trim().startsWith('-')) {
+                                                return <li key={index} className="ml-4 list-disc text-[var(--ios-label-secondary)]">{line.replace('-', '').trim()}</li>;
+                                            }
+                                            if (line.trim() === '') {
+                                                return null;
+                                            }
+                                            return <p key={index} className="text-[var(--ios-label-secondary)]">{line}</p>;
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!stockData && !loading && (
+                    <div className="text-center py-16 ios-card border-dashed border-2 flex flex-col items-center justify-center">
+                        <div className="w-14 h-14 rounded-2xl bg-[var(--ios-fill-tertiary)] flex items-center justify-center text-[var(--ios-label-tertiary)] mb-3">
+                            <Cpu size={26} />
                         </div>
-                    )}
-
-                    {!stockData && !loading && (
-                        <div className="text-center py-24 opacity-40">
-                            <Cpu size={56} className="mx-auto mb-4 text-gray-400" />
-                            <p className="text-gray-500 font-bold uppercase tracking-wider text-xs">
-                                InvestSkill Engine Active
-                            </p>
-                        </div>
-                    )}
-
-                </div>
-            </main>
+                        <h4 className="text-sm font-bold text-[var(--ios-label-primary)]">InvestSkill Analysis Ready</h4>
+                        <p className="text-xs text-[var(--ios-label-secondary)] mt-1 max-w-xs">
+                            Enter any US ticker above to select from 25 institutional frameworks including DCF, Buffett MOAT, and DuPont models.
+                        </p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

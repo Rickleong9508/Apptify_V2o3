@@ -1035,33 +1035,30 @@ ${retrievedNotesContext}`;
     ];
 
     return (
-        <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-blue-500/20 transition-colors duration-300 relative">
+        <div className="min-h-screen pb-32 bg-[var(--ios-bg-grouped)] text-[var(--ios-label-primary)] font-sans selection:bg-blue-500/20 transition-colors duration-300 relative">
 
             {/* Main Content Area */}
             <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
-                <div className="max-w-5xl mx-auto p-4 md:p-8 pb-40 animate-fade-in relative min-h-full">
+                <div className="max-w-5xl mx-auto p-4 md:p-8 pb-32 animate-fade-in relative min-h-full">
 
                     {/* Header aka Dynamic Island Area */}
-                    <div className="sticky top-4 z-30 mb-8 flex justify-between items-center px-2">
+                    <div className="sticky top-2 sm:top-4 z-30 mb-6 flex justify-between items-center px-1">
                         {/* Sync Status & Manual Trigger */}
-                        <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center gap-3 flex-1">
                             <button
                                 onClick={handleManualSync}
                                 disabled={isSyncing}
-                                className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-gray-500 hover:text-blue-600 hover:bg-white/50 transition-all border border-transparent shadow-clay-btn bg-[#E0E5EC]"
-                                style={{
-                                    boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
-                                }}
-                                title="Force Cloud Sync"
+                                className="ios-button-secondary flex items-center gap-2 py-2 px-3.5 text-xs font-semibold tap-scale shadow-sm"
+                                title="Force Cloud / Obsidian Vault Sync"
                             >
-                                <RefreshCw size={12} className={isSyncing ? "animate-spin text-blue-500" : ""} />
-                                {isSyncing ? "Syncing..." : "Sync Vault"}
+                                <RefreshCw size={13} className={isSyncing ? "animate-spin text-blue-500" : ""} />
+                                <span>{isSyncing ? "Syncing..." : vaultPath ? "Sync Obsidian" : "Sync Vault"}</span>
                             </button>
 
                             {showSyncSuccess && !isSyncing && (
-                                <div className="flex items-center gap-1 text-xs text-green-500 font-medium animate-fade-in">
-                                    <CheckCircle2 size={12} />
-                                    <span>Saved</span>
+                                <div className="flex items-center gap-1 text-xs text-emerald-500 font-semibold animate-fade-in">
+                                    <CheckCircle2 size={13} />
+                                    <span>Vault Updated</span>
                                 </div>
                             )}
                         </div>
@@ -1069,14 +1066,10 @@ ${retrievedNotesContext}`;
                         {/* Global AI Trigger */}
                         <button
                             onClick={() => setIsGlobalChatOpen(true)}
-                            className="hidden md:flex text-gray-700 px-5 py-2.5 rounded-[20px] items-center gap-2 transition-all active:scale-95 group hover:text-blue-600"
-                            style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                            }}
+                            className="ios-button-primary flex items-center gap-1.5 py-2 px-4 text-xs font-semibold tap-scale shadow-sm"
                         >
-                            <Sparkles size={16} className="text-amber-500 group-hover:rotate-12 transition-transform" />
-                            <span className="font-bold text-sm">Ask AI</span>
+                            <Sparkles size={14} className="text-amber-300" />
+                            <span>Ask Vault AI</span>
                         </button>
                     </div>
 
@@ -1099,15 +1092,9 @@ ${retrievedNotesContext}`;
                 </div>
             </main>
 
-            {/* FLOATING CLAY NAVIGATION DOCK */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 w-auto">
-                <nav
-                    className="rounded-[32px] px-2 py-2 flex items-center gap-4 transition-transform hover:scale-[1.02]"
-                    style={{
-                        background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                    }}
-                >
+            {/* FLOATING IOS NAVIGATION DOCK */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-auto px-4 max-w-full pb-safe">
+                <nav className="ios-glass rounded-full p-1.5 flex items-center gap-1.5 sm:gap-2 shadow-2xl border border-white/20 dark:border-white/10">
                     {navItems.map((item) => {
                         const isActive = activeTab === item.id;
                         const Icon = item.icon;
@@ -1116,53 +1103,46 @@ ${retrievedNotesContext}`;
                                 key={item.id}
                                 onClick={() => setActiveTab(item.id as any)}
                                 className={`
-                                    flex items-center justify-center w-14 h-14 rounded-[24px] transition-all duration-300 relative group
-                                    ${isActive ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}
+                                    flex flex-col items-center justify-center min-w-[56px] sm:min-w-[64px] h-12 sm:h-14 rounded-full transition-all duration-200 tap-scale relative
+                                    ${isActive 
+                                        ? 'bg-blue-500 text-white shadow-md' 
+                                        : 'text-[var(--ios-label-secondary)] hover:text-[var(--ios-label-primary)] hover:bg-[var(--ios-fill-tertiary)]'
+                                    }
                                 `}
-                                style={isActive ? {
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                } : {}}
                             >
-                                <Icon
-                                    size={24}
-                                    strokeWidth={isActive ? 2.5 : 2}
-                                />
+                                <Icon size={19} strokeWidth={isActive ? 2.5 : 2} />
+                                <span className="text-[10px] font-semibold mt-0.5 tracking-tight">{item.label}</span>
                             </button>
-                        )
+                        );
                     })}
                 </nav>
             </div>
 
-            {/* GLOBAL AI OVERLAY - CLAY STYLE */}
+            {/* GLOBAL AI OVERLAY - IOS GLASS SLIDE-OVER */}
             {isGlobalChatOpen && (
-                <div className="fixed inset-0 z-50 flex justify-end">
-                    <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setIsGlobalChatOpen(false)}></div>
-                    <div className="w-full max-w-[450px] bg-[#E0E5EC] h-full shadow-2xl relative flex flex-col animate-slide-left border-l border-white/40">
-                        <div
-                            className="p-4 pt-6 sticky top-0 z-10 flex justify-between items-center z-50"
-                            style={{ background: "#E0E5EC", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}
-                        >
-                            <h3 className="font-bold text-lg flex items-center gap-2 text-gray-700"><Sparkles size={18} className="text-purple-500" /> Intelligence</h3>
+                <div className="fixed inset-0 z-50 flex justify-end animate-fade-in">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsGlobalChatOpen(false)}></div>
+                    <div className="w-full max-w-[450px] bg-[var(--ios-card-bg)] h-full shadow-2xl relative flex flex-col animate-slide-left border-l border-[var(--ios-separator)]">
+                        <div className="p-4 pt-6 sticky top-0 z-10 flex justify-between items-center border-b border-[var(--ios-separator)] bg-[var(--ios-card-bg)]/90 backdrop-blur-md">
+                            <h3 className="font-bold text-base flex items-center gap-2 text-[var(--ios-label-primary)]">
+                                <Sparkles size={16} className="text-blue-500" />
+                                <span>Vault Intelligence</span>
+                            </h3>
                             <button
                                 onClick={() => setIsGlobalChatOpen(false)}
-                                className="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-red-500 transition-colors active:scale-95"
-                                style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                                }}
+                                className="w-8 h-8 rounded-full bg-[var(--ios-fill-tertiary)] flex items-center justify-center text-[var(--ios-label-secondary)] hover:text-[var(--ios-label-primary)] tap-scale"
                             >
-                                <X size={18} />
+                                <X size={16} />
                             </button>
                         </div>
 
                         {/* Mode Selector */}
-                        <div className="px-4 py-2 flex gap-2 border-b border-gray-200/20 pb-3" style={{ background: "#E0E5EC" }}>
+                        <div className="px-4 py-2 flex gap-2 border-b border-gray-200/20 pb-3" style={{ background: "var(--ios-card-bg)" }}>
                             <button
                                 onClick={() => setAiMode('general')}
                                 className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aiMode === 'general' ? 'text-blue-600 bg-white/40 shadow-inner' : 'text-gray-400 hover:text-gray-600 bg-transparent'}`}
                                 style={aiMode === 'general' ? {
-                                    boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff"
+                                    boxShadow: "none"
                                 } : {}}
                             >
                                 Chat Assistant
@@ -1171,7 +1151,7 @@ ${retrievedNotesContext}`;
                                 onClick={() => setAiMode('ask_notes')}
                                 className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${aiMode === 'ask_notes' ? 'text-purple-600 bg-white/40 shadow-inner' : 'text-gray-400 hover:text-gray-600 bg-transparent'}`}
                                 style={aiMode === 'ask_notes' ? {
-                                    boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff"
+                                    boxShadow: "none"
                                 } : {}}
                             >
                                 Ask My Notes
@@ -1199,20 +1179,20 @@ ${retrievedNotesContext}`;
                                 <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                                     <div
                                         className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm ${msg.role === 'user' ? 'bg-gray-700' : 'bg-blue-500'}`}
-                                        style={{ boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" }}
+                                        style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.05)" }}
                                     >
                                         {msg.role === 'user' ? <User size={16} /> : <Sparkles size={16} />}
                                     </div>
                                     <div
                                         className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed ${msg.role === 'user'
-                                            ? 'bg-[#E0E5EC] text-gray-800 rounded-tr-md' // User Bubble
-                                            : 'bg-[#E0E5EC] text-gray-800 rounded-tl-md' // AI Bubble
+                                            ? 'bg-[var(--ios-card-bg)] text-gray-800 rounded-tr-md' // User Bubble
+                                            : 'bg-[var(--ios-card-bg)] text-gray-800 rounded-tl-md' // AI Bubble
                                             }`}
                                         style={msg.role === 'user' ? {
-                                            boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                            boxShadow: "none"
                                         } : {
-                                            background: "#E0E5EC",
-                                            boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                            background: "var(--ios-card-bg)",
+                                            boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                         }}
                                     >
                                         {msg.role === 'user' ? (
@@ -1300,10 +1280,10 @@ ${retrievedNotesContext}`;
                             ))}
                             {isAiThinking && (
                                 <div className="flex gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-[#E0E5EC] flex items-center justify-center shrink-0 animate-pulse shadow-sm">
+                                    <div className="w-10 h-10 rounded-full bg-[var(--ios-card-bg)] flex items-center justify-center shrink-0 animate-pulse shadow-sm">
                                         <Sparkles size={16} className="text-blue-400" />
                                     </div>
-                                    <div className="p-4 bg-[#E0E5EC] rounded-[20px] rounded-tl-sm text-xs font-bold text-gray-400 shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff]">
+                                    <div className="p-4 bg-[var(--ios-card-bg)] rounded-[20px] rounded-tl-sm text-xs font-bold text-gray-400 shadow-sm">
                                         Thinking...
                                     </div>
                                 </div>
@@ -1314,8 +1294,8 @@ ${retrievedNotesContext}`;
                             <div
                                 className="relative rounded-[28px] focus-within:shadow-inner transition-all flex items-end p-2 mb-4"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "none"
                                 }}
                             >
                                 <textarea
@@ -1354,7 +1334,7 @@ ${retrievedNotesContext}`;
                             <div className="flex items-center justify-between px-1">
                                 <div className="flex items-center gap-3">
                                     {/* Mic & Lang */}
-                                    <div className="flex items-center gap-1 bg-[#E0E5EC] rounded-full px-2 py-1.5 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]">
+                                    <div className="flex items-center gap-1 bg-[var(--ios-card-bg)] rounded-full px-2 py-1.5 shadow-sm">
                                         <button
                                             onClick={() => setSpeechLang(prev => prev === 'zh-CN' ? 'en-US' : 'zh-CN')}
                                             className="text-[10px] font-bold text-gray-500 hover:text-black px-1.5 py-0.5 rounded transition-colors uppercase"
@@ -1380,8 +1360,8 @@ ${retrievedNotesContext}`;
                                                 className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-500 rounded-full transition-all cursor-pointer active:scale-90"
                                                 title="Upload File (PDF/Doc/Image)"
                                                 style={{
-                                                    background: "#E0E5EC",
-                                                    boxShadow: "4px 4px 8px #b8b9be, -4px -4px 8px #ffffff"
+                                                    background: "var(--ios-card-bg)",
+                                                    boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
                                                 }}
                                             >
                                                 <Paperclip size={18} />
@@ -1397,8 +1377,8 @@ ${retrievedNotesContext}`;
                                     disabled={!globalChatInput.trim() && globalResources.length === 0}
                                     className="w-12 h-12 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 transition-all text-white"
                                     style={{
-                                        background: globalChatInput.trim() || globalResources.length > 0 ? '#4F46E5' : '#E0E5EC',
-                                        boxShadow: globalChatInput.trim() || globalResources.length > 0 ? "4px 4px 10px rgba(79, 70, 229, 0.4)" : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff",
+                                        background: globalChatInput.trim() || globalResources.length > 0 ? "#0071E3" : "var(--ios-fill-tertiary)",
+                                        boxShadow: globalChatInput.trim() || globalResources.length > 0 ? "4px 4px 10px rgba(79, 70, 229, 0.4)" : "0 2px 8px rgba(0,0,0,0.06)",
                                         color: globalChatInput.trim() || globalResources.length > 0 ? 'white' : '#9CA3AF'
                                     }}
                                 >
@@ -1493,8 +1473,8 @@ const CalendarStrip = ({ selectedDate, setSelectedDate, todos }: { selectedDate:
         <div
             className="rounded-[32px] p-6 mb-8 select-none relative overflow-hidden group/cal"
             style={{
-                background: "#E0E5EC",
-                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                background: "var(--ios-card-bg)",
+                boxShadow: "var(--ios-card-shadow)"
             }}
         >
             <div className="flex justify-between items-center mb-6 px-2">
@@ -1506,8 +1486,8 @@ const CalendarStrip = ({ selectedDate, setSelectedDate, todos }: { selectedDate:
                     {selectedDate.toDateString() !== new Date().toDateString() && (
                         <button
                             onClick={jumpToToday}
-                            className="bg-[#E0E5EC] px-3 py-1 rounded-full text-[10px] font-bold animate-fade-in flex items-center gap-1 text-blue-600 transition-colors"
-                            style={{ boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff" }}
+                            className="bg-[var(--ios-card-bg)] px-3 py-1 rounded-full text-[10px] font-bold animate-fade-in flex items-center gap-1 text-blue-600 transition-colors"
+                            style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.05)" }}
                         >
                             <Target size={10} /> Today
                         </button>
@@ -1546,11 +1526,11 @@ const CalendarStrip = ({ selectedDate, setSelectedDate, todos }: { selectedDate:
                                     ${isSelected ? 'text-blue-600' : 'text-gray-600'}
                                 `}
                                 style={isSelected ? {
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "none"
                                 } : {
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 {dayNum}
@@ -1585,8 +1565,8 @@ const ConfirmModal: React.FC<{
             <div
                 className="rounded-[24px] w-full max-w-sm overflow-hidden animate-scale-in p-6"
                 style={{
-                    background: "#E0E5EC",
-                    boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                    background: "var(--ios-card-bg)",
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                 }}
                 onClick={e => e.stopPropagation()}
             >
@@ -1601,8 +1581,8 @@ const ConfirmModal: React.FC<{
                             onClick={onClose}
                             className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:text-gray-700 transition-colors"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                             }}
                         >
                             Cancel
@@ -1611,8 +1591,8 @@ const ConfirmModal: React.FC<{
                             onClick={() => { onConfirm(); onClose(); }}
                             className="flex-1 py-3 rounded-xl font-bold text-red-500 hover:text-red-600 transition-colors"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                             }}
                         >
                             Delete
@@ -2276,11 +2256,11 @@ Example:
     // 1. EDIT MODE
     if (isEditing) {
         return (
-            <div className="fixed inset-0 z-50 bg-[#E0E5EC] flex flex-col animate-slide-up">
+            <div className="fixed inset-0 z-50 bg-[var(--ios-card-bg)] flex flex-col animate-slide-up">
                 {/* Editor Header */}
                 <div
                     className="backdrop-blur-xl px-6 py-4 flex justify-between items-center sticky top-0 z-10"
-                    style={{ background: "#E0E5EC", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}
+                    style={{ background: "var(--ios-card-bg)", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}
                 >
                     <button onClick={handleSave} className="flex items-center gap-2 text-blue-600 font-bold hover:opacity-80 transition-opacity">
                         <ArrowLeft size={20} /> <span className="text-sm">Done</span>
@@ -2290,8 +2270,8 @@ Example:
                             onClick={() => setInteractionMode(interactionMode === 'VIEW' ? 'EDIT' : 'VIEW')}
                             className="p-2 rounded-full text-gray-500 hover:text-blue-500 transition-colors"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                             }}
                         >
                             {interactionMode === 'VIEW' ? <Edit2 size={18} /> : <Eye size={18} />}
@@ -2304,7 +2284,7 @@ Example:
                     <div
                         className="rounded-[32px] p-8 mb-8"
                         style={{
-                            background: "#E0E5EC",
+                            background: "var(--ios-card-bg)",
                             boxShadow: "inset 9px 9px 16px #b8b9be, inset -9px -9px 16px #ffffff"
                         }}
                     >
@@ -2330,7 +2310,7 @@ Example:
                         <div
                             className="rounded-[28px] p-6 mb-8 border border-white/50 animate-scale-in"
                             style={{
-                                background: "#E0E5EC",
+                                background: "var(--ios-card-bg)",
                                 boxShadow: "5px 5px 15px rgb(163,177,198,0.5), -5px -5px 15px rgba(255,255,255, 0.8)"
                             }}
                         >
@@ -2378,7 +2358,7 @@ Example:
                         <div
                             className="rounded-[28px] p-6 mb-8 border border-white/50 flex flex-col items-center justify-center py-8 text-center"
                             style={{
-                                background: "#E0E5EC",
+                                background: "var(--ios-card-bg)",
                                 boxShadow: "5px 5px 15px rgb(163,177,198,0.5), -5px -5px 15px rgba(255,255,255, 0.8)"
                             }}
                         >
@@ -2417,8 +2397,8 @@ Example:
                                     onClick={() => handleOpenReview(entry)}
                                     className="p-5 rounded-[24px] cursor-pointer transition-all active:scale-95 group relative overflow-hidden"
                                     style={{
-                                        background: "#E0E5EC",
-                                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                        background: "var(--ios-card-bg)",
+                                        boxShadow: "var(--ios-card-shadow)"
                                     }}
                                 >
                                     {/* Simple rendering for stream items */}
@@ -2468,7 +2448,7 @@ Example:
                                                 onClick={() => handleOpenRelatedNote(r)}
                                                 className="p-4 rounded-[24px] cursor-pointer transition-all active:scale-95 group border border-white/30 flex justify-between items-center"
                                                 style={{
-                                                    background: "#E0E5EC",
+                                                    background: "var(--ios-card-bg)",
                                                     boxShadow: "5px 5px 12px rgb(163,177,198,0.5), -5px -5px 12px rgba(255,255,255, 0.8)"
                                                 }}
                                             >
@@ -2503,8 +2483,8 @@ Example:
                     <div
                         className="max-w-4xl mx-auto flex items-center gap-3 p-2 rounded-[28px] pr-2 transition-all cursor-pointer"
                         style={{
-                            background: "#E0E5EC",
-                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                            background: "var(--ios-card-bg)",
+                            boxShadow: "var(--ios-card-shadow)"
                         }}
                         onClick={() => setIsAddNoteModalOpen(true)}
                     >
@@ -2522,7 +2502,7 @@ Example:
                             Add a quick note...
                         </div>
 
-                        <button className="text-white rounded-full p-2 w-10 h-10 flex items-center justify-center transition-all opacity-30" style={{ background: '#E0E5EC', color: '#9CA3AF', boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}> <ArrowLeft size={20} className="rotate-90 md:rotate-0" /> </button>
+                        <button className="text-white rounded-full p-2 w-10 h-10 flex items-center justify-center transition-all opacity-30" style={{ background: "var(--ios-fill-tertiary)", color: "var(--ios-label-secondary)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}> <ArrowLeft size={20} className="rotate-90 md:rotate-0" /> </button>
                     </div>
                 </div>
 
@@ -2532,8 +2512,8 @@ Example:
                         <div
                             className="rounded-[32px] w-full max-w-lg overflow-hidden animate-scale-in flex flex-col max-h-[90vh]"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                             }}
                             onClick={e => e.stopPropagation()}
                         >
@@ -2559,8 +2539,8 @@ Example:
                                     value={newThreadInput}
                                     onChange={e => setNewThreadInput(e.target.value)}
                                     placeholder="Write your note here..."
-                                    className="w-full h-40 rounded-xl p-4 outline-none resize-none bg-[#E0E5EC] text-gray-700 text-lg placeholder-gray-400 mb-6 focus:shadow-inner transition-shadow"
-                                    style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
+                                    className="w-full h-40 rounded-xl p-4 outline-none resize-none bg-[var(--ios-card-bg)] text-gray-700 text-lg placeholder-gray-400 mb-6 focus:shadow-inner transition-shadow"
+                                    style={{ boxShadow: "none" }}
                                     autoFocus
                                 />
 
@@ -2628,8 +2608,8 @@ Example:
                         <div
                             className="rounded-[32px] w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                             }}
                             onClick={e => e.stopPropagation()}
                         >
@@ -2657,8 +2637,8 @@ Example:
                                         <textarea
                                             value={reviewForm.content}
                                             onChange={e => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
-                                            className="w-full h-40 rounded-xl p-4 outline-none resize-none bg-[#E0E5EC] text-gray-700"
-                                            style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
+                                            className="w-full h-40 rounded-xl p-4 outline-none resize-none bg-[var(--ios-card-bg)] text-gray-700"
+                                            style={{ boxShadow: "none" }}
                                             placeholder="Content..."
                                         />
 
@@ -2694,8 +2674,8 @@ Example:
                                             onClick={handleSaveReview}
                                             className="w-full py-3 rounded-xl font-bold transition-transform active:scale-95 text-blue-600 mt-4"
                                             style={{
-                                                background: "#E0E5EC",
-                                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                background: "var(--ios-card-bg)",
+                                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                             }}
                                         >
                                             Save Changes
@@ -2770,9 +2750,9 @@ Example:
                 {confirmOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-fade-in">
                         <div
-                            className="bg-[#E0E5EC] rounded-[24px] p-6 w-full max-w-sm m-4 shadow-2xl animate-scale-in"
+                            className="bg-[var(--ios-card-bg)] rounded-[24px] p-6 w-full max-w-sm m-4 shadow-2xl animate-scale-in"
                             style={{
-                                boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                             }}
                         >
                             <h3 className="text-xl font-bold text-gray-800 mb-2">{confirmConfig.title}</h3>
@@ -2813,8 +2793,8 @@ Example:
                     onClick={handleCreate}
                     className="w-12 h-12 rounded-xl flex items-center justify-center transition-all active:scale-95 group text-gray-600 hover:text-blue-500"
                     style={{
-                        background: "#E0E5EC",
-                        boxShadow: "6px 6px 12px #b8b9be, -6px -6px 12px #ffffff"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.08)"
                     }}
                 >
                     <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
@@ -2828,8 +2808,8 @@ Example:
                         onClick={() => handleEdit(note)}
                         className="p-6 rounded-[32px] cursor-pointer group flex flex-col h-[280px] relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-xl animate-scale-in opacity-0"
                         style={{
-                            background: "#E0E5EC",
-                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
+                            background: "var(--ios-card-bg)",
+                            boxShadow: "var(--ios-card-shadow)",
                             animationDelay: `${idx * 100}ms`
                         }}
                     >
@@ -2838,7 +2818,7 @@ Example:
                         {note.image && (
                             <div className="absolute top-0 left-0 w-full h-32 opacity-80 group-hover:opacity-100 transition-opacity">
                                 <img src={note.image} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#E0E5EC] via-[#E0E5EC]/50 to-transparent"></div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-[var(--ios-card-bg)] via-[var(--ios-card-bg)]/50 to-transparent"></div>
                             </div>
                         )}
 
@@ -2860,7 +2840,7 @@ Example:
                                 <div className="flex justify-between items-start mb-2">
                                     <h3 className="font-bold text-xl leading-tight line-clamp-2 text-gray-700 group-hover:text-blue-600 transition-colors">{note.title || "Untitled Note"}</h3>
                                     {note.thread && note.thread.length > 0 && (
-                                        <div className="text-gray-500 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 bg-[#E0E5EC] shadow-inner shrink-0">
+                                        <div className="text-gray-500 px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 bg-[var(--ios-card-bg)] shadow-inner shrink-0">
                                             <Database size={10} /> {note.thread.length}
                                         </div>
                                     )}
@@ -2871,7 +2851,7 @@ Example:
                                 {note.ai_keywords && note.ai_keywords.length > 0 && (
                                     <div className="flex gap-1.5 mt-2.5 flex-wrap">
                                         {note.ai_keywords.slice(0, 3).map((keyword, kid) => (
-                                            <span key={kid} className="text-[9px] font-bold text-gray-400 bg-[#E0E5EC]/80 px-2 py-0.5 rounded-md shadow-inner border border-white/20">
+                                            <span key={kid} className="text-[9px] font-bold text-gray-400 bg-[var(--ios-card-bg)]/80 px-2 py-0.5 rounded-md shadow-inner border border-white/20">
                                                 #{keyword}
                                             </span>
                                         ))}
@@ -2900,8 +2880,8 @@ Example:
                     <div
                         className="w-16 h-16 rounded-full flex items-center justify-center transition-colors text-gray-500 group-hover:text-blue-500"
                         style={{
-                            background: "#E0E5EC",
-                            boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                            background: "var(--ios-card-bg)",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                         }}
                     >
                         <Plus size={32} className="group-hover:scale-110 transition-transform" />
@@ -2914,9 +2894,9 @@ Example:
             {confirmOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-fade-in">
                     <div
-                        className="bg-[#E0E5EC] rounded-[24px] p-6 w-full max-w-sm m-4 shadow-2xl animate-scale-in"
+                        className="bg-[var(--ios-card-bg)] rounded-[24px] p-6 w-full max-w-sm m-4 shadow-2xl animate-scale-in"
                         style={{
-                            boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                            boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                         }}
                     >
                         <h3 className="text-xl font-bold text-gray-800 mb-2">{confirmConfig.title}</h3>
@@ -3111,7 +3091,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
             <div
                 className="flex p-1 rounded-xl w-fit mb-6"
                 style={{
-                    background: "#E0E5EC",
+                    background: "var(--ios-card-bg)",
                     boxShadow: "inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff"
                 }}
             >
@@ -3119,8 +3099,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                     onClick={() => setViewMode('active')}
                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'active' ? 'text-blue-600' : 'text-gray-400'}`}
                     style={viewMode === 'active' ? {
-                        background: "#E0E5EC",
-                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                     } : {}}
                 >
                     Cards
@@ -3129,8 +3109,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                     onClick={() => setViewMode('timeline')}
                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'timeline' ? 'text-blue-600' : 'text-gray-400'}`}
                     style={viewMode === 'timeline' ? {
-                        background: "#E0E5EC",
-                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                     } : {}}
                 >
                     Timeline
@@ -3139,8 +3119,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                     onClick={() => setViewMode('history')}
                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'history' ? 'text-blue-600' : 'text-gray-400'}`}
                     style={viewMode === 'history' ? {
-                        background: "#E0E5EC",
-                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                     } : {}}
                 >
                     History
@@ -3151,7 +3131,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
             {viewMode === 'timeline' && (
                 <div className="animate-fade-in relative pl-4 space-y-8">
                     {/* Continuous Vertical Line */}
-                    <div className="absolute left-[27px] top-4 bottom-0 w-1 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] rounded-full opacity-50"></div>
+                    <div className="absolute left-[27px] top-4 bottom-0 w-1 bg-[var(--ios-card-bg)] shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] rounded-full opacity-50"></div>
 
                     {Object.entries(groupedTasks).map(([dateLabel, tasks]) => (
                         <div key={dateLabel}>
@@ -3164,8 +3144,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                     }
                                 `}
                                     style={{
-                                        background: "#E0E5EC",
-                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                        background: "var(--ios-card-bg)",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                     }}>
                                     {dateLabel === new Date().toDateString() ? 'Today' : dateLabel}
                                 </span>
@@ -3183,7 +3163,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                             <div
                                                 className="absolute left-[5px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full z-10 transition-transform group-hover:scale-125 border border-white/20"
                                                 style={{
-                                                    background: "#E0E5EC",
+                                                    background: "var(--ios-card-bg)",
                                                     boxShadow: "2px 2px 4px #b8b9be, -2px -2px 4px #ffffff"
                                                 }}
                                             ></div>
@@ -3193,8 +3173,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                                 onClick={() => setPreviewTask(task)}
                                                 className="relative p-5 rounded-[24px] cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 text-gray-700"
                                                 style={{
-                                                    background: "#E0E5EC",
-                                                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                                    background: "var(--ios-card-bg)",
+                                                    boxShadow: "var(--ios-card-shadow)"
                                                 }}
                                             >
                                                 <div className="flex justify-between items-start mb-2 relative z-10">
@@ -3216,8 +3196,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                                         <div
                                                             className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600"
                                                             style={{
-                                                                background: "#E0E5EC",
-                                                                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                                background: "var(--ios-card-bg)",
+                                                                boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
                                                             }}
                                                         >Me</div>
                                                     </div>
@@ -3226,8 +3206,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                                             onClick={(e) => toggleComplete(task.id, e)}
                                                             className="w-10 h-10 rounded-full flex items-center justify-center transition-colors text-gray-500 hover:text-green-500"
                                                             style={{
-                                                                background: "#E0E5EC",
-                                                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                                background: "var(--ios-card-bg)",
+                                                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                                             }}
                                                         >
                                                             <CheckCircle2 size={20} />
@@ -3271,16 +3251,16 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                         <div
                                             className="absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-[24px] p-5 flex flex-col justify-between overflow-hidden"
                                             style={{
-                                                background: "#E0E5EC",
-                                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                                background: "var(--ios-card-bg)",
+                                                boxShadow: "var(--ios-card-shadow)"
                                             }}
                                         >
                                             <div className="flex justify-between items-start z-10">
                                                 <div
                                                     className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-600"
                                                     style={{
-                                                        background: "#E0E5EC",
-                                                        boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                                        background: "var(--ios-card-bg)",
+                                                        boxShadow: "none"
                                                     }}
                                                 >
                                                     {thumbnail
@@ -3291,8 +3271,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                                 <span
                                                     className="text-[10px] font-black uppercase px-2 py-1 rounded-full text-gray-500"
                                                     style={{
-                                                        background: "#E0E5EC",
-                                                        boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                        background: "var(--ios-card-bg)",
+                                                        boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
                                                     }}
                                                 >
                                                     {task.priority}
@@ -3311,7 +3291,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                         <div
                                             className="absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-[24px] p-5 flex flex-col justify-between"
                                             style={{
-                                                background: "#E0E5EC",
+                                                background: "var(--ios-card-bg)",
                                                 boxShadow: "inset 9px 9px 16px #b8b9be, inset -9px -9px 16px #ffffff"
                                             }}
                                         >
@@ -3326,8 +3306,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                                 <div
                                                     className="w-8 h-8 rounded-full flex items-center justify-center text-blue-500"
                                                     style={{
-                                                        background: "#E0E5EC",
-                                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                        background: "var(--ios-card-bg)",
+                                                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                                     }}
                                                 >
                                                     <Eye size={14} />
@@ -3342,7 +3322,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             onClick={() => setIsFormOpen(true)}
                             className="w-full h-48 rounded-[24px] flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-500 transition-all"
                             style={{
-                                background: "#E0E5EC",
+                                background: "var(--ios-card-bg)",
                                 boxShadow: "inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff"
                             }}
                         >
@@ -3364,7 +3344,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             key={task.id}
                             className="p-5 rounded-[24px] flex items-center gap-4 transition-all group opacity-60 hover:opacity-100"
                             style={{
-                                background: "#E0E5EC",
+                                background: "var(--ios-card-bg)",
                                 boxShadow: "inset 6px 6px 12px #b8b9be, inset -6px -6px 12px #ffffff"
                             }}
                         >
@@ -3389,8 +3369,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                     onClick={() => setIsFormOpen(true)}
                     className="w-16 h-16 rounded-full flex items-center justify-center text-blue-600 hover:scale-105 active:scale-95 transition-all"
                     style={{
-                        background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "var(--ios-card-shadow)"
                     }}
                 >
                     <Plus size={32} />
@@ -3404,11 +3384,11 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                     <div
                         className="w-full max-w-lg rounded-[32px] relative z-10 animate-scale-in overflow-hidden flex flex-col max-h-[85vh]"
                         style={{
-                            background: "#E0E5EC",
-                            boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                            background: "var(--ios-card-bg)",
+                            boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                         }}
                     >
-                        <div className={`h-40 shrink-0 relative bg-[#E0E5EC] flex items-center justify-center overflow-hidden`}>
+                        <div className={`h-40 shrink-0 relative bg-[var(--ios-card-bg)] flex items-center justify-center overflow-hidden`}>
                             {previewTask.attachments?.find(a => a.startsWith('data:image')) ? (
                                 <img src={previewTask.attachments.find(a => a.startsWith('data:image'))} className="w-full h-full object-cover cursor-pointer" onClick={() => setViewingAttachment(previewTask.attachments?.find(a => a.startsWith('data:image')) || null)} />
                             ) : (
@@ -3418,8 +3398,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                 onClick={() => setPreviewTask(null)}
                                 className="absolute top-4 right-4 text-gray-500 p-2 rounded-full hover:text-gray-700 transition-colors"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 <X size={20} />
@@ -3430,7 +3410,7 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                 <div>
                                     <h3 className="text-2xl font-bold text-gray-700 leading-tight mb-2">{previewTask.title}</h3>
                                     <div className="flex items-center gap-2">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold text-gray-500 shadow-inner bg-[#E0E5EC]`}>{previewTask.priority}</span>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold text-gray-500 shadow-inner bg-[var(--ios-card-bg)]`}>{previewTask.priority}</span>
                                         <span className="text-xs font-bold text-gray-400 flex items-center gap-1"><CalendarIcon size={12} />{previewTask.deadline ? new Date(previewTask.deadline).toLocaleString() : 'No Deadline'}</span>
                                     </div>
                                 </div>
@@ -3438,11 +3418,11 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                     onClick={() => toggleComplete(previewTask.id)}
                                     className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${previewTask.completed ? 'text-green-500' : 'text-gray-400 hover:text-green-500'}`}
                                     style={previewTask.completed ? {
-                                        background: "#E0E5EC",
-                                        boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                        background: "var(--ios-card-bg)",
+                                        boxShadow: "none"
                                     } : {
-                                        background: "#E0E5EC",
-                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                        background: "var(--ios-card-bg)",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                     }}
                                 >
                                     <Check size={24} />
@@ -3463,8 +3443,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                                     onClick={() => setViewingAttachment(att)}
                                                     className="relative rounded-xl overflow-hidden aspect-video group cursor-pointer hover:shadow-lg transition-all"
                                                     style={{
-                                                        background: "#E0E5EC",
-                                                        boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                                        background: "var(--ios-card-bg)",
+                                                        boxShadow: "none"
                                                     }}
                                                 >
                                                     {att.startsWith('data:image') ? <img src={att} className="w-full h-full object-cover" /> : <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 p-2 text-center text-xs font-bold break-all"><FileText size={24} className="mb-2" />{att.replace('FILE:', '')}</div>}
@@ -3482,8 +3462,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                 onClick={() => handleEditTask(previewTask)}
                                 className="flex-1 text-gray-600 px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 hover:text-blue-500"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 <Edit2 size={18} /> Edit Task
@@ -3519,8 +3499,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                     <div
                         className="w-full max-w-lg rounded-[32px] relative z-10 animate-scale-in p-6 max-h-[90vh] overflow-y-auto"
                         style={{
-                            background: "#E0E5EC",
-                            boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                            background: "var(--ios-card-bg)",
+                            boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                         }}
                     >
                         <h3 className="font-bold text-xl text-gray-700 mb-6">{editingId ? 'Edit Task' : 'New Task'}</h3>
@@ -3531,8 +3511,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             onChange={e => setNewTitle(e.target.value)}
                             autoFocus
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "none"
                             }}
                         />
                         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -3542,11 +3522,11 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                     onClick={() => setNewPriority(p as PriorityLevel)}
                                     className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${newPriority === p ? 'text-blue-600' : 'text-gray-400'}`}
                                     style={newPriority === p ? {
-                                        background: "#E0E5EC",
-                                        boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                        background: "var(--ios-card-bg)",
+                                        boxShadow: "none"
                                     } : {
-                                        background: "#E0E5EC",
-                                        boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                        background: "var(--ios-card-bg)",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                     }}
                                 >
                                     {p === 'T0' ? 'Urgent' : p}
@@ -3560,8 +3540,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                 value={newDeadline}
                                 onChange={e => setNewDeadline(e.target.value)}
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "none"
                                 }}
                             />
                             <input
@@ -3570,8 +3550,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                 value={newStartTime}
                                 onChange={e => setNewStartTime(e.target.value)}
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "none"
                                 }}
                             />
                         </div>
@@ -3581,8 +3561,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             value={newDesc}
                             onChange={e => setNewDesc(e.target.value)}
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "none"
                             }}
                         />
                         {/* Attachments */}
@@ -3590,8 +3570,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             <label
                                 className="flex flex-col items-center justify-center w-20 h-20 rounded-xl cursor-pointer transition-transform hover:scale-105 active:scale-95"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 <ImageIcon size={20} className="text-gray-500 mb-1" /><span className="text-[10px] text-gray-500 font-bold">Image</span><input type="file" accept="image/*" className="hidden" onChange={handleFileAttach} />
@@ -3599,8 +3579,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             <label
                                 className="flex flex-col items-center justify-center w-20 h-20 rounded-xl cursor-pointer transition-transform hover:scale-105 active:scale-95"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 <Play size={20} className="text-gray-500 mb-1" /><span className="text-[10px] text-gray-500 font-bold">Video</span><input type="file" accept="video/*" className="hidden" onChange={handleFileAttach} />
@@ -3608,8 +3588,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             <label
                                 className="flex flex-col items-center justify-center w-20 h-20 rounded-xl cursor-pointer transition-transform hover:scale-105 active:scale-95"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 <FileText size={20} className="text-gray-500 mb-1" /><span className="text-[10px] text-gray-500 font-bold">Doc</span><input type="file" className="hidden" onChange={handleFileAttach} />
@@ -3622,8 +3602,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                                         key={idx}
                                         className="w-16 h-16 rounded-xl shrink-0 overflow-hidden relative"
                                         style={{
-                                            background: "#E0E5EC",
-                                            boxShadow: "inset 2px 2px 4px #b8b9be, inset -2px -2px 4px #ffffff"
+                                            background: "var(--ios-card-bg)",
+                                            boxShadow: "none"
                                         }}
                                     >
                                         {att.startsWith('data:image') ? <img src={att} className="w-full h-full object-cover opacity-80" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-500 font-bold p-1 text-center break-all">{att.substring(0, 10)}...</div>}
@@ -3636,8 +3616,8 @@ const TodoView: React.FC<{ todos: Todo[], setTodos: any }> = ({ todos, setTodos 
                             onClick={handleSave}
                             className="w-full py-4 rounded-2xl font-bold transition-transform active:scale-98 text-blue-600"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "var(--ios-card-shadow)"
                             }}
                         >
                             {editingId ? 'Save Changes' : 'Create Task'}
@@ -3691,18 +3671,18 @@ const FocusView: React.FC<FocusViewProps> = ({ timeLeft, setTimeLeft, isActive, 
     return (
         <div className="flex flex-col items-center justify-center py-6 min-h-[70vh] animate-fade-in">
             {/* Mode Selector */}
-            <div className="flex justify-center gap-2 mb-12 bg-[#E0E5EC] p-1.5 rounded-full w-fit shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]">
+            <div className="flex justify-center gap-2 mb-12 bg-[var(--ios-card-bg)] p-1.5 rounded-full w-fit shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]">
                 <button
                     onClick={() => switchMode('FOCUS')}
-                    className={`px-6 py-2 rounded-full text-xs font-black transition-all duration-300 ${mode === 'FOCUS' ? 'text-gray-800 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]' : 'text-gray-400 opacity-60'}`}
-                    style={mode === 'FOCUS' ? { background: '#E0E5EC' } : {}}
+                    className={`px-6 py-2 rounded-full text-xs font-black transition-all duration-300 ${mode === 'FOCUS' ? 'text-gray-800 shadow-sm' : 'text-gray-400 opacity-60'}`}
+                    style={mode === 'FOCUS' ? { background: "var(--ios-card-bg)", boxShadow: "var(--ios-card-shadow)" } : {}}
                 >
                     Focus
                 </button>
                 <button
                     onClick={() => switchMode('BREAK')}
-                    className={`px-6 py-2 rounded-full text-xs font-black transition-all duration-300 ${mode === 'BREAK' ? 'text-gray-800 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]' : 'text-gray-400 opacity-60'}`}
-                    style={mode === 'BREAK' ? { background: '#E0E5EC' } : {}}
+                    className={`px-6 py-2 rounded-full text-xs font-black transition-all duration-300 ${mode === 'BREAK' ? 'text-gray-800 shadow-sm' : 'text-gray-400 opacity-60'}`}
+                    style={mode === 'BREAK' ? { background: "var(--ios-card-bg)", boxShadow: "var(--ios-card-shadow)" } : {}}
                 >
                     Break
                 </button>
@@ -3714,15 +3694,15 @@ const FocusView: React.FC<FocusViewProps> = ({ timeLeft, setTimeLeft, isActive, 
                 style={{
                     width: `${size}px`,
                     height: `${size}px`,
-                    background: "#E0E5EC",
-                    boxShadow: "20px 20px 60px #bebebe, -20px -20px 60px #ffffff"
+                    background: "var(--ios-card-bg)",
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.2)"
                 }}
             >
                 {/* Inner Recessed Circle */}
                 <div
                     className="absolute inset-4 rounded-full flex flex-col items-center justify-center"
                     style={{
-                        background: "#E0E5EC",
+                        background: "var(--ios-card-bg)",
                         boxShadow: "inset 10px 10px 20px #b8b9be, inset -10px -10px 20px #ffffff"
                     }}
                 >
@@ -3773,7 +3753,7 @@ const FocusView: React.FC<FocusViewProps> = ({ timeLeft, setTimeLeft, isActive, 
                         ${isActive ? 'text-gray-300 cursor-default' : 'text-gray-600 hover:text-blue-600'}
                     `}
                     style={{
-                        background: "#E0E5EC",
+                        background: "var(--ios-card-bg)",
                         boxShadow: isActive
                             ? "inset 4px 4px 10px #b8b9be, inset -4px -4px 10px #ffffff"
                             : "8px 8px 16px #b8b9be, -8px -8px 16px #ffffff"
@@ -3789,7 +3769,7 @@ const FocusView: React.FC<FocusViewProps> = ({ timeLeft, setTimeLeft, isActive, 
                         ${!isActive ? 'text-gray-300 cursor-default' : 'text-gray-600 hover:text-red-500'}
                     `}
                     style={{
-                        background: "#E0E5EC",
+                        background: "var(--ios-card-bg)",
                         boxShadow: !isActive
                             ? "inset 4px 4px 10px #b8b9be, inset -4px -4px 10px #ffffff"
                             : "8px 8px 16px #b8b9be, -8px -8px 16px #ffffff"
@@ -3801,7 +3781,7 @@ const FocusView: React.FC<FocusViewProps> = ({ timeLeft, setTimeLeft, isActive, 
                     onClick={reset}
                     className="px-8 py-3 rounded-[20px] font-black text-sm text-gray-600 hover:text-gray-900 transition-all duration-300 active:scale-95"
                     style={{
-                        background: "#E0E5EC",
+                        background: "var(--ios-card-bg)",
                         boxShadow: "8px 8px 16px #b8b9be, -8px -8px 16px #ffffff"
                     }}
                 >
@@ -3890,8 +3870,8 @@ const VideoSummaryView = ({
             <div
                 className="p-8 rounded-[32px]"
                 style={{
-                    background: "#E0E5EC",
-                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                    background: "var(--ios-card-bg)",
+                    boxShadow: "var(--ios-card-shadow)"
                 }}
             >
                 <div className="flex items-center gap-3 mb-6">
@@ -3913,8 +3893,8 @@ const VideoSummaryView = ({
                             placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...)"
                             className="w-full text-base font-bold py-4 pl-4 pr-16 rounded-[20px] outline-none transition-all placeholder:text-gray-300 text-gray-700"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "none"
                             }}
                         />
                         <div className="absolute inset-y-0 right-2.5 flex items-center">
@@ -3939,8 +3919,8 @@ const VideoSummaryView = ({
                 <div
                     className="p-8 rounded-[32px] space-y-6"
                     style={{
-                        background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "var(--ios-card-shadow)"
                     }}
                 >
                     <div className="flex justify-between items-center flex-wrap gap-4 pb-4 border-b border-gray-300/40">
@@ -3961,8 +3941,8 @@ const VideoSummaryView = ({
                                     value={category}
                                     onChange={(e) => setCategory(e.target.value)}
                                     placeholder="Folder name"
-                                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#E0E5EC] outline-none text-gray-700 max-w-[120px]"
-                                    style={{ boxShadow: "inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff" }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--ios-card-bg)] outline-none text-gray-700 max-w-[120px]"
+                                    style={{ boxShadow: "none" }}
                                 />
                             </div>
                             <button
@@ -3982,9 +3962,9 @@ const VideoSummaryView = ({
                             <textarea
                                 value={markdown}
                                 onChange={(e) => setMarkdown(e.target.value)}
-                                className="flex-1 w-full p-5 text-sm font-mono leading-relaxed bg-[#E0E5EC] rounded-[24px] outline-none resize-none overflow-y-auto"
+                                className="flex-1 w-full p-5 text-sm font-mono leading-relaxed bg-[var(--ios-card-bg)] rounded-[24px] outline-none resize-none overflow-y-auto"
                                 style={{
-                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff",
+                                    boxShadow: "none",
                                     color: "#2D3748"
                                 }}
                             />
@@ -3993,9 +3973,9 @@ const VideoSummaryView = ({
                         <div className="flex flex-col h-full overflow-hidden">
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Rendered Note</label>
                             <div
-                                className="flex-1 w-full p-6 bg-[#E0E5EC] rounded-[24px] overflow-y-auto prose prose-sm leading-relaxed"
+                                className="flex-1 w-full p-6 bg-[var(--ios-card-bg)] rounded-[24px] overflow-y-auto prose prose-sm leading-relaxed"
                                 style={{
-                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff",
+                                    boxShadow: "none",
                                     color: "#2D3748"
                                 }}
                             >
