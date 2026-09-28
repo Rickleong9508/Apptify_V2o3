@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, NotebookPen, ArrowRight, Sparkles, Settings, Cpu, ArrowLeft, ChevronDown, Sun, Moon } from 'lucide-react';
+import { 
+  Wallet, 
+  NotebookPen, 
+  ArrowRight, 
+  Sparkles, 
+  Settings, 
+  Cpu, 
+  ChevronLeft, 
+  ChevronDown, 
+  Sun, 
+  Moon,
+  MessageSquare,
+  Bot
+} from 'lucide-react';
 import MyWealthApp from './components/MyWealthApp';
 import KnowledgeVault from './components/KnowledgeVault';
 import GlobalSettings from './components/GlobalSettings';
@@ -27,12 +40,12 @@ const LauncherRobot: React.FC = () => {
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
       const date = now.getDate();
-      const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
       const day = days[now.getDay()];
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      setTimeStr(`${year}年${month}月${date}日 ${day} ${hours}:${minutes}:${seconds}`);
+      setTimeStr(`${month}月${date}日 ${day} ${hours}:${minutes}:${seconds}`);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -46,13 +59,13 @@ const LauncherRobot: React.FC = () => {
       setPosX(prev => {
         let next = prev;
         if (direction === 'right') {
-          next += 0.4;
-          if (next >= 75) {
+          next += 0.35;
+          if (next >= 72) {
             setDirection('left');
           }
         } else {
-          next -= 0.4;
-          if (next <= 25) {
+          next -= 0.35;
+          if (next <= 28) {
             setDirection('right');
           }
         }
@@ -75,7 +88,7 @@ const LauncherRobot: React.FC = () => {
     if (!chatQuery.trim()) return;
 
     setIsRobotReplying(true);
-    setChatResponse(`🤖 收到指令: "${chatQuery}"，正在帮您发送至 AI 助理执行...`);
+    setChatResponse(`🤖 收到指令: "${chatQuery}"，正在发送至 AI 助理执行...`);
     
     const queryToSend = chatQuery;
     setChatQuery('');
@@ -93,20 +106,20 @@ const LauncherRobot: React.FC = () => {
         }
       });
       window.dispatchEvent(event);
-    }, 1200);
+    }, 1000);
   };
 
   return (
-    <div className="w-full h-44 flex items-center relative select-none">
+    <div className="w-full h-40 flex items-center relative select-none overflow-hidden sm:overflow-visible">
       {/* Centered Walking/Interactive Entity */}
       <div 
         onMouseEnter={() => setIsWalking(false)}
         onMouseLeave={() => { if (!showChat) setIsWalking(true); }}
         className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-300"
         style={{
-          left: `calc(${posX}% - 112px)`, // centered: half of w-56 (224px) is 112px
+          left: `calc(${posX}% - 110px)`,
           transition: 'left 0.1s linear, transform 0.2s ease-out',
-          width: '224px',
+          width: '220px',
           zIndex: showChat ? 30 : 10
         }}
       >
@@ -114,60 +127,60 @@ const LauncherRobot: React.FC = () => {
         {!showChat ? (
           <div 
             onClick={handleInteraction}
-            className="mb-2 px-3 py-1.5 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-md flex flex-col items-center gap-0.5 text-center w-56 relative cursor-pointer transform hover:scale-105 active:scale-95 transition-all duration-300 animate-bounce-soft"
-            style={{
-              boxShadow: "0 6px 20px rgba(0, 0, 0, 0.05)",
-            }}
+            className="mb-2 px-3 py-1.5 rounded-2xl bg-white/80 dark:bg-[#1E2025]/85 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-lg shadow-black/5 flex flex-col items-center gap-0.5 text-center w-52 relative cursor-pointer transform hover:scale-105 active:scale-95 transition-all duration-200 animate-bounce-soft"
           >
-            <span className="text-[9px] text-blue-500 font-extrabold uppercase tracking-wider">今日时刻</span>
-            <span className="text-[11px] font-extrabold text-gray-800 dark:text-gray-100">{timeStr}</span>
-            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium leading-none mt-1">🤖 点我开启 AI 互动</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold tracking-wide">今日时刻</span>
+            </div>
+            <span className="text-xs font-bold text-gray-800 dark:text-gray-100">{timeStr}</span>
+            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium leading-none mt-0.5">点我开启 AI 对话 💬</span>
             
             {/* Arrow */}
-            <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-white/90 dark:border-t-zinc-900/90" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white/80 dark:bg-[#1E2025]/85 border-r border-b border-white/50 dark:border-white/10" />
           </div>
         ) : (
           /* Mini Chat Dialogue Overlay */
           <div 
-            className="mb-2 flex flex-col gap-2 w-56 p-3 rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg relative"
-            onClick={(e) => e.stopPropagation()} // Prevent propagation from triggering handleInteraction again
-            style={{
-              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
-            }}
+            className="mb-2 flex flex-col gap-2 w-56 p-3 rounded-2xl bg-white/95 dark:bg-[#1C1E23]/95 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-2xl relative animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-zinc-800">
-              <span className="text-[10px] font-bold text-blue-500">Apptify 智能助手</span>
+            <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-white/10">
+              <div className="flex items-center gap-1.5">
+                <Bot size={13} className="text-blue-500" />
+                <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">Apptify 智能助手</span>
+              </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); setShowChat(false); setIsWalking(true); }}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold"
+                className="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-bold transition-colors"
               >
                 ✕
               </button>
             </div>
             
             <div className="text-[10px] text-gray-600 dark:text-gray-400 text-left font-medium leading-normal">
-              <p className="font-extrabold text-blue-600 dark:text-blue-400 mb-1">⏰ {timeStr}</p>
-              <p>{chatResponse || "您可以对我说：“帮我存100块到钱包” 或 “帮我做理财分析”。"}</p>
+              <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1">⏰ {timeStr}</p>
+              <p className="line-clamp-2">{chatResponse || "可输入：“存100块到钱包” 或 “分析苹果股票”"}</p>
             </div>
             
             {!isRobotReplying ? (
               <form onSubmit={handleChatSubmit} className="flex gap-1.5 mt-1">
                 <input
                   type="text"
-                  placeholder="输入对话或指令..."
+                  placeholder="指令或对话..."
                   value={chatQuery}
                   onChange={(e) => setChatQuery(e.target.value)}
-                  className="flex-1 px-2 py-1 text-[11px] rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 outline-none text-gray-800 dark:text-gray-100 focus:border-blue-500"
+                  className="flex-1 px-2.5 py-1.5 text-[11px] rounded-xl bg-gray-100/80 dark:bg-black/40 border border-gray-200 dark:border-white/10 outline-none text-gray-800 dark:text-gray-100 focus:border-blue-500 transition-colors"
                 />
                 <button 
                   type="submit"
-                  className="px-2.5 py-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white text-[10px] font-bold rounded-lg transition-all"
+                  className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-[10px] font-bold rounded-xl transition-all shadow-sm"
                 >
                   发送
                 </button>
               </form>
             ) : (
-              <div className="flex items-center gap-1.5 justify-center py-1.5">
+              <div className="flex items-center gap-1.5 justify-center py-2">
                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
@@ -175,79 +188,60 @@ const LauncherRobot: React.FC = () => {
             )}
 
             {/* Arrow */}
-            <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-white/95 dark:border-t-zinc-900/95" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white/95 dark:bg-[#1C1E23]/95 border-r border-b border-white/60 dark:border-white/15" />
           </div>
         )}
 
-        {/* Neumorphic Interactive Card */}
+        {/* Modern Spatial Glass Capsule */}
         <div 
           onClick={handleInteraction}
-          className="w-[185px] h-[64px] rounded-[24px] bg-[#E0E5EC] p-3 flex items-center gap-3 cursor-pointer select-none transition-all duration-300 hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            boxShadow: "6px 6px 12px rgb(163,177,198,0.6), -6px -6px 12px rgba(255,255,255, 0.5)",
-          }}
+          className="w-[180px] h-[60px] rounded-2xl bg-white/70 dark:bg-[#1E2026]/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 cursor-pointer select-none border border-white/60 dark:border-white/10 shadow-lg shadow-black/5 hover:border-blue-500/50 hover:shadow-blue-500/10 transition-all duration-300 active:scale-95 group"
         >
           {/* SVG Robot Drawing */}
-          <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+          <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-tr from-blue-500/10 to-purple-500/10 border border-blue-500/20">
             <svg 
-              width="40" 
-              height="40" 
+              width="36" 
+              height="36" 
               viewBox="0 0 64 64" 
               fill="none" 
               xmlns="http://www.w3.org/2000/svg"
-              className={`animate-bounce-soft duration-[2s] ${direction === 'left' ? 'scale-x-[-1]' : ''}`}
+              className={`transition-transform duration-300 ${direction === 'left' ? 'scale-x-[-1]' : ''}`}
             >
-              {/* Head Antenna */}
-              <path d="M32 14V8" stroke="#1082FF" strokeWidth="3" strokeLinecap="round" />
-              <circle cx="32" cy="7" r="3" fill="#BF5AF2" className="animate-pulse" />
+              {/* Antenna */}
+              <path d="M32 14V8" stroke="#0071E3" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="32" cy="7" r="2.5" fill="#BF5AF2" className="animate-pulse" />
 
               {/* Ears */}
-              <rect x="8" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
-              <rect x="52" y="24" width="4" height="8" rx="2" fill="#8E8E93" />
+              <rect x="10" y="24" width="3" height="7" rx="1.5" fill="#9CA3AF" />
+              <rect x="51" y="24" width="3" height="7" rx="1.5" fill="#9CA3AF" />
 
               {/* Body */}
-              <rect x="16" y="26" width="32" height="24" rx="8" fill="url(#robotBodyGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" className="backdrop-blur-md" />
+              <rect x="16" y="26" width="32" height="24" rx="8" fill="#3B82F6" fillOpacity="0.15" stroke="#3B82F6" strokeWidth="1.5" />
               
               {/* Head */}
-              <rect x="20" y="14" width="24" height="18" rx="6" fill="url(#robotHeadGrad)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <rect x="20" y="14" width="24" height="18" rx="6" fill="#3B82F6" fillOpacity="0.25" stroke="#3B82F6" strokeWidth="1.5" />
 
               {/* Screen / Face */}
-              <rect x="23" y="17" width="18" height="12" rx="3" fill="#1C1C1E" />
+              <rect x="23" y="17" width="18" height="12" rx="3" fill="#0D0E10" />
               
-              {/* Eyes - Blinking */}
-              <circle cx="28" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
-              <circle cx="36" cy="23" r="2.5" fill="#30D158" className="animate-pulse" />
+              {/* Eyes */}
+              <circle cx="28" cy="23" r="2" fill="#34D399" className="animate-pulse" />
+              <circle cx="36" cy="23" r="2" fill="#34D399" className="animate-pulse" />
 
               {/* Cheeks */}
-              <circle cx="25" cy="27" r="1" fill="#FF453A" />
-              <circle cx="39" cy="27" r="1" fill="#FF453A" />
-
-              {/* Hands */}
-              <path d="M12 34C12 34 8 36 8 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
-              <path d="M52 34C52 34 56 36 56 40" stroke="#8E8E93" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="25" cy="27" r="1" fill="#F87171" />
+              <circle cx="39" cy="27" r="1" fill="#F87171" />
 
               {/* Legs */}
-              <rect x="24" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} />
-              <rect x="36" y="50" width="4" height="8" rx="2" fill="#8E8E93" className={isWalking ? "animate-bounce" : ""} style={{ animationDelay: '0.2s' }} />
-
-              {/* Gradients */}
-              <defs>
-                <linearGradient id="robotHeadGrad" x1="20" y1="14" x2="44" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.75)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0.45)" />
-                </linearGradient>
-                <linearGradient id="robotBodyGrad" x1="16" y1="26" x2="48" y2="50" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0.55)" />
-                </linearGradient>
-              </defs>
+              <rect x="25" y="50" width="3.5" height="7" rx="1.5" fill="#9CA3AF" className={isWalking ? "animate-bounce" : ""} />
+              <rect x="35.5" y="50" width="3.5" height="7" rx="1.5" fill="#9CA3AF" className={isWalking ? "animate-bounce" : ""} style={{ animationDelay: '0.2s' }} />
             </svg>
           </div>
 
-          {/* Card Text Content */}
+          {/* Capsule Text */}
           <div className="flex flex-col justify-center min-w-0">
-            <span className="text-xs font-extrabold text-gray-700 leading-tight">Ask Apptify</span>
-            <span className="text-[9px] text-gray-500 font-bold mt-0.5 leading-none truncate">点击与 AI 助手对话</span>
+            <span className="text-xs font-bold text-gray-800 dark:text-gray-100 leading-tight group-hover:text-blue-500 transition-colors">Ask Apptify</span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mt-0.5 leading-none truncate">点击随时语音对话</span>
           </div>
         </div>
       </div>
@@ -267,8 +261,10 @@ const App: React.FC = () => {
     const root = window.document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
+      root.classList.remove('light');
     } else {
       root.classList.remove('dark');
+      root.classList.add('light');
     }
     localStorage.setItem('mw_theme', theme);
     window.dispatchEvent(new Event('apptify_theme_change'));
@@ -411,11 +407,11 @@ const App: React.FC = () => {
 
   const getAppTitle = () => {
     switch (currentApp) {
-      case 'mywealth': return 'MyWealth';
-      case 'knowledgevault': return 'Knowledge Vault';
-      case 'settings': return 'Global Settings';
-      case 'autocount': return 'AutoCount';
-      case 'newshub': return 'NewsHub';
+      case 'mywealth': return 'MyWealth 资产';
+      case 'knowledgevault': return 'Knowledge Vault 知识库';
+      case 'settings': return '系统设置';
+      case 'autocount': return 'AutoCount 投研';
+      case 'newshub': return 'NewsHub 资讯';
       default: return '';
     }
   };
@@ -441,83 +437,114 @@ const App: React.FC = () => {
       return <NewsHub onExit={() => setCurrentApp('launcher')} />;
     }
 
+    // Default Launcher View (iOS Mobile-First)
     return (
-      <div className="min-h-screen bg-[#E0E5EC] text-[#4A4A4A] flex flex-col items-center justify-start pt-16 md:pt-24 p-6 transition-all duration-500 font-sans selection:bg-gray-300">
-        <div className="max-w-md w-full flex flex-col items-center gap-8 translate-y-[-20px] md:translate-y-[-40px]">
-          {/* Header */}
-          <div className="text-center space-y-2 animate-fade-in-down w-full relative flex flex-col items-center justify-center">
-            {/* Theme Toggle Button */}
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="absolute top-0 right-2 p-2.5 rounded-full text-gray-600 dark:text-gray-300 bg-[#E0E5EC] hover:scale-105 active:scale-95 transition-all border border-white/40 shadow-sm"
-              style={{
-                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
-              }}
-            >
-              {theme === 'dark' ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-indigo-600" />}
-            </button>
-            <h1 className="text-6xl font-bold tracking-tight text-[#444] drop-shadow-sm">
+      <div className="min-h-screen-safe w-full flex flex-col items-center justify-between px-4 py-6 sm:py-10 max-w-lg mx-auto selection:bg-blue-500/20">
+        {/* Top Header & Theme Switcher */}
+        <header className="w-full flex items-center justify-between pt-2 pb-4">
+          <div className="flex flex-col text-left">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
               Apptify
             </h1>
-            <p className="text-sm font-medium text-gray-500 uppercase tracking-widest">Next Gen Personal OS</p>
+            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 tracking-wider uppercase mt-0.5">
+              Personal OS
+            </span>
           </div>
 
-          {/* Interactive walking robot */}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-white/50 dark:border-white/15 shadow-sm text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-blue-600" />}
+          </button>
+        </header>
+
+        {/* Mascot Interactive Zone */}
+        <div className="w-full my-auto py-2">
           <LauncherRobot />
+        </div>
 
-          {/* 2x2 Grid Layout */}
-          <div className="grid grid-cols-2 gap-6 w-full px-2">
-            {[
-              { id: 'mywealth', icon: Wallet, title: 'MyWealth', desc: 'Finance & Portfolio' },
-              { id: 'autocount', icon: Cpu, title: 'AutoCount', desc: 'AI Object Valuation' },
-              { id: 'knowledgevault', icon: NotebookPen, title: 'Knowledge Vault', desc: 'Second Brain' },
-              { id: 'newshub', icon: Sparkles, title: 'NewsHub Beta', desc: 'Tech & Trends' },
-            ].map((item, index) => (
-              <button
-                key={item.id}
-                onClick={() => setCurrentApp(item.id as AppMode)}
-                className="group aspect-square rounded-[35px] bg-[#E0E5EC] p-5 flex flex-col justify-between text-left transition-all duration-300 hover:scale-[1.02] active:scale-95 animate-fade-in-up opacity-0"
-                style={{
-                  boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-                  animationDelay: `${index * 100}ms`
-                }}
-              >
-                {/* Icon Container - Raised Neumorphic */}
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-700 mb-2 transition-transform group-hover:-translate-y-1"
-                  style={{
-                    background: "#E0E5EC",
-                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                  }}
-                >
-                  <item.icon size={22} strokeWidth={2} />
-                </div>
+        {/* Main 2x2 App Grid (iOS Touch-Friendly Cards) */}
+        <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4 my-auto">
+          {[
+            { 
+              id: 'mywealth', 
+              icon: Wallet, 
+              title: 'MyWealth', 
+              desc: '个人资产与财务',
+              color: 'from-emerald-500 to-teal-600',
+              glow: 'hover:shadow-emerald-500/20'
+            },
+            { 
+              id: 'autocount', 
+              icon: Cpu, 
+              title: 'AutoCount', 
+              desc: 'AI 股票与估值研报',
+              color: 'from-indigo-500 to-blue-600',
+              glow: 'hover:shadow-indigo-500/20'
+            },
+            { 
+              id: 'knowledgevault', 
+              icon: NotebookPen, 
+              title: 'Knowledge Vault', 
+              desc: 'Obsidian 与第二大脑',
+              color: 'from-amber-500 to-orange-600',
+              glow: 'hover:shadow-amber-500/20'
+            },
+            { 
+              id: 'newshub', 
+              icon: Sparkles, 
+              title: 'NewsHub Beta', 
+              desc: '多源科技与财经动态',
+              color: 'from-purple-500 to-pink-600',
+              glow: 'hover:shadow-purple-500/20'
+            },
+          ].map((item, index) => (
+            <button
+              key={item.id}
+              onClick={() => setCurrentApp(item.id as AppMode)}
+              className={`group aspect-[1/1.05] rounded-3xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left border border-white/60 dark:border-white/10 shadow-lg shadow-black/5 ${item.glow} hover:border-white/90 dark:hover:border-white/20 active:scale-[0.96] transition-all duration-200 animate-fade-in-up`}
+              style={{ animationDelay: `${index * 80}ms` }}
+            >
+              {/* App Icon Container */}
+              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr ${item.color} flex items-center justify-center text-white shadow-md shadow-black/10 group-hover:scale-105 transition-transform duration-200`}>
+                <item.icon size={22} strokeWidth={2.2} />
+              </div>
 
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800 leading-tight group-hover:text-blue-600 transition-colors">{item.title}</h2>
-                  <p className="text-[10px] text-gray-500 font-medium mt-1 leading-snug">{item.desc}</p>
-                </div>
+              {/* Title & Desc */}
+              <div className="mt-2">
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight">
+                  {item.title}
+                </h2>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-1 leading-snug line-clamp-2">
+                  {item.desc}
+                </p>
+              </div>
 
-                <div className="flex items-center gap-1 text-[#6B7280] group-hover:text-blue-500 transition-colors text-xs font-semibold mt-2 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 duration-300">
-                  Launch <ArrowRight size={14} />
-                </div>
-              </button>
-            ))}
-          </div>
+              {/* Action Indicator */}
+              <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-semibold opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200">
+                进入 <ArrowRight size={13} />
+              </div>
+            </button>
+          ))}
+        </div>
 
-          {/* Settings Button - Wide Pill */}
+        {/* Bottom Settings Button (Full-width Touch Bar) */}
+        <div className="w-full mt-4 pb-2">
           <button
             onClick={() => setCurrentApp('settings')}
-            className="w-full flex items-center gap-4 py-4 px-8 rounded-[30px] bg-[#E0E5EC] text-gray-700 font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 hover:text-blue-600 group animate-fade-in-up opacity-0"
-            style={{
-              boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-              animationDelay: '400ms'
-            }}
+            className="w-full h-14 rounded-2xl bg-white/65 dark:bg-[#1A1C22]/65 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-md shadow-black/5 flex items-center justify-between px-5 text-gray-800 dark:text-gray-200 font-semibold active:scale-[0.98] transition-all group hover:border-blue-500/30"
           >
-            <div className="group-hover:rotate-90 transition-transform duration-500">
-              <Settings size={24} />
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:rotate-45 transition-transform duration-300">
+                <Settings size={18} />
+              </div>
+              <span className="text-sm font-bold">系统设置中心</span>
             </div>
-            <span className="text-lg">Settings</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 font-medium">
+              AI 密钥与存储 <ArrowRight size={13} />
+            </span>
           </button>
         </div>
       </div>
@@ -525,148 +552,133 @@ const App: React.FC = () => {
   };
 
   return (
-    <>
+    <div className="min-h-screen text-gray-900 dark:text-gray-100 font-sans selection:bg-blue-500/20">
+      {/* Universal Floating Top Bar for Sub-Apps (iOS Safe Area Ready) */}
       {currentApp !== 'launcher' && (
-        <div className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none animate-fade-in-down animate-duration-300">
-          <div 
-            className="w-[95%] sm:w-[90%] max-w-4xl flex items-center justify-between px-3 py-2 sm:px-6 sm:py-3 rounded-full bg-[#E0E5EC]/90 backdrop-blur-md border border-white/50 pointer-events-auto"
-            style={{
-              boxShadow: "9px 9px 16px rgb(163,177,198,0.3), -9px -9px 16px rgba(255,255,255, 0.8)"
-            }}
-          >
-          {/* Back to Launcher Button */}
-          <button
-            onClick={() => setCurrentApp('launcher')}
-            className="flex items-center gap-1 px-2.5 py-1.5 sm:gap-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-bold text-gray-600 hover:text-blue-500 transition-all bg-[#E0E5EC] hover:scale-105 active:scale-95 border border-white/40"
-            style={{
-              boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
-            }}
-          >
-            <ArrowLeft size={14} />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-
-          {/* Active App Title */}
-          <span className="font-extrabold text-[10px] sm:text-xs text-gray-700 uppercase tracking-widest pl-1 sm:pl-2 truncate max-w-[100px] sm:max-w-none">
-            {getAppTitle()}
-          </span>
-
-          {/* Right actions container */}
-          <div className="flex items-center gap-2">
-            {/* Theme Toggle Button */}
+        <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/75 dark:bg-[#0D0E10]/80 backdrop-blur-2xl border-b border-black/5 dark:border-white/10 transition-colors">
+          <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+            {/* Back Button (iOS Style Chevron) */}
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="flex items-center justify-center p-1.5 sm:p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-blue-500 transition-all bg-[#E0E5EC] border border-white/40"
-              style={{
-                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
-              }}
+              onClick={() => setCurrentApp('launcher')}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 bg-black/5 dark:bg-white/10 active:scale-95 transition-all"
             >
-              {theme === 'dark' ? <Sun size={14} className="text-amber-500" /> : <Moon size={14} className="text-indigo-600" />}
+              <ChevronLeft size={18} strokeWidth={2.5} />
+              <span>主页</span>
             </button>
 
-            {/* Global AI Model Dropdown Selection */}
-            <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-1 px-2.5 py-1.5 sm:gap-2 sm:px-4 sm:py-2 rounded-full text-xs font-extrabold text-purple-600 hover:text-purple-700 transition-all bg-[#E0E5EC] border border-white/40"
-              style={{
-                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
-              }}
-            >
-              <Cpu size={14} />
-              <span className="max-w-[60px] sm:max-w-[120px] truncate">
-                {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}
-              </span>
-              <ChevronDown size={14} />
-            </button>
+            {/* Active App Title */}
+            <h2 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white truncate max-w-[140px] sm:max-w-xs text-center">
+              {getAppTitle()}
+            </h2>
 
-            {showDropdown && (
-              <>
-                {/* Backdrop Click Shield */}
-                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowDropdown(false)} />
-                
-                {/* Dropdown Card */}
-                <div 
-                  className="absolute right-0 mt-2.5 w-56 sm:w-64 rounded-2xl p-3 sm:p-4 bg-[#E0E5EC] border border-white/50 z-50 shadow-2xl max-h-[320px] overflow-y-auto no-scrollbar"
-                  style={{
-                    boxShadow: "10px 10px 20px rgb(163,177,198,0.4), -10px -10px 20px rgba(255,255,255, 0.8)"
-                  }}
+            {/* Right Controls Container */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Theme Toggle */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-indigo-600" />}
+              </button>
+
+              {/* AI Model Selector Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 active:scale-95 transition-all border border-purple-500/20"
                 >
-                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-300/40">
-                    <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Select AI Model</span>
-                    <span className="text-[9px] font-extrabold text-purple-500 uppercase px-2 py-0.5 rounded-full bg-purple-50">
-                      {activeProvider}
-                    </span>
-                  </div>
+                  <Cpu size={13} />
+                  <span className="max-w-[70px] sm:max-w-[110px] truncate">
+                    {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}
+                  </span>
+                  <ChevronDown size={13} />
+                </button>
 
-                  {/* Pinned Favorites */}
-                  {favorites.length > 0 && (
-                    <div className="mb-4">
-                      <span className="text-[9px] font-extrabold text-amber-500 uppercase tracking-wider block mb-1">⭐ Favorites</span>
-                      <div className="space-y-1">
-                        {favorites.map(id => (
-                          <button
-                            key={id}
-                            onClick={() => handleSelectModel(id)}
-                            className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === id ? 'text-purple-600' : 'text-gray-600'}`}
-                          >
-                            {id.includes('/') ? id.split('/').pop() : id}
-                          </button>
-                        ))}
+                {/* Dropdown Menu */}
+                {showDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+                    <div className="absolute right-0 mt-2 w-60 sm:w-64 rounded-2xl p-3 bg-white/95 dark:bg-[#1A1C22]/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 z-50 shadow-2xl max-h-[340px] overflow-y-auto no-scrollbar animate-scale-in">
+                      <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-gray-100 dark:border-white/10">
+                        <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">选择 AI 模型</span>
+                        <span className="text-[9px] font-bold text-purple-600 dark:text-purple-400 uppercase px-2 py-0.5 rounded-full bg-purple-500/10">
+                          {activeProvider}
+                        </span>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Recently Used */}
-                  {recentModels.length > 0 && (
-                    <div className="mb-4">
-                      <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">🕒 Recent</span>
-                      <div className="space-y-1">
-                        {recentModels.filter(id => !favorites.includes(id)).map(id => (
-                          <button
-                            key={id}
-                            onClick={() => handleSelectModel(id)}
-                            className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === id ? 'text-purple-600' : 'text-gray-600'}`}
-                          >
-                            {id.includes('/') ? id.split('/').pop() : id}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Retrieved Models / Current Provider Models */}
-                  <div>
-                    <span className="text-[9px] font-extrabold text-blue-500 uppercase tracking-wider block mb-1">📋 All Models</span>
-                    <div className="space-y-1">
-                      {modelsList.length > 0 ? (
-                        modelsList.map(m => (
-                          <button
-                            key={m.id}
-                            onClick={() => handleSelectModel(m.id)}
-                            className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === m.id ? 'text-purple-600' : 'text-gray-600'}`}
-                          >
-                            {m.name || (m.id.includes('/') ? m.id.split('/').pop() : m.id)}
-                          </button>
-                        ))
-                      ) : (
-                        <p className="text-[9px] text-gray-400 italic p-2">No models found in cache.</p>
+                      {/* Favorites */}
+                      {favorites.length > 0 && (
+                        <div className="mb-3">
+                          <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider block mb-1">⭐ 常用收藏</span>
+                          <div className="space-y-1">
+                            {favorites.map(id => (
+                              <button
+                                key={id}
+                                onClick={() => handleSelectModel(id)}
+                                className={`w-full text-left p-1.5 rounded-xl text-xs font-semibold transition-all truncate hover:bg-black/5 dark:hover:bg-white/10 ${activeModel === id ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10' : 'text-gray-700 dark:text-gray-300'}`}
+                              >
+                                {id.includes('/') ? id.split('/').pop() : id}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       )}
+
+                      {/* Recents */}
+                      {recentModels.length > 0 && (
+                        <div className="mb-3">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">🕒 最近使用</span>
+                          <div className="space-y-1">
+                            {recentModels.filter(id => !favorites.includes(id)).map(id => (
+                              <button
+                                key={id}
+                                onClick={() => handleSelectModel(id)}
+                                className={`w-full text-left p-1.5 rounded-xl text-xs font-semibold transition-all truncate hover:bg-black/5 dark:hover:bg-white/10 ${activeModel === id ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10' : 'text-gray-700 dark:text-gray-300'}`}
+                              >
+                                {id.includes('/') ? id.split('/').pop() : id}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* All Models */}
+                      <div>
+                        <span className="text-[9px] font-bold text-blue-500 uppercase tracking-wider block mb-1">📋 可用模型</span>
+                        <div className="space-y-1">
+                          {modelsList.length > 0 ? (
+                            modelsList.map(m => (
+                              <button
+                                key={m.id}
+                                onClick={() => handleSelectModel(m.id)}
+                                className={`w-full text-left p-1.5 rounded-xl text-xs font-semibold transition-all truncate hover:bg-black/5 dark:hover:bg-white/10 ${activeModel === m.id ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10' : 'text-gray-700 dark:text-gray-300'}`}
+                              >
+                                {m.name || (m.id.includes('/') ? m.id.split('/').pop() : m.id)}
+                              </button>
+                            ))
+                          ) : (
+                            <p className="text-[10px] text-gray-400 italic p-2">未找到缓存模型</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </>
-            )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </header>
       )}
-      <div className={currentApp !== 'launcher' ? 'pt-24 bg-[#E0E5EC] min-h-screen' : ''}>
+
+      {/* Main Sub-App Content with Safe-Area Offset */}
+      <main className={currentApp !== 'launcher' ? 'pt-16 sm:pt-20 min-h-screen-safe' : 'min-h-screen-safe'}>
         {renderSubApp()}
-      </div>
+      </main>
+
+      {/* Global AI Floating Copilot Drawer */}
       <AskApptify currentApp={currentApp} setCurrentApp={setCurrentApp} />
-    </>
+    </div>
   );
 };
 

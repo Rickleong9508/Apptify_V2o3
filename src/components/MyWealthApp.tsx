@@ -628,42 +628,38 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] overflow-hidden bg-[#E0E5EC] text-[#4A4A4A] font-sans selection:bg-gray-300 transition-colors duration-300 relative">
+    <div className="flex h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] overflow-hidden bg-transparent text-gray-900 dark:text-gray-100 font-sans relative">
 
       {/* Main Content Area */}
       <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
-        {/* Added extra bottom padding (pb-40) to accommodate floating bar */}
-        <div className="max-w-5xl mx-auto p-6 md:p-12 pb-40">
-
+        <div className="max-w-5xl mx-auto px-3 sm:px-8 pt-4 pb-36">
 
           {/* Minimal Header Sync Status */}
-          <div className="flex items-center justify-between mb-8 animate-fade-in-down">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between mb-5 sm:mb-8 animate-fade-in-down">
+            <div className="flex items-center gap-3">
               {/* Sync Status Indicator */}
-              <div
-                className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer hover:bg-white/50 bg-[#E0E5EC] rounded-full px-4 py-2 border border-transparent shadow-clay-btn transition-colors"
-                style={{
-                  boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
-                }}
+              <button
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm hover:border-blue-500/30 transition-all active:scale-95"
                 onClick={fetchData}
-                title="Click to force sync"
+                title="点击强制云端同步"
               >
                 {isSyncing ? (
-                  <div className="flex items-center gap-1 text-blue-500 animate-pulse">
+                  <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 animate-pulse">
                     <Cloud size={14} />
-                    <span>Syncing...</span>
+                    <span>同步中...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-gray-400 hover:text-blue-500 transition-colors">
+                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                     <Cloud size={14} />
-                    <span>Sync Cloud</span>
+                    <span>云端同步</span>
                   </div>
                 )}
-              </div>
+              </button>
+
               {showSyncSuccess && !isSyncing && (
-                <div className="flex items-center gap-1 text-xs text-green-500 font-medium animate-fade-in">
+                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium animate-fade-in">
                   <CheckCircle2 size={14} />
-                  <span>Saved</span>
+                  <span>已保存</span>
                 </div>
               )}
             </div>
@@ -680,15 +676,10 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         </div>
       </main>
 
-
-
-      {/* FLOATING CLAY NAVIGATION DOCK */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] md:w-auto max-w-lg transition-all duration-300">
+      {/* iOS FLOATING ISLAND NAVIGATION DOCK (Thumb Zone & Safe Area Ready) */}
+      <div className="fixed bottom-3 sm:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none pb-safe">
         <nav
-          className="bg-[#E0E5EC] rounded-[30px] px-4 py-3 md:px-6 md:py-4 flex items-center justify-between md:gap-6 transition-all hover:scale-[1.02]"
-          style={{
-            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-          }}
+          className="bg-white/85 dark:bg-[#16181F]/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-1.5 sm:p-2 flex items-center justify-between gap-1 sm:gap-2 border border-white/60 dark:border-white/10 shadow-2xl shadow-black/15 pointer-events-auto max-w-md w-full"
         >
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -697,22 +688,18 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 relative group
-                    ${isActive ? 'text-blue-600 transform -translate-y-1' : 'text-gray-400 hover:text-gray-600'}
-                `}
-                style={isActive ? {
-                  background: "#E0E5EC",
-                  boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                } : {}}
+                className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl sm:rounded-2xl transition-all duration-200 tap-scale ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
               >
-                <Icon
-                  size={22}
-                  strokeWidth={isActive ? 2.5 : 2}
-                  className="transition-all"
-                />
-
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[10px] mt-0.5 tracking-tight ${isActive ? 'font-bold' : 'font-medium'}`}>
+                  {item.label}
+                </span>
               </button>
-            )
+            );
           })}
         </nav>
       </div>

@@ -1,0 +1,296 @@
+/* ==========================================================================
+   APPTIFY DESIGN SYSTEM (iOS HIG & Spatial Glassmorphism)
+   Tailwind + Custom CSS Tokens for Mobile-First & Desktop
+   ========================================================================== */
+
+:root {
+  /* --- Apple Clean Light Palette --- */
+  --color-primary: 0 113 227;        /* #0071E3 Apple Royal Blue */
+  --color-primary-hover: 0 99 204;
+  --color-secondary: 29 29 31;
+  --color-accent: 245 99 0;          /* #F56300 Apple Vibrant Orange */
+  
+  --color-background: 248 249 250;   /* #F8F9FA Fresh Canvas */
+  --color-surface: 255 255 255;
+  --color-text-main: 17 24 39;        /* #111827 High contrast */
+  --color-text-muted: 107 114 128;   /* #6B7280 */
+  --color-border: 229 231 235;       /* #E5E7EB */
+  --color-input-bg: 243 244 246;
+
+  /* Modern Spatial Glass Tokens (Light Mode) */
+  --glass-card-bg: rgba(255, 255, 255, 0.75);
+  --glass-card-border: rgba(255, 255, 255, 0.65);
+  --glass-card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  
+  --glass-btn-bg: rgba(255, 255, 255, 0.85);
+  --glass-btn-border: rgba(0, 0, 0, 0.06);
+  --glass-btn-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+  
+  --glass-input-bg: rgba(243, 244, 246, 0.7);
+  --glass-input-border: rgba(0, 0, 0, 0.08);
+  --glass-input-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --glass-input-focus-border: rgba(0, 113, 227, 0.5);
+
+  /* Modern Subtle Fluid Canvas Ambient Light */
+  --app-bg-gradient: radial-gradient(at 0% 0%, rgba(224, 242, 254, 0.45) 0px, transparent 50%),
+                     radial-gradient(at 100% 0%, rgba(243, 232, 255, 0.4) 0px, transparent 50%),
+                     radial-gradient(at 50% 100%, rgba(240, 253, 244, 0.35) 0px, transparent 50%);
+}
+
+/* --- Dark Mode (Deep OLED Black & Subtle Specular Borders) --- */
+.dark, html.dark {
+  --color-primary: 10 132 255;       /* #0A84FF Apple Bright Blue */
+  --color-primary-hover: 64 156 255;
+  --color-secondary: 245 245 247;
+  --color-accent: 255 159 10;
+  
+  --color-background: 13 14 16;      /* #0D0E10 Deep Rich Obsidian */
+  --color-surface: 24 25 28;         /* #18191C */
+  --color-text-main: 249 250 251;    /* #F9FAFB */
+  --color-text-muted: 156 163 175;   /* #9CA3AF */
+  --color-border: 39 41 46;          /* #27292E */
+  --color-input-bg: 22 23 26;
+
+  /* Modern Spatial Glass Tokens (Dark Mode) */
+  --glass-card-bg: rgba(22, 24, 29, 0.75);
+  --glass-card-border: rgba(255, 255, 255, 0.08);
+  --glass-card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 1px 1px 0 rgba(255, 255, 255, 0.05) inset;
+  
+  --glass-btn-bg: rgba(255, 255, 255, 0.07);
+  --glass-btn-border: rgba(255, 255, 255, 0.1);
+  --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3);
+  
+  --glass-input-bg: rgba(18, 19, 23, 0.8);
+  --glass-input-border: rgba(255, 255, 255, 0.1);
+  --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  --glass-input-focus-border: rgba(10, 132, 255, 0.5);
+
+  --app-bg-gradient: radial-gradient(at 0% 0%, rgba(14, 52, 100, 0.3) 0px, transparent 55%),
+                     radial-gradient(at 100% 0%, rgba(55, 24, 80, 0.25) 0px, transparent 55%),
+                     radial-gradient(at 50% 100%, rgba(16, 40, 26, 0.2) 0px, transparent 55%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --color-primary: 10 132 255;
+    --color-secondary: 245 245 247;
+    --color-accent: 255 159 10;
+    --color-background: 13 14 16;
+    --color-surface: 24 25 28;
+    --color-text-main: 249 250 251;
+    --color-text-muted: 156 163 175;
+    --color-border: 39 41 46;
+    --color-input-bg: 22 23 26;
+
+    --glass-card-bg: rgba(22, 24, 29, 0.75);
+    --glass-card-border: rgba(255, 255, 255, 0.08);
+    --glass-card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 1px 1px 0 rgba(255, 255, 255, 0.05) inset;
+    
+    --glass-btn-bg: rgba(255, 255, 255, 0.07);
+    --glass-btn-border: rgba(255, 255, 255, 0.1);
+    --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3);
+    
+    --glass-input-bg: rgba(18, 19, 23, 0.8);
+    --glass-input-border: rgba(255, 255, 255, 0.1);
+    --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+    --glass-input-focus-border: rgba(10, 132, 255, 0.5);
+
+    --app-bg-gradient: radial-gradient(at 0% 0%, rgba(14, 52, 100, 0.3) 0px, transparent 55%),
+                       radial-gradient(at 100% 0%, rgba(55, 24, 80, 0.25) 0px, transparent 55%),
+                       radial-gradient(at 50% 100%, rgba(16, 40, 26, 0.2) 0px, transparent 55%);
+  }
+}
+
+/* Explicit class-based dark override */
+html.dark {
+  --color-primary: 10 132 255;
+  --color-secondary: 245 245 247;
+  --color-accent: 255 159 10;
+  --color-background: 13 14 16;
+  --color-surface: 24 25 28;
+  --color-text-main: 249 250 251;
+  --color-text-muted: 156 163 175;
+  --color-border: 39 41 46;
+  --color-input-bg: 22 23 26;
+
+  --glass-card-bg: rgba(22, 24, 29, 0.75);
+  --glass-card-border: rgba(255, 255, 255, 0.08);
+  --glass-card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 1px 1px 0 rgba(255, 255, 255, 0.05) inset;
+  
+  --glass-btn-bg: rgba(255, 255, 255, 0.07);
+  --glass-btn-border: rgba(255, 255, 255, 0.1);
+  --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3);
+  
+  --glass-input-bg: rgba(18, 19, 23, 0.8);
+  --glass-input-border: rgba(255, 255, 255, 0.1);
+  --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  --glass-input-focus-border: rgba(10, 132, 255, 0.5);
+
+  --app-bg-gradient: radial-gradient(at 0% 0%, rgba(14, 52, 100, 0.3) 0px, transparent 55%),
+                     radial-gradient(at 100% 0%, rgba(55, 24, 80, 0.25) 0px, transparent 55%),
+                     radial-gradient(at 50% 100%, rgba(16, 40, 26, 0.2) 0px, transparent 55%);
+}
+
+/* ==========================================================================
+   BASE & MOBILE TOUCH HYGIENE
+   ========================================================================== */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: rgb(var(--color-background)) !important;
+  background-image: var(--app-bg-gradient) !important;
+  background-attachment: fixed !important;
+  color: rgb(var(--color-text-main));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+/* iOS inputs: enforce 16px minimum on touch screens to prevent unwanted viewport zoom */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ==========================================================================
+   SAFE AREA UTILITIES FOR iOS (Dynamic Island & Home Indicator)
+   ========================================================================== */
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.min-h-screen-safe {
+  min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+/* ==========================================================================
+   TACTILE & GLASS UTILITIES (Emil Kowalski Physics & Polish)
+   ========================================================================== */
+
+/* Active scale micro-interaction */
+.tap-scale {
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tap-scale:active {
+  transform: scale(0.96);
+  opacity: 0.88;
+}
+
+/* Glass Surface Styles */
+.ios-glass {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-card-border);
+  box-shadow: var(--glass-card-shadow);
+}
+
+.ios-card {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-card-border);
+  box-shadow: var(--glass-card-shadow);
+  border-radius: 20px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+@media (min-width: 768px) {
+  .ios-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--glass-card-border);
+  }
+}
+
+.ios-button {
+  background: var(--glass-btn-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-btn-border);
+  box-shadow: var(--glass-btn-shadow);
+  color: rgb(var(--color-text-main));
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 44px; /* iOS HIG minimum hit area */
+}
+.ios-button:active {
+  transform: scale(0.97);
+}
+
+.ios-input {
+  background: var(--glass-input-bg);
+  border: 1px solid var(--glass-input-border);
+  box-shadow: var(--glass-input-shadow);
+  color: rgb(var(--color-text-main));
+  border-radius: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ios-input:focus {
+  border-color: var(--glass-input-focus-border);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+}
+
+/* ==========================================================================
+   BACKWARD-COMPATIBLE CLASS ALIASES FOR LEGACY NEUMORPHIC CLASSES
+   (Smoothly maps old hardcoded #E0E5EC classes to modern spatial glass)
+   ========================================================================== */
+
+.bg-\[\#E0E5EC\] {
+  background: var(--glass-card-bg) !important;
+  border-color: var(--glass-card-border) !important;
+}
+
+div.min-h-screen.bg-\[\#E0E5EC\], div.pt-24.bg-\[\#E0E5EC\].min-h-screen {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Subtle sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.2);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.4);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
