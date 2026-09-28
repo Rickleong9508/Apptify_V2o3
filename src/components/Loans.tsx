@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loan } from '../types';
-import { Trash2, Plus, CreditCard, ChevronRight, Pencil, X, AlertCircle, Check, Calculator } from 'lucide-react';
+import { Trash2, Plus, CreditCard, ChevronRight, Pencil, X, AlertCircle, Calculator, Calendar, DollarSign } from 'lucide-react';
 
 interface LoansProps {
   loans: Loan[];
@@ -39,21 +39,17 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
 
     const total = Number(formData.totalAmount);
     const monthly = Number(formData.monthlyPayment);
-    // If remaining isn't set (new loan), default to total. If editing, keep as is unless changed.
     const remaining = formData.remainingAmount !== undefined ? Number(formData.remainingAmount) : total;
 
-    // Auto-calculate months if not provided manually
     let months = formData.remainingMonths !== undefined && formData.remainingMonths !== null
       ? Number(formData.remainingMonths)
       : 0;
 
-    // If months is 0 (or empty) and we have a monthly payment, calculate it
     if ((!months || months === 0) && monthly > 0) {
       months = Math.ceil(remaining / monthly);
     }
 
     if (editingId) {
-      // Update Existing
       setLoans(prev => prev.map(l => l.id === editingId ? {
         ...l,
         name: formData.name!,
@@ -63,7 +59,6 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
         remainingMonths: months
       } : l));
     } else {
-      // Create New
       const newLoan: Loan = {
         id: Date.now().toString(),
         name: formData.name!,
@@ -96,175 +91,227 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
     setLoans(updated);
   };
 
-  return (
-    <div className="space-y-8 animate-fade-in pb-10">
+  const totalDebt = loans.reduce((acc, l) => acc + (l.remainingAmount || 0), 0);
+  const totalMonthlyCommitment = loans.reduce((acc, l) => acc + (l.monthlyPayment || 0), 0);
 
-      {/* Header */}
-      <div className="flex justify-between items-center pb-2">
-        <h2 className="text-4xl font-bold text-gray-700 tracking-tight animate-fade-in-down">Loans</h2>
+  return (
+    <div className="space-y-6 pb-20 animate-fade-in">
+      {/* Header & Stats Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ios-label-primary)]">
+            Loans & Liabilities
+          </h2>
+          <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] mt-0.5">
+            Track amortization, repayments, and debt-free milestones
+          </p>
+        </div>
+
         <button
           onClick={openAddModal}
-          className="bg-[#E0E5EC] hover:scale-105 text-gray-700 w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 animate-fade-in-down"
-          style={{ boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+          className="ios-button-primary flex items-center justify-center gap-2 tap-scale self-start sm:self-auto"
         >
-          <Plus size={24} />
+          <Plus size={18} />
+          <span>Add Liability</span>
         </button>
       </div>
 
+      {/* Summary Metrics */}
+      {loans.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="ios-card p-4 sm:p-5">
+            <span className="text-[11px] sm:text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider">
+              Total Outstanding Debt
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-rose-500 mt-1">
+              RM {totalDebt.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </div>
+          </div>
+          <div className="ios-card p-4 sm:p-5">
+            <span className="text-[11px] sm:text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider">
+              Monthly Debt Outflow
+            </span>
+            <div className="text-xl sm:text-2xl font-bold text-[var(--ios-label-primary)] mt-1">
+              RM {totalMonthlyCommitment.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Loan Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {loans.map((loan, index) => {
-          const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100 : 0;
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {loans.map(loan => {
+          const progress = loan.totalAmount > 0
+            ? Math.min(100, Math.max(0, ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100))
+            : 0;
+
           return (
             <div
               key={loan.id}
-              className="rounded-[32px] overflow-hidden relative group transition-all duration-300 animate-fade-in-up opacity-0"
-              style={{
-                background: "#E0E5EC",
-                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-                animationDelay: `${index * 100}ms`
-              }}
+              className="ios-card p-5 sm:p-6 flex flex-col justify-between space-y-5 transition-all"
             >
-              <div className="p-8">
-                <div className="flex justify-between items-start mb-8">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-14 h-14 text-red-500 rounded-2xl flex items-center justify-center" style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
-                      <CreditCard size={24} strokeWidth={2} />
+              <div>
+                {/* Header row */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                      <CreditCard size={22} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-xl text-gray-700 tracking-tight">{loan.name}</h3>
-                      <span className="text-sm text-gray-500 font-medium">RM {loan.monthlyPayment.toLocaleString()}/mo</span>
+                      <h3 className="font-bold text-base sm:text-lg text-[var(--ios-label-primary)] leading-tight">
+                        {loan.name}
+                      </h3>
+                      <span className="text-xs text-[var(--ios-label-secondary)] font-medium">
+                        RM {loan.monthlyPayment.toLocaleString()}/month
+                      </span>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
+                  {/* Actions */}
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => openEditModal(loan)}
-                      className="p-3 text-gray-500 hover:text-blue-600 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95"
-                      style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                      className="p-2 text-[var(--ios-label-secondary)] hover:text-blue-500 rounded-full hover:bg-[var(--ios-fill-tertiary)] tap-scale transition-colors"
                       title="Edit Loan"
                     >
-                      <Pencil size={18} />
+                      <Pencil size={16} />
                     </button>
                     <button
                       onClick={() => setDeleteId(loan.id)}
-                      className="p-3 text-gray-500 hover:text-red-600 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95"
-                      style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                      className="p-2 text-[var(--ios-label-secondary)] hover:text-rose-500 rounded-full hover:bg-[var(--ios-fill-tertiary)] tap-scale transition-colors"
                       title="Delete Loan"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
 
-                <div className="mb-8">
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-4xl font-bold text-gray-700 tracking-tight">
-                      <span className="text-xl align-top opacity-50 mr-1">RM</span>
-                      {loan.remainingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {/* Balance & Progress */}
+                <div className="mt-5 space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <div>
+                      <span className="text-xs text-[var(--ios-label-secondary)] font-medium mr-1.5">Remaining</span>
+                      <span className="text-2xl sm:text-3xl font-extrabold text-[var(--ios-label-primary)] tracking-tight">
+                        RM {loan.remainingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
+                      {progress.toFixed(0)}% Repaid
                     </span>
-                    <span className="text-sm font-semibold text-gray-500 mb-1">{progress.toFixed(0)}% Paid</span>
                   </div>
 
-                  {/* Apple Style Progress Bar */}
-                  <div className="w-full rounded-full h-4 overflow-hidden" style={{ background: "#E0E5EC", boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
+                  {/* iOS Style Progress Bar */}
+                  <div className="w-full h-2.5 rounded-full bg-[var(--ios-fill-tertiary)] overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-red-500 to-orange-500 h-full rounded-full transition-all duration-1000 ease-out relative shadow-sm"
+                      className="h-full rounded-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-700 ease-out"
                       style={{ width: `${progress}%` }}
-                    >
-                      <div className="absolute top-0 right-0 bottom-0 w-full bg-white/20 animate-pulse"></div>
-                    </div>
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-8 pt-6 border-t border-gray-300/50">
+                {/* Meta stats */}
+                <div className="grid grid-cols-2 gap-3 pt-4 mt-4 border-t border-[var(--ios-separator)]">
                   <div>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Total Principal</p>
-                    <p className="font-semibold text-gray-700">RM {loan.totalAmount.toLocaleString()}</p>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ios-label-secondary)]">
+                      Total Principal
+                    </span>
+                    <p className="font-semibold text-xs sm:text-sm text-[var(--ios-label-primary)] mt-0.5">
+                      RM {loan.totalAmount.toLocaleString()}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Time Left</p>
-                    <p className="font-semibold text-gray-700">{loan.remainingMonths} months</p>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ios-label-secondary)]">
+                      Time Remaining
+                    </span>
+                    <p className="font-semibold text-xs sm:text-sm text-[var(--ios-label-primary)] mt-0.5">
+                      {loan.remainingMonths} months (~{(loan.remainingMonths / 12).toFixed(1)} yrs)
+                    </p>
                   </div>
                 </div>
               </div>
 
+              {/* Pay 1 month button */}
               <button
                 onClick={() => payOneMonth(loan)}
-                className="w-full hover:bg-gray-200/50 p-4 text-sm font-bold text-gray-600 hover:text-blue-600 transition-colors flex items-center justify-center space-x-2 border-t border-gray-300/50 active:bg-gray-300/50"
+                disabled={loan.remainingAmount <= 0}
+                className="w-full py-3 px-4 rounded-xl bg-[var(--ios-fill-tertiary)] hover:bg-[var(--ios-fill-secondary)] text-[var(--ios-label-primary)] text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 tap-scale transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>Record 1 Month Payment</span>
-                <ChevronRight size={16} />
+                <ChevronRight size={14} className="text-[var(--ios-label-secondary)]" />
               </button>
             </div>
           );
         })}
+
         {loans.length === 0 && (
-          <div className="md:col-span-2 text-center py-20 rounded-[32px] border-2 border-dashed border-gray-300" style={{ background: "transparent" }}>
-            <div className="w-20 h-20 bg-[#E0E5EC] rounded-full flex items-center justify-center mx-auto mb-6" style={{ boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)" }}>
-              <CreditCard size={32} className="text-gray-400" />
+          <div className="md:col-span-2 text-center py-16 ios-card border-dashed border-2 flex flex-col items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
+              <CreditCard size={28} />
             </div>
-            <p className="text-gray-500 font-medium text-lg">No active loans. You are debt free!</p>
-            <button onClick={openAddModal} className="mt-4 text-blue-600 font-bold text-sm hover:underline">Add a liability</button>
+            <h3 className="text-lg font-bold text-[var(--ios-label-primary)]">You are debt free!</h3>
+            <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] max-w-sm mt-1">
+              No active loans or liabilities recorded. Track home, auto, or personal loans when you need to.
+            </p>
+            <button
+              onClick={openAddModal}
+              className="mt-4 ios-button-primary text-xs tap-scale"
+            >
+              Add a Liability
+            </button>
           </div>
         )}
       </div>
 
-      {/* --- ADD / EDIT MODAL --- */}
+      {/* --- ADD / EDIT BOTTOM SHEET / MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          <div
-            className="rounded-[32px] w-full max-w-lg shadow-2xl relative z-10 animate-scale-in overflow-hidden"
-            style={{
-              background: "#E0E5EC",
-              boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-            }}
-          >
-            <div className="p-6 border-b border-gray-300 flex justify-between items-center bg-[#E0E5EC]">
-              <h3 className="font-bold text-xl text-gray-700 flex items-center gap-2">
-                {editingId ? <><Pencil size={20} className="text-blue-600" /> Edit Loan</> : <><Plus size={20} className="text-blue-600" /> New Liability</>}
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="w-full sm:max-w-lg ios-card rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto animate-slide-up sm:animate-scale-in">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--ios-separator)]">
+              <h3 className="text-lg font-bold text-[var(--ios-label-primary)] flex items-center gap-2">
+                {editingId ? <Pencil size={18} className="text-blue-500" /> : <Plus size={18} className="text-blue-500" />}
+                <span>{editingId ? 'Edit Loan' : 'Add Liability'}</span>
               </h3>
               <button
                 onClick={closeModal}
-                className="p-2 rounded-full text-gray-500 hover:text-red-500 transition-all active:scale-95"
-                style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                className="w-8 h-8 rounded-full bg-[var(--ios-fill-tertiary)] flex items-center justify-center text-[var(--ios-label-secondary)] tap-scale"
               >
-                <X size={20} />
+                <X size={16} />
               </button>
             </div>
 
-            <div className="p-8 space-y-6 bg-[#E0E5EC]">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Loan Name</label>
+                <label className="block text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider mb-1.5">
+                  Loan Name
+                </label>
                 <input
-                  className="w-full p-3 rounded-xl border-none focus:ring-0 font-bold text-gray-700 outline-none transition-all"
-                  style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
-                  placeholder="e.g. Car Loan"
+                  className="ios-input"
+                  placeholder="e.g. Car Loan, Home Mortgage"
                   value={formData.name || ''}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Total Principal</label>
+                  <label className="block text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider mb-1.5">
+                    Total Principal (RM)
+                  </label>
                   <input
                     type="number"
-                    className="w-full p-3 rounded-xl border-none focus:ring-0 font-bold text-gray-700 outline-none transition-all"
-                    style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
+                    className="ios-input"
                     placeholder="0.00"
                     value={formData.totalAmount || ''}
                     onChange={e => setFormData({ ...formData, totalAmount: Number(e.target.value) })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Monthly Payment</label>
+                  <label className="block text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider mb-1.5">
+                    Monthly Payment (RM)
+                  </label>
                   <input
                     type="number"
-                    className="w-full p-3 rounded-xl border-none focus:ring-0 font-bold text-gray-700 outline-none transition-all"
-                    style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}
+                    className="ios-input"
                     placeholder="0.00"
                     value={formData.monthlyPayment || ''}
                     onChange={e => setFormData({ ...formData, monthlyPayment: Number(e.target.value) })}
@@ -272,30 +319,32 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl border border-gray-300 space-y-4 bg-[#E0E5EC]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calculator size={14} className="text-gray-400" />
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status Adjustment (Optional)</span>
+              <div className="p-4 rounded-2xl bg-[var(--ios-fill-tertiary)] space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider">
+                  <Calculator size={14} />
+                  <span>Amortization Adjustment (Optional)</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Remaining Amount</label>
+                    <label className="block text-[10px] font-semibold text-[var(--ios-label-secondary)] uppercase mb-1">
+                      Current Remaining (RM)
+                    </label>
                     <input
                       type="number"
-                      className="w-full p-2.5 rounded-lg border-none focus:ring-0 font-bold text-sm text-gray-700 outline-none"
-                      style={{ background: "#E0E5EC", boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}
-                      placeholder="Auto"
+                      className="ios-input text-sm"
+                      placeholder="Auto (Principal)"
                       value={formData.remainingAmount !== undefined ? formData.remainingAmount : ''}
                       onChange={e => setFormData({ ...formData, remainingAmount: Number(e.target.value) })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Months Left</label>
+                    <label className="block text-[10px] font-semibold text-[var(--ios-label-secondary)] uppercase mb-1">
+                      Remaining Months
+                    </label>
                     <input
                       type="number"
-                      className="w-full p-2.5 rounded-lg border-none focus:ring-0 font-bold text-sm text-gray-700 outline-none"
-                      style={{ background: "#E0E5EC", boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}
-                      placeholder="Auto-calc"
+                      className="ios-input text-sm"
+                      placeholder="Auto-calculated"
                       value={formData.remainingMonths !== undefined ? formData.remainingMonths : ''}
                       onChange={e => setFormData({ ...formData, remainingMonths: Number(e.target.value) })}
                     />
@@ -305,8 +354,8 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
 
               <button
                 onClick={handleSave}
-                className="w-full py-4 rounded-xl font-bold text-lg text-blue-600 hover:scale-[1.02] transition-all shadow-lg active:scale-[0.98]"
-                style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
+                disabled={!formData.name || !formData.totalAmount || !formData.monthlyPayment}
+                className="w-full ios-button-primary py-3.5 text-base tap-scale disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {editingId ? 'Save Changes' : 'Create Liability'}
               </button>
@@ -317,44 +366,32 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
 
       {/* --- CONFIRM DELETE MODAL --- */}
       {deleteId && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
-          <div
-            className="rounded-[24px] w-full max-w-sm shadow-2xl relative z-10 animate-scale-in overflow-hidden"
-            style={{
-              background: "#E0E5EC",
-              boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-            }}
-          >
-            <div className="p-6 flex flex-col items-center text-center">
-              <div className="w-16 h-16 text-red-500 rounded-full flex items-center justify-center mb-4" style={{ background: "#E0E5EC", boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
-                <AlertCircle size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-gray-700 mb-2">Delete Loan?</h3>
-              <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                Are you sure you want to remove this loan record? This cannot be undone.
-              </p>
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => setDeleteId(null)}
-                  className="flex-1 py-3.5 text-gray-600 font-bold rounded-xl hover:text-gray-800 transition-all active:scale-95"
-                  style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="flex-1 py-3.5 text-red-500 font-bold rounded-xl hover:text-red-700 transition-all active:scale-95"
-                  style={{ background: "#E0E5EC", boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff" }}
-                >
-                  Delete
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm ios-card rounded-3xl p-6 text-center space-y-4 animate-scale-in">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+              <AlertCircle size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-[var(--ios-label-primary)]">Delete Loan?</h3>
+            <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] leading-relaxed">
+              Are you sure you want to remove this loan record? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setDeleteId(null)}
+                className="flex-1 py-3 rounded-xl bg-[var(--ios-fill-tertiary)] hover:bg-[var(--ios-fill-secondary)] font-semibold text-xs sm:text-sm text-[var(--ios-label-primary)] tap-scale"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs sm:text-sm tap-scale shadow-sm"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

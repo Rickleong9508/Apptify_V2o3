@@ -7,18 +7,16 @@ import {
     Activity,
     BarChart3,
     AlertCircle,
-    Triangle,
+    ChevronLeft,
     Sparkles,
     Loader2,
     DollarSign,
     ArrowRight,
     Calculator,
-    Scale,
     Target,
     Briefcase,
     LineChart
 } from 'lucide-react';
-
 import { stockService, DetailedStockData } from '../services/stockService';
 
 interface AiValuationProps {
@@ -38,20 +36,6 @@ const AiValuation: React.FC<AiValuationProps> = ({ onExit }) => {
     const aiProvider = (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google';
     const aiModel = localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash';
 
-    const handleAiValuation = async () => {
-        if (!data || !apiKey) return;
-        setIsCalculatingAi(true);
-        try {
-            const valuation = await aiService.analyzeValuation(aiProvider, aiModel, apiKey, data.symbol, data);
-            setAiValuation(valuation);
-        } catch (err) {
-            console.error("AI Valuation failed", err);
-            setError("AI Valuation Failed. Try again.");
-        } finally {
-            setIsCalculatingAi(false);
-        }
-    };
-
     const handleSearch = async () => {
         if (!symbol.trim()) return;
 
@@ -60,18 +44,15 @@ const AiValuation: React.FC<AiValuationProps> = ({ onExit }) => {
         setData(null);
         setAiAnalysis('');
         setAiValuation(null);
-        setIsCalculatingAi(false); // Reset loading state
+        setIsCalculatingAi(false);
 
         try {
-            // 1. Fetch Real-time Detailed Data
             const stockData = await stockService.getDetailedQuote(symbol);
             setData(stockData);
 
-            // 2. AUTO-TRIGGER AI Analysis (Valuation + Narrative)
             if (apiKey) {
                 setIsCalculatingAi(true);
 
-                // Run both requests in parallel for speed
                 const valuationPromise = aiService.analyzeValuation(aiProvider, aiModel, apiKey, stockData.symbol, stockData)
                     .then(val => setAiValuation(val))
                     .catch(e => console.error("Auto-Valuation Failed", e));
@@ -95,13 +76,11 @@ const AiValuation: React.FC<AiValuationProps> = ({ onExit }) => {
                         setAiAnalysis("AI Analysis unavailable.");
                     });
 
-                // Wait for both (or let them settle independently, but stop loading spinner when both done)
                 await Promise.allSettled([valuationPromise, analysisPromise]);
                 setIsCalculatingAi(false);
             } else {
-                setAiAnalysis("Configure API Key for AI-powered analysis.");
+                setAiAnalysis("Configure API Key in Global Settings for AI-powered valuation.");
             }
-
         } catch (err: any) {
             console.error(err);
             setError(err.message || "Failed to analyze stock. Please check the symbol or try again.");
@@ -112,213 +91,224 @@ const AiValuation: React.FC<AiValuationProps> = ({ onExit }) => {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden text-text-main bg-background selection:bg-teal-500/10 transition-colors duration-300 relative">
-            <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
-                <div className="max-w-4xl mx-auto p-6 md:p-12 pb-40 animate-fade-in">
-
-                    {/* Header */}
-                    <div
+        <div className="min-h-screen pb-24 animate-fade-in text-[var(--ios-label-primary)]">
+            <div className="max-w-4xl mx-auto space-y-6">
+                {/* Header & Back Button */}
+                <div className="flex items-center justify-between">
+                    <button
                         onClick={onExit}
-                        className="flex items-center gap-2 mb-12 pl-1 opacity-60 hover:opacity-100 transition-opacity w-fit select-none cursor-pointer group"
+                        className="flex items-center gap-1.5 text-blue-500 font-semibold text-sm tap-scale"
                     >
-                        <div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                            <Triangle size={12} fill="currentColor" className="rotate-180" />
-                        </div>
-                        <span className="font-bold text-lg tracking-tight text-teal-600">AiValuation</span>
+                        <ChevronLeft size={20} />
+                        <span>Back to Launcher</span>
+                    </button>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ios-label-secondary)] bg-[var(--ios-fill-tertiary)] px-3 py-1 rounded-full">
+                        <Sparkles size={13} className="text-amber-500" />
+                        <span>AI Valuation Engine</span>
                     </div>
+                </div>
 
-                    {/* Search Section */}
-                    <div className="flex flex-col items-center mb-12">
-                        <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 tracking-tight">
-                            Market <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-500">
-                                Intelligence
-                            </span>
+                {/* Hero Search Box */}
+                <div className="ios-card p-6 sm:p-8 text-center space-y-5">
+                    <div>
+                        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--ios-label-primary)]">
+                            Market Intelligence & Valuation
                         </h1>
-
-                        <div className="w-full max-w-lg relative group z-20">
-                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-text-muted">
-                                <Search size={24} />
-                            </div>
-                            <input
-                                type="text"
-                                value={symbol}
-                                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder="Enter Symbol (e.g. AAPL, MSFT)"
-                                className="w-full bg-surface text-2xl font-bold py-6 pl-14 pr-16 rounded-[24px] shadow-apple border border-border focus:ring-4 ring-teal-500/10 focus:border-teal-500/50 outline-none transition-all placeholder:text-text-muted/30 uppercase"
-                            />
-                            <div className="absolute inset-y-0 right-3 flex items-center">
-                                <button
-                                    onClick={handleSearch}
-                                    disabled={loading || !symbol}
-                                    className="w-12 h-12 bg-teal-600 text-white rounded-xl flex items-center justify-center hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95"
-                                >
-                                    {loading ? <Loader2 size={24} className="animate-spin" /> : <ArrowRight size={24} />}
-                                </button>
-                            </div>
-                        </div>
-                        {error && (
-                            <div className="mt-6 flex items-center gap-2 text-red-500 bg-red-500/10 px-4 py-2 rounded-xl">
-                                <AlertCircle size={18} />
-                                <span className="font-medium text-sm">{error}</span>
-                            </div>
-                        )}
+                        <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] mt-1.5 max-w-md mx-auto">
+                            Instant multi-model DCF/PE valuation, volume flow analysis, and automated equity research
+                        </p>
                     </div>
 
-                    {/* Result Dashboard */}
-                    {data && (
-                        <div className="space-y-6 animate-slide-up">
+                    <div className="max-w-md mx-auto relative">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-[var(--ios-label-tertiary)]">
+                            <Search size={18} />
+                        </div>
+                        <input
+                            type="text"
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder="Enter Ticker (e.g. AAPL, NVDA, TSLA)"
+                            className="ios-input pl-11 pr-14 py-3.5 text-base sm:text-lg font-bold tracking-wide uppercase"
+                        />
+                        <button
+                            onClick={handleSearch}
+                            disabled={loading || !symbol.trim()}
+                            className="absolute right-2 top-2 bottom-2 px-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-40 text-white rounded-xl flex items-center justify-center tap-scale transition-colors shadow-sm"
+                        >
+                            {loading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+                        </button>
+                    </div>
 
-                            {/* Simplified Main Dashboard */}
-                            <div className="grid grid-cols-1 gap-6">
-                                {/* Hero Card: Price Only */}
-                                <div className="bg-surface p-8 md:p-10 rounded-[32px] shadow-apple border border-border relative overflow-hidden group text-center">
-                                    <div className="flex flex-col items-center justify-center gap-4">
-                                        <p className="text-text-muted font-bold tracking-widest text-sm uppercase">{data.symbol} Price</p>
-                                        <div className="flex items-center justify-center gap-4">
-                                            <h2 className="text-6xl md:text-7xl font-bold text-text-main tracking-tighter">
-                                                {data.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                            </h2>
+                    {error && (
+                        <div className="flex items-center justify-center gap-2 text-xs text-rose-500 bg-rose-500/10 py-2.5 px-4 rounded-xl max-w-md mx-auto">
+                            <AlertCircle size={15} />
+                            <span>{error}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Live Stock Results */}
+                {data && (
+                    <div className="space-y-6 animate-slide-up">
+                        {/* Live Price Hero Card */}
+                        <div className="ios-card p-6 sm:p-8 text-center relative overflow-hidden">
+                            <span className="text-xs font-bold text-[var(--ios-label-tertiary)] uppercase tracking-widest">
+                                {data.symbol} Live Quote
+                            </span>
+                            <div className="flex items-center justify-center gap-3 mt-2">
+                                <span className="text-4xl sm:text-6xl font-extrabold text-[var(--ios-label-primary)] tracking-tight">
+                                    ${data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-center">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
+                                    data.changePercent >= 0 ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'
+                                }`}>
+                                    {data.changePercent >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                    <span>{data.changePercent >= 0 ? '+' : ''}{data.changePercent.toFixed(2)}% Today</span>
+                                </span>
+                            </div>
+
+                            {isCalculatingAi && (
+                                <div className="mt-6 flex flex-col items-center gap-2">
+                                    <Loader2 size={20} className="animate-spin text-blue-500" />
+                                    <span className="text-xs font-semibold text-blue-500">Generating AI Fair Value Estimate...</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* AI Fair Value Range Card */}
+                        {aiValuation && (
+                            <div className="ios-card p-6 sm:p-8 border-2 border-blue-500/30 space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center">
+                                            <Target size={18} />
                                         </div>
-                                        <div className={`px-5 py-2 rounded-full text-lg font-bold flex items-center shadow-sm w-fit ${data.changePercent > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
-                                            {data.changePercent > 0 ? <TrendingUp size={20} className="mr-2" /> : <TrendingDown size={20} className="mr-2" />}
-                                            {Math.abs(data.changePercent).toFixed(2)}%
+                                        <div>
+                                            <h3 className="font-bold text-base text-[var(--ios-label-primary)]">
+                                                AI Estimated Fair Value
+                                            </h3>
+                                            <p className="text-xs text-[var(--ios-label-secondary)]">
+                                                Model: {aiValuation.methodology || 'Multi-Factor DCF'}
+                                            </p>
                                         </div>
                                     </div>
 
-                                    {/* AI Calculation Loader */}
-                                    {isCalculatingAi && (
-                                        <div className="mt-8 flex flex-col items-center animate-pulse">
-                                            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                                            <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Consulting Analyst Agent...</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider ${
+                                            aiValuation.rating === 'Buy'
+                                                ? 'bg-emerald-500 text-white'
+                                                : aiValuation.rating === 'Sell'
+                                                ? 'bg-rose-500 text-white'
+                                                : 'bg-amber-500 text-white'
+                                        }`}>
+                                            {aiValuation.rating} Rating
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 rounded-2xl bg-[var(--ios-fill-tertiary)] flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+                                    <div>
+                                        <span className="text-[11px] font-semibold text-[var(--ios-label-tertiary)] uppercase">
+                                            Intrinsic Target Range
+                                        </span>
+                                        <div className="text-2xl sm:text-3xl font-extrabold text-[var(--ios-label-primary)] mt-0.5">
+                                            ${aiValuation.fairValueLow} – ${aiValuation.fairValueHigh}
+                                        </div>
+                                    </div>
+                                    {data.price && (
+                                        <div className="text-xs font-semibold text-[var(--ios-label-secondary)]">
+                                            Current: ${data.price.toFixed(2)}
                                         </div>
                                     )}
                                 </div>
+
+                                {aiValuation.reasoning && (
+                                    <div className="text-xs sm:text-sm text-[var(--ios-label-secondary)] leading-relaxed italic border-l-2 border-blue-500 pl-3">
+                                        "{aiValuation.reasoning}"
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Volume Flow & Market Thesis */}
+                        <div className="ios-card p-6 sm:p-8 space-y-5">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center">
+                                    <LineChart size={18} />
+                                </div>
+                                <h3 className="font-bold text-base text-[var(--ios-label-primary)]">
+                                    Volume Prediction & Market Thesis
+                                </h3>
                             </div>
 
-                            {/* AI Valuation Result Card */}
-                            {aiValuation && (
-                                <div className="bg-gradient-to-br from-indigo-900/10 to-purple-900/10 p-1 rounded-[32px] shadow-lg animate-fade-in border border-indigo-500/20">
-                                    <div className="bg-surface p-8 rounded-[28px] h-full relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-6 opacity-10">
-                                            <Calculator size={120} />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="p-4 rounded-2xl bg-[var(--ios-fill-tertiary)] space-y-3">
+                                    <span className="text-[10px] font-semibold text-[var(--ios-label-tertiary)] uppercase">
+                                        Smart Signal
+                                    </span>
+                                    <div className={`text-2xl font-extrabold ${
+                                        data.volumeSignal === 'Bullish'
+                                            ? 'text-emerald-500'
+                                            : data.volumeSignal === 'Bearish'
+                                            ? 'text-rose-500'
+                                            : 'text-[var(--ios-label-primary)]'
+                                    }`}>
+                                        {data.volumeSignal}
+                                    </div>
+
+                                    <div className="space-y-1.5 text-xs pt-2 border-t border-[var(--ios-separator)]">
+                                        <div className="flex justify-between">
+                                            <span className="text-[var(--ios-label-secondary)]">Real-time Vol</span>
+                                            <span className="font-semibold">{data.volume.toLocaleString()}</span>
                                         </div>
-
-                                        <div className="flex flex-col md:flex-row gap-8 relative z-10">
-                                            {/* Left: Numbers */}
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-4">
-                                                    <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-600">
-                                                        <Target size={20} />
-                                                    </div>
-                                                    <h3 className="text-xl font-bold text-text-main">AI Estimated Fair Value</h3>
-                                                </div>
-
-                                                <div className="flex items-baseline gap-1 mb-2">
-                                                    <span className="text-4xl md:text-5xl font-bold text-text-main">
-                                                        ${aiValuation.fairValueLow} - ${aiValuation.fairValueHigh}
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex items-center gap-3 mt-4">
-                                                    <span className={`px-4 py-1.5 rounded-xl text-sm font-bold uppercase tracking-wider ${aiValuation.rating === 'Buy' ? 'bg-emerald-500 text-white' : aiValuation.rating === 'Sell' ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'}`}>
-                                                        {aiValuation.rating}
-                                                    </span>
-                                                    <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider border border-indigo-500/20 px-3 py-1.5 rounded-xl">
-                                                        Model: {aiValuation.methodology}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Right: Reasoning */}
-                                            <div className="flex-1 flex flex-col justify-center">
-                                                <p className="text-sm text-text-muted leading-relaxed italic border-l-4 border-indigo-500 pl-4 py-1">
-                                                    "{aiValuation.reasoning}"
-                                                </p>
-                                            </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-[var(--ios-label-secondary)]">30d Avg Vol</span>
+                                            <span className="font-semibold">{Math.round(data.avgVolume).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Prediction & Volume Analysis */}
-                            <div className="bg-surface p-8 rounded-[32px] shadow-apple border border-border">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
-                                        <LineChart size={20} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-text-main">Volume Prediction & Forecast</h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    {/* Volume Signal */}
-                                    <div className="md:col-span-1 bg-input-bg p-6 rounded-[24px]">
-                                        <p className="text-xs font-bold uppercase text-text-muted mb-2">Smart Signal</p>
-                                        <p className={`text-3xl font-bold mb-4 ${data.volumeSignal === 'Bullish' ? 'text-emerald-500' : data.volumeSignal === 'Bearish' ? 'text-rose-500' : 'text-text-main'}`}>
-                                            {data.volumeSignal}
+                                <div className="md:col-span-2 p-5 rounded-2xl bg-[var(--ios-fill-tertiary)] flex flex-col justify-between space-y-3">
+                                    <div>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-[var(--ios-label-primary)] mb-1.5">
+                                            <Briefcase size={14} className="text-blue-500" />
+                                            <span>AI Research Synthesis</span>
+                                        </div>
+                                        <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] leading-relaxed">
+                                            {aiAnalysis || data.prediction?.text || "Synthesizing market volume dynamics and fundamentals..."}
                                         </p>
-
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-text-muted">Real-time Vol</span>
-                                                <span className="font-mono font-bold">{data.volume.toLocaleString()}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-text-muted">Avg Vol (30d)</span>
-                                                <span className="font-mono font-bold opacity-70">{Math.round(data.avgVolume).toLocaleString()}</span>
-                                            </div>
-                                            <div className="pt-3 border-t border-border/10">
-                                                <p className="text-[10px] uppercase font-bold text-text-muted mb-1">3-Day Price Forecast</p>
-                                                <div className="flex justify-between items-center font-mono font-bold text-lg text-indigo-500">
-                                                    <span>${data.prediction?.low.toFixed(2)}</span>
-                                                    <span className="text-text-muted/30">-</span>
-                                                    <span>${data.prediction?.high.toFixed(2)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
 
-                                    {/* AI Prediction Narrative */}
-                                    <div className="md:col-span-2 space-y-4">
-                                        <div className="p-5 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-[24px] border border-indigo-500/10 h-full flex flex-col justify-center">
-                                            <div className="flex gap-3 mb-3">
-                                                <Briefcase size={18} className="text-indigo-600 shrink-0 mt-0.5" />
-                                                <h4 className="font-bold text-text-main text-sm">AI Market Thesis</h4>
-                                            </div>
-                                            <p className="text-sm text-text-main leading-relaxed mb-4">
-                                                {aiAnalysis || data.prediction?.text || "Analyzing volume flow and price action..."}
-                                            </p>
-
-                                            <div className="flex gap-2">
-                                                <span className="px-3 py-1 bg-white/50 rounded-lg text-xs font-bold text-text-muted border border-border/50">
-                                                    EPS: ${data.eps?.toFixed(2) || 'N/A'}
-                                                </span>
-                                                <span className="px-3 py-1 bg-white/50 rounded-lg text-xs font-bold text-text-muted border border-border/50">
-                                                    P/E: {data.peRatio?.toFixed(1) || 'N/A'}x
-                                                </span>
-                                            </div>
-                                        </div>
+                                    <div className="flex items-center gap-2 pt-2 border-t border-[var(--ios-separator)] text-xs text-[var(--ios-label-secondary)]">
+                                        <span className="bg-[var(--ios-fill-secondary)] px-2.5 py-1 rounded-md font-semibold">
+                                            EPS: ${data.eps?.toFixed(2) || 'N/A'}
+                                        </span>
+                                        <span className="bg-[var(--ios-fill-secondary)] px-2.5 py-1 rounded-md font-semibold">
+                                            P/E: {data.peRatio?.toFixed(1) || 'N/A'}x
+                                        </span>
                                     </div>
                                 </div>
-                                <p className="text-[10px] text-right text-text-muted mt-4 opacity-50 uppercase font-bold">
-                                    Source: Hybrid Stream (Yahoo/Nasdaq)
-                                </p>
                             </div>
-
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Empty State / Prompt */}
-                    {!data && !loading && (
-                        <div className="text-center py-20 opacity-50">
-                            <BarChart3 size={48} className="mx-auto mb-4 text-text-muted" />
-                            <p className="text-text-muted font-medium">Enter a ticker to see advanced AI Valuation.</p>
+                {/* Empty State */}
+                {!data && !loading && (
+                    <div className="text-center py-16 ios-card border-dashed border-2 flex flex-col items-center justify-center">
+                        <div className="w-14 h-14 rounded-2xl bg-[var(--ios-fill-tertiary)] flex items-center justify-center text-[var(--ios-label-tertiary)] mb-3">
+                            <BarChart3 size={24} />
                         </div>
-                    )}
-
-                </div>
-            </main>
+                        <h4 className="text-sm font-bold text-[var(--ios-label-primary)]">Ready for Stock Valuation</h4>
+                        <p className="text-xs text-[var(--ios-label-secondary)] mt-1 max-w-xs">
+                            Type any stock symbol like AAPL, NVDA, TSLA to view institutional volume flow and fair value metrics.
+                        </p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
