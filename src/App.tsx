@@ -23,232 +23,6 @@ import AskApptify from './components/AskApptify';
 
 type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'autocount' | 'newshub';
 
-const LauncherRobot: React.FC = () => {
-  const [posX, setPosX] = useState(50); // percentage position (25% - 75%)
-  const [direction, setDirection] = useState<'left' | 'right'>('right');
-  const [isWalking, setIsWalking] = useState(true);
-  const [timeStr, setTimeStr] = useState('');
-  const [showChat, setShowChat] = useState(false);
-  const [chatQuery, setChatQuery] = useState('');
-  const [chatResponse, setChatResponse] = useState('');
-  const [isRobotReplying, setIsRobotReplying] = useState(false);
-
-  // Update date and time dynamically every second
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      const date = now.getDate();
-      const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-      const day = days[now.getDay()];
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      setTimeStr(`${month}月${date}日 ${day} ${hours}:${minutes}:${seconds}`);
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Animate walking around
-  useEffect(() => {
-    if (!isWalking) return;
-    const interval = setInterval(() => {
-      setPosX(prev => {
-        let next = prev;
-        if (direction === 'right') {
-          next += 0.35;
-          if (next >= 72) {
-            setDirection('left');
-          }
-        } else {
-          next -= 0.35;
-          if (next <= 28) {
-            setDirection('right');
-          }
-        }
-        return next;
-      });
-    }, 100);
-    return () => clearInterval(interval);
-  }, [direction, isWalking]);
-
-  const handleInteraction = () => {
-    setShowChat(prev => {
-      const next = !prev;
-      setIsWalking(!next);
-      return next;
-    });
-  };
-
-  const handleChatSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatQuery.trim()) return;
-
-    setIsRobotReplying(true);
-    setChatResponse(`🤖 收到指令: "${chatQuery}"，正在发送至 AI 助理执行...`);
-    
-    const queryToSend = chatQuery;
-    setChatQuery('');
-
-    setTimeout(() => {
-      setIsRobotReplying(false);
-      setShowChat(false);
-      setIsWalking(true);
-      setChatResponse('');
-
-      // Dispatch event to open Ask Apptify with custom query
-      const event = new CustomEvent('open_ask_apptify', {
-        detail: { 
-          query: queryToSend
-        }
-      });
-      window.dispatchEvent(event);
-    }, 1000);
-  };
-
-  return (
-    <div className="w-full h-40 flex items-center relative select-none overflow-hidden sm:overflow-visible">
-      {/* Centered Walking/Interactive Entity */}
-      <div 
-        onMouseEnter={() => setIsWalking(false)}
-        onMouseLeave={() => { if (!showChat) setIsWalking(true); }}
-        className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-300"
-        style={{
-          left: `calc(${posX}% - 110px)`,
-          transition: 'left 0.1s linear, transform 0.2s ease-out',
-          width: '220px',
-          zIndex: showChat ? 30 : 10
-        }}
-      >
-        {/* Dynamic speech bubble */}
-        {!showChat ? (
-          <div 
-            onClick={handleInteraction}
-            className="mb-2 px-3 py-1.5 rounded-2xl bg-white/80 dark:bg-[#1E2025]/85 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-lg shadow-black/5 flex flex-col items-center gap-0.5 text-center w-52 relative cursor-pointer transform hover:scale-105 active:scale-95 transition-all duration-200 animate-bounce-soft"
-          >
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold tracking-wide">今日时刻</span>
-            </div>
-            <span className="text-xs font-bold text-gray-800 dark:text-gray-100">{timeStr}</span>
-            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium leading-none mt-0.5">点我开启 AI 对话 💬</span>
-            
-            {/* Arrow */}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white/80 dark:bg-[#1E2025]/85 border-r border-b border-white/50 dark:border-white/10" />
-          </div>
-        ) : (
-          /* Mini Chat Dialogue Overlay */
-          <div 
-            className="mb-2 flex flex-col gap-2 w-56 p-3 rounded-2xl bg-white/95 dark:bg-[#1C1E23]/95 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-2xl relative animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-white/10">
-              <div className="flex items-center gap-1.5">
-                <Bot size={13} className="text-blue-500" />
-                <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200">Apptify 智能助手</span>
-              </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setShowChat(false); setIsWalking(true); }}
-                className="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-bold transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="text-[10px] text-gray-600 dark:text-gray-400 text-left font-medium leading-normal">
-              <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1">⏰ {timeStr}</p>
-              <p className="line-clamp-2">{chatResponse || "可输入：“存100块到钱包” 或 “分析苹果股票”"}</p>
-            </div>
-            
-            {!isRobotReplying ? (
-              <form onSubmit={handleChatSubmit} className="flex gap-1.5 mt-1">
-                <input
-                  type="text"
-                  placeholder="指令或对话..."
-                  value={chatQuery}
-                  onChange={(e) => setChatQuery(e.target.value)}
-                  className="flex-1 px-2.5 py-1.5 text-[11px] rounded-xl bg-gray-100/80 dark:bg-black/40 border border-gray-200 dark:border-white/10 outline-none text-gray-800 dark:text-gray-100 focus:border-blue-500 transition-colors"
-                />
-                <button 
-                  type="submit"
-                  className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-[10px] font-bold rounded-xl transition-all shadow-sm"
-                >
-                  发送
-                </button>
-              </form>
-            ) : (
-              <div className="flex items-center gap-1.5 justify-center py-2">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
-              </div>
-            )}
-
-            {/* Arrow */}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white/95 dark:bg-[#1C1E23]/95 border-r border-b border-white/60 dark:border-white/15" />
-          </div>
-        )}
-
-        {/* Modern Spatial Glass Capsule */}
-        <div 
-          onClick={handleInteraction}
-          className="w-[180px] h-[60px] rounded-2xl bg-white/70 dark:bg-[#1E2026]/70 backdrop-blur-xl p-2.5 flex items-center gap-2.5 cursor-pointer select-none border border-white/60 dark:border-white/10 shadow-lg shadow-black/5 hover:border-blue-500/50 hover:shadow-blue-500/10 transition-all duration-300 active:scale-95 group"
-        >
-          {/* SVG Robot Drawing */}
-          <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-gradient-to-tr from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-            <svg 
-              width="36" 
-              height="36" 
-              viewBox="0 0 64 64" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-              className={`transition-transform duration-300 ${direction === 'left' ? 'scale-x-[-1]' : ''}`}
-            >
-              {/* Antenna */}
-              <path d="M32 14V8" stroke="#0071E3" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="32" cy="7" r="2.5" fill="#BF5AF2" className="animate-pulse" />
-
-              {/* Ears */}
-              <rect x="10" y="24" width="3" height="7" rx="1.5" fill="#9CA3AF" />
-              <rect x="51" y="24" width="3" height="7" rx="1.5" fill="#9CA3AF" />
-
-              {/* Body */}
-              <rect x="16" y="26" width="32" height="24" rx="8" fill="#3B82F6" fillOpacity="0.15" stroke="#3B82F6" strokeWidth="1.5" />
-              
-              {/* Head */}
-              <rect x="20" y="14" width="24" height="18" rx="6" fill="#3B82F6" fillOpacity="0.25" stroke="#3B82F6" strokeWidth="1.5" />
-
-              {/* Screen / Face */}
-              <rect x="23" y="17" width="18" height="12" rx="3" fill="#0D0E10" />
-              
-              {/* Eyes */}
-              <circle cx="28" cy="23" r="2" fill="#34D399" className="animate-pulse" />
-              <circle cx="36" cy="23" r="2" fill="#34D399" className="animate-pulse" />
-
-              {/* Cheeks */}
-              <circle cx="25" cy="27" r="1" fill="#F87171" />
-              <circle cx="39" cy="27" r="1" fill="#F87171" />
-
-              {/* Legs */}
-              <rect x="25" y="50" width="3.5" height="7" rx="1.5" fill="#9CA3AF" className={isWalking ? "animate-bounce" : ""} />
-              <rect x="35.5" y="50" width="3.5" height="7" rx="1.5" fill="#9CA3AF" className={isWalking ? "animate-bounce" : ""} style={{ animationDelay: '0.2s' }} />
-            </svg>
-          </div>
-
-          {/* Capsule Text */}
-          <div className="flex flex-col justify-center min-w-0">
-            <span className="text-xs font-bold text-gray-800 dark:text-gray-100 leading-tight group-hover:text-blue-500 transition-colors">Ask Apptify</span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mt-0.5 leading-none truncate">点击随时语音对话</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const getAppFromHash = (): AppMode => {
   if (typeof window === 'undefined') return 'launcher';
   const hash = window.location.hash.replace('#', '') as AppMode;
@@ -459,114 +233,138 @@ const App: React.FC = () => {
       return <NewsHub onExit={() => setCurrentApp('launcher')} />;
     }
 
-    // Default Launcher View (iOS Mobile-First)
+    // Default Launcher View (iOS 27 Liquid Glass Centered)
     return (
-      <div className="min-h-screen-safe w-full flex flex-col items-center justify-between px-4 py-6 sm:py-10 max-w-lg mx-auto selection:bg-blue-500/20">
-        {/* Top Header & Theme Switcher */}
-        <header className="w-full flex items-center justify-between pt-2 pb-4">
-          <div className="flex flex-col text-left">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-              Apptify
-            </h1>
-            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 tracking-wider uppercase mt-0.5">
-              Personal OS
-            </span>
-          </div>
-
+      <div className="min-h-screen-safe w-full flex flex-col items-center justify-between px-4 sm:px-6 py-4 sm:py-8 max-w-lg mx-auto selection:bg-blue-500/20">
+        {/* Centered Large Apptify Header & Absolute Top-Right Theme Toggle */}
+        <header className="w-full relative flex flex-col items-center justify-center pt-6 sm:pt-10 pb-5 sm:pb-8 text-center">
+          {/* Floating Theme Switcher at Top-Right */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-white/50 dark:border-white/15 shadow-sm text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
+            className="absolute right-0 top-6 sm:top-8 w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_0_rgba(0,0,0,0.06)] text-gray-700 dark:text-gray-200 active:scale-90 transition-all hover:bg-white/90 dark:hover:bg-white/20"
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-blue-600" />}
+            {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-blue-600" />}
           </button>
+
+          {/* Centered Large Apptify Title with Apple iOS 27 Liquid Gradient */}
+          <div className="flex flex-col items-center animate-fade-in-down">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 dark:border-blue-400/25 text-blue-600 dark:text-blue-400 text-[11px] font-semibold tracking-wider uppercase mb-2.5 shadow-sm backdrop-blur-md">
+              <Sparkles size={12} className="animate-pulse text-indigo-500 dark:text-indigo-300" />
+              <span>iOS 27 Liquid Glass</span>
+            </div>
+            <h1 className="text-5xl sm:text-6xl font-black tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
+              Apptify
+            </h1>
+            <p className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-gray-500 dark:text-gray-400 uppercase mt-2 select-none">
+              Personal OS · 个人智能系统
+            </p>
+          </div>
         </header>
 
-        {/* Mascot Interactive Zone */}
-        <div className="w-full my-auto py-2">
-          <LauncherRobot />
-        </div>
-
-        {/* Main 2x2 App Grid (iOS Touch-Friendly Cards) */}
-        <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4 my-auto">
+        {/* Main 2x2 App Grid with Frosted Glass Gradients (毛玻璃渐变色卡片) */}
+        <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-5 my-auto">
           {[
             { 
               id: 'mywealth', 
               icon: Wallet, 
               title: 'MyWealth', 
               desc: '个人资产与财务',
-              color: 'from-emerald-500 to-teal-600',
-              glow: 'hover:shadow-emerald-500/20'
+              cardClass: 'liquid-card-emerald',
+              iconColor: 'bg-emerald-500 text-white shadow-emerald-500/30',
+              badgeText: '资产管理',
+              badgeClass: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-400/15'
             },
             { 
               id: 'autocount', 
               icon: Cpu, 
               title: 'AutoCount', 
               desc: 'AI 股票与估值研报',
-              color: 'from-indigo-500 to-blue-600',
-              glow: 'hover:shadow-indigo-500/20'
+              cardClass: 'liquid-card-blue',
+              iconColor: 'bg-blue-600 text-white shadow-blue-500/30',
+              badgeText: '智能投研',
+              badgeClass: 'text-blue-700 dark:text-blue-300 bg-blue-500/15 dark:bg-blue-400/15'
             },
             { 
               id: 'knowledgevault', 
               icon: NotebookPen, 
               title: 'Knowledge Vault', 
               desc: 'Obsidian 与第二大脑',
-              color: 'from-amber-500 to-orange-600',
-              glow: 'hover:shadow-amber-500/20'
+              cardClass: 'liquid-card-amber',
+              iconColor: 'bg-amber-500 text-white shadow-amber-500/30',
+              badgeText: '笔记专注',
+              badgeClass: 'text-amber-800 dark:text-amber-300 bg-amber-500/15 dark:bg-amber-400/15'
             },
             { 
               id: 'newshub', 
               icon: Sparkles, 
               title: 'NewsHub Beta', 
               desc: '多源科技与财经动态',
-              color: 'from-purple-500 to-pink-600',
-              glow: 'hover:shadow-purple-500/20'
+              cardClass: 'liquid-card-purple',
+              iconColor: 'bg-fuchsia-600 text-white shadow-fuchsia-500/30',
+              badgeText: '全球资讯',
+              badgeClass: 'text-fuchsia-800 dark:text-fuchsia-300 bg-fuchsia-500/15 dark:bg-fuchsia-400/15'
             },
           ].map((item, index) => (
             <button
               key={item.id}
               onClick={() => setCurrentApp(item.id as AppMode)}
-              className={`group aspect-[1/1.05] rounded-3xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left border border-white/60 dark:border-white/10 shadow-lg shadow-black/5 ${item.glow} hover:border-white/90 dark:hover:border-white/20 active:scale-[0.96] transition-all duration-200 animate-fade-in-up`}
-              style={{ animationDelay: `${index * 80}ms` }}
+              className={`group aspect-[1/1.08] sm:aspect-square rounded-3xl ${item.cardClass} backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden`}
             >
-              {/* App Icon Container */}
-              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr ${item.color} flex items-center justify-center text-white shadow-md shadow-black/10 group-hover:scale-105 transition-transform duration-200`}>
-                <item.icon size={22} strokeWidth={2.2} />
+              {/* Top Specular Shimmer */}
+              <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-white/20 dark:bg-white/10 blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+
+              {/* Icon and Tag Badge */}
+              <div className="flex items-center justify-between w-full relative z-10">
+                <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl ${item.iconColor} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                  <item.icon size={22} strokeWidth={2.2} />
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badgeClass} backdrop-blur-md`}>
+                  {item.badgeText}
+                </span>
               </div>
 
               {/* Title & Desc */}
-              <div className="mt-2">
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight">
+              <div className="mt-2 relative z-10">
+                <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
                   {item.title}
                 </h2>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-1 leading-snug line-clamp-2">
+                <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium mt-1 leading-snug line-clamp-2">
                   {item.desc}
                 </p>
               </div>
 
-              {/* Action Indicator */}
-              <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-semibold opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200">
-                进入 <ArrowRight size={13} />
+              {/* Action Indicator Pill */}
+              <div className="flex items-center justify-between pt-1 relative z-10">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  进入
+                </span>
+                <div className="w-6 h-6 rounded-full bg-white/60 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-200 group-hover:bg-blue-600 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200">
+                  <ArrowRight size={13} strokeWidth={2.5} />
+                </div>
               </div>
             </button>
           ))}
         </div>
 
-        {/* Bottom Settings Button (Full-width Touch Bar) */}
+        {/* Bottom Settings Button (iOS 27 Liquid Glass Touch Bar) */}
         <div className="w-full mt-4 pb-2">
           <button
             onClick={() => setCurrentApp('settings')}
-            className="w-full h-14 rounded-2xl bg-white/65 dark:bg-[#1A1C22]/65 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-md shadow-black/5 flex items-center justify-between px-5 text-gray-800 dark:text-gray-200 font-semibold active:scale-[0.98] transition-all group hover:border-blue-500/30"
+            className="w-full h-15 py-3 rounded-2xl bg-white/70 dark:bg-[#181A20]/75 backdrop-blur-2xl border border-white/60 dark:border-white/12 shadow-[0_8px_30px_0_rgba(0,0,0,0.05)] flex items-center justify-between px-5 text-gray-800 dark:text-gray-200 font-semibold active:scale-[0.98] transition-all group hover:border-blue-500/30"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:rotate-45 transition-transform duration-300">
+              <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:rotate-45 transition-transform duration-300 shadow-sm">
                 <Settings size={18} />
               </div>
-              <span className="text-sm font-bold">系统设置中心</span>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold leading-tight">系统设置中心</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">AI 密钥配置 · 数据存储 · 偏好设置</span>
+              </div>
             </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 font-medium">
-              AI 密钥与存储 <ArrowRight size={13} />
-            </span>
+            <div className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all">
+              <ArrowRight size={14} strokeWidth={2.5} />
+            </div>
           </button>
         </div>
       </div>

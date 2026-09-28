@@ -93,10 +93,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Hero Section: Net Worth Card (iOS Spatial Glass Card) */}
-      <div className="rounded-3xl p-6 sm:p-8 bg-white/75 dark:bg-[#181A20]/80 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-xl shadow-black/5 relative overflow-hidden group">
+      {/* Hero Section: Net Worth Card (iOS 27 Liquid Glass Frosted Gradient) */}
+      <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-blue-500/15 via-indigo-500/8 to-white/70 dark:from-blue-600/20 dark:via-indigo-950/15 dark:to-[#181A20]/80 backdrop-blur-3xl border border-blue-500/30 dark:border-blue-400/25 shadow-[0_16px_40px_-10px_rgba(59,130,246,0.18)] relative overflow-hidden group">
         {/* Subtle decorative glowing corner */}
-        <div className="absolute -top-16 -right-16 w-40 h-40 bg-blue-500/10 dark:bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-16 -right-16 w-44 h-44 bg-blue-500/20 dark:bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
@@ -111,24 +112,24 @@ const Dashboard: React.FC<DashboardProps> = ({
             </span>
           </div>
 
-          {/* Quick Metrics Breakdown */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-6 border-t border-gray-100 dark:border-white/10 pt-5">
-            <div className="p-2 sm:p-3 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/10">
-              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-semibold mb-0.5">流动现金</p>
+          {/* Quick Metrics Breakdown (Frosted Translucent Pills) */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-6 border-t border-gray-100/80 dark:border-white/10 pt-5">
+            <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 dark:from-emerald-500/20 dark:to-emerald-500/5 border border-emerald-500/20 backdrop-blur-md">
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">流动现金</p>
               <p className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">
                 +RM {totalCash.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
 
-            <div className="p-2 sm:p-3 rounded-2xl bg-purple-500/5 dark:bg-purple-500/10 border border-purple-500/10">
-              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-semibold mb-0.5">投资持仓</p>
+            <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-purple-500/15 to-purple-500/5 dark:from-purple-500/20 dark:to-purple-500/5 border border-purple-500/20 backdrop-blur-md">
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">投资持仓</p>
               <p className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400 truncate">
                 +RM {totalStockValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
 
-            <div className="p-2 sm:p-3 rounded-2xl bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/10">
-              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-semibold mb-0.5">待还负债</p>
+            <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-rose-500/15 to-rose-500/5 dark:from-rose-500/20 dark:to-rose-500/5 border border-rose-500/20 backdrop-blur-md">
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">待还负债</p>
               <p className="text-sm sm:text-lg font-bold text-rose-600 dark:text-rose-400 truncate">
                 -RM {totalLiabilities.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
