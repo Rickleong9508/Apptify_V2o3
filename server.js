@@ -92,7 +92,11 @@ async function createServer() {
 
             // Safe filename check to avoid directory traversal
             const cleanFileName = path.basename(fileName);
-            const reportPath = path.join(__dirname, cleanFileName);
+            const reportsDir = path.join(__dirname, 'reports');
+            if (!fs.existsSync(reportsDir)) {
+                await fs.promises.mkdir(reportsDir, { recursive: true });
+            }
+            const reportPath = path.join(reportsDir, cleanFileName);
 
             await fs.promises.writeFile(reportPath, htmlContent, 'utf-8');
             console.log(`Saved stock report: ${reportPath}`);
