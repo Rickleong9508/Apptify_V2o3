@@ -255,37 +255,33 @@ const App: React.FC = () => {
       return <NewsHub onExit={() => setCurrentApp('launcher')} />;
     }
 
-    // Default Launcher View (iOS 27 Liquid Glass 3-Core Apps Golden Layout)
+    // Default Launcher View (3-Core Apps Golden Layout)
     return (
-      <div className="min-h-screen-safe w-full flex flex-col items-center justify-between px-4 sm:px-6 py-4 sm:py-8 max-w-lg mx-auto selection:bg-blue-500/20">
+      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-4 sm:px-6 py-6 sm:py-10 max-w-lg mx-auto space-y-5 sm:space-y-7 selection:bg-blue-500/20">
         {/* Centered Large Apptify Header & Absolute Top-Right Theme Toggle */}
-        <header className="w-full relative flex flex-col items-center justify-center pt-6 sm:pt-10 pb-5 sm:pb-8 text-center">
+        <header className="w-full relative flex flex-col items-center justify-center pt-3 sm:pt-6 pb-2 sm:pb-4 text-center">
           {/* Floating Theme Switcher at Top-Right */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_0_rgba(0,0,0,0.06)] text-gray-700 dark:text-gray-200 active:scale-90 transition-all hover:bg-white/90 dark:hover:bg-white/20 absolute right-0 top-6 sm:top-8"
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_0_rgba(0,0,0,0.06)] text-gray-700 dark:text-gray-200 active:scale-90 transition-all hover:bg-white/90 dark:hover:bg-white/20 absolute right-0 top-3 sm:top-5"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-blue-600" />}
           </button>
 
-          {/* Centered Large Apptify Title with Apple iOS 27 Liquid Gradient */}
-          <div className="flex flex-col items-center animate-fade-in-down">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 dark:border-blue-400/25 text-blue-600 dark:text-blue-400 text-[11px] font-semibold tracking-wider uppercase mb-2.5 shadow-sm backdrop-blur-md">
-              <Sparkles size={12} className="animate-pulse text-indigo-500 dark:text-indigo-300" />
-              <span>iOS 27 Liquid Glass</span>
-            </div>
-            <h1 className="text-5xl sm:text-6xl font-black tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
+          {/* Centered Large Apptify Title with Apple Liquid Gradient */}
+          <div className="flex flex-col items-center animate-fade-in-down w-full px-2">
+            <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-[1.2] pb-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
               Apptify
             </h1>
-            <p className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-gray-500 dark:text-gray-400 uppercase mt-2 select-none">
+            <p className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-gray-500 dark:text-gray-400 uppercase mt-3 select-none">
               Personal OS · 个人智能系统
             </p>
           </div>
         </header>
 
         {/* 3 Core Apps Layout: 1 Hero Wide Card (MyWealth) + 2 Standard Cards (Vault & News) */}
-        <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4 my-auto">
+        <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4">
           {/* 1. Hero Wide Card: MyWealth */}
           <button
             onClick={() => setCurrentApp('mywealth')}

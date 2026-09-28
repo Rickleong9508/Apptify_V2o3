@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Sparkles, Send, X, Check, AlertTriangle, ArrowRight, 
   Wallet, FileText, CheckSquare, TrendingUp, RefreshCw, 
-  Compass, ChevronRight, PieChart, ShieldCheck, Zap
+  Compass, ChevronRight, ChevronLeft, PieChart, ShieldCheck, Zap
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { supabase } from '../services/supabaseClient';
@@ -60,7 +60,7 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
         type: 'wealth',
         title: '专属私人助理已就绪',
         details: ['全面联动 MyWealth 财富中心', '全面联动 Knowledge Vault 灵感空间', '支持语音与自然语言命令实时更新'],
-        badge: 'iOS 27 Copilot'
+        badge: '专属私人助理'
       }
     }
   ]);
@@ -803,31 +803,33 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
 
   return (
     <>
-      {/* 1. iOS 27 Liquid Glass Floating Assistant Pill (Always Visible in Corner) */}
+      {/* 1. Side-docked Collapsible Assistant Tab (收起在右侧贴边，点击后展开) */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full ios-glass border border-white/40 dark:border-white/15 text-gray-900 dark:text-white font-bold transition-all duration-300 tap-scale select-none hover:scale-105 shadow-2xl group bg-white/70 dark:bg-[#16181F]/80 backdrop-blur-2xl"
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl rounded-r-none bg-white/85 dark:bg-[#16181F]/90 backdrop-blur-2xl border-l border-t border-b border-white/60 dark:border-white/15 text-gray-800 dark:text-gray-100 shadow-[-4px_10px_30px_rgba(59,130,246,0.25)] hover:pl-3.5 transition-all duration-300 group tap-scale cursor-pointer"
           style={{
-            boxShadow: '0 12px 35px -8px rgba(59, 130, 246, 0.35), 0 0 0 1px rgba(255,255,255,0.2) inset'
+            boxShadow: '-6px 0 24px -2px rgba(59, 130, 246, 0.25), 0 0 0 1px rgba(255,255,255,0.2) inset'
           }}
-          aria-label="打开专属私人 AI 助手"
+          aria-label="展开 Ask Apptify 私人助理"
+          title="点击展开专属私人助理"
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md relative overflow-hidden group-hover:rotate-12 transition-transform duration-300">
-            <Sparkles size={16} className="fill-white animate-pulse" />
-            <div className="absolute inset-0 bg-white/20 rounded-full blur-[2px]" />
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform">
+            <Sparkles size={14} className="fill-white animate-pulse" />
           </div>
-          <div className="flex flex-col text-left">
-            <span className="text-xs font-bold leading-tight flex items-center gap-1.5">
-              Ask Apptify
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+          <div className="flex flex-col text-left pr-0.5">
+            <span className="text-[11px] font-extrabold tracking-tight leading-none text-gray-900 dark:text-white">
+              AI 助理
             </span>
-            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium hidden sm:inline">专属私人 AI</span>
+            <span className="text-[8px] text-blue-600 dark:text-blue-400 font-bold mt-0.5 leading-none">
+              展开
+            </span>
           </div>
+          <ChevronLeft size={13} className="text-gray-400 group-hover:-translate-x-0.5 transition-transform" />
         </button>
       )}
 
-      {/* 2. Slide-out iOS 27 Liquid Glass Copilot Drawer */}
+      {/* 2. Slide-out Copilot Drawer */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           {/* Backdrop blur */}
