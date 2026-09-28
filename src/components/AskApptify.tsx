@@ -190,13 +190,13 @@ const VideoSummaryWidget: React.FC<VideoSummaryWidgetProps> = ({ summary, onSave
   };
 
   return (
-    <div className="mt-4 p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/40 space-y-4">
+    <div className="mt-4 p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/40 space-y-4">
       <div className="border-b border-gray-300/40 pb-2">
         <p className="font-extrabold text-indigo-600 text-sm">YouTube Summary Widget</p>
         <p className="text-xs text-gray-500 line-clamp-1">{summary.title}</p>
       </div>
 
-      <div className="p-3 rounded-xl bg-[#E0E5EC] shadow-clay-btn text-xs text-gray-700 italic space-y-1">
+      <div className="p-3 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] text-xs text-gray-700 italic space-y-1">
         <span className="font-extrabold text-gray-500 block uppercase text-[9px]">Excerpt</span>
         <p className="line-clamp-3 leading-relaxed">{excerpt}</p>
       </div>
@@ -2194,11 +2194,11 @@ Format your response in a clear and readable manner. Cite the note titles you us
     <title>${symbol} - InvestReport</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #E0E5EC; color: #4A4A4A; font-family: 'Inter', sans-serif; margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
-        .container { max-width: 900px; width: 100%; background: #E0E5EC; padding: 40px; border-radius: 40px; box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5); }
+        body { background-color: #0F172A; color: #F8FAFC; font-family: 'Inter', sans-serif; margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
+        .container { max-width: 900px; width: 100%; background: "var(--ios-card-bg)"; padding: 40px; border-radius: 40px; box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5); }
         h1 { color: #2D3748; font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 30px; }
         .signal-grid { display: grid; grid-template-cols: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 40px; }
-        .signal-card { background: #E0E5EC; padding: 15px; border-radius: 20px; text-align: center; box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff; }
+        .signal-card { background: "var(--ios-card-bg)"; padding: 15px; border-radius: 20px; text-align: center; box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff; }
         .signal-val { font-size: 18px; font-weight: 700; margin-top: 5px; color: #2D3748; }
         .signal-label { font-size: 10px; font-weight: 600; color: #718096; text-transform: uppercase; }
         .score-card { border: 2px solid ${scoreColor}; }
@@ -2255,15 +2255,14 @@ Format your response in a clear and readable manner. Cite the note titles you us
         onClick={handleButtonClick}
         style={{
           transform: `translate(${position.x}px, ${position.y}px)`,
-          touchAction: 'none',
-          boxShadow: isDragging 
-            ? "12px 12px 24px rgb(163,177,198,0.8), -12px -12px 24px rgba(255,255,255, 0.7)" 
-            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+          touchAction: 'none'
         }}
-        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-4 rounded-[26px] bg-[#E0E5EC] text-gray-700 font-bold transition-all duration-300 ${isDragging ? 'scale-105' : 'hover:scale-105 active:scale-95'} group border border-white/40 select-none cursor-grab active:cursor-grabbing`}
+        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-3.5 py-2.5 rounded-full ios-glass border border-white/20 dark:border-white/10 text-[var(--ios-label-primary)] font-bold transition-all duration-200 tap-scale select-none cursor-grab active:cursor-grabbing shadow-2xl ${isDragging ? 'scale-105' : 'hover:scale-105'}`}
       >
-        <Sparkles className="text-purple-600" size={20} />
-        <span className="hidden md:inline">Ask Apptify</span>
+        <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <Sparkles size={14} className="fill-white" />
+        </div>
+        <span className="text-xs font-bold hidden sm:inline">Ask Apptify</span>
       </button>
     );
   }
@@ -2288,7 +2287,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
       {/* Floating Neumorphic Panel */}
       <div 
-        className="w-full max-w-[450px] bg-[#E0E5EC] h-full shadow-2xl relative flex flex-col border-l border-white/40 animate-slide-in-right"
+        className="w-full max-w-[450px] bg-[var(--ios-card-bg)] h-full shadow-2xl relative flex flex-col border-l border-white/40 animate-slide-in-right"
         style={{
           boxShadow: "-10px 0 30px rgba(163,177,198,0.2)"
         }}
@@ -2297,13 +2296,13 @@ Format your response in a clear and readable manner. Cite the note titles you us
         <div 
           className="p-5 pt-6 sticky top-0 flex justify-between items-center z-10"
           style={{ 
-            background: "#E0E5EC", 
+            background: "var(--ios-card-bg)", 
             borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
             boxShadow: "0 4px 10px rgba(0,0,0,0.02)"
           }}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-clay-btn border border-white/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm border border-[var(--ios-separator)] border border-white/20">
               <Sparkles size={18} className="fill-white" />
             </div>
             <div>
@@ -2326,7 +2325,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
           
           <button
             onClick={() => setIsOpen(false)}
-            className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-500 hover:text-red-500 hover:scale-105 active:scale-95 transition-all shadow-clay-btn"
+            className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-500 hover:text-red-500 hover:scale-105 active:scale-95 transition-all shadow-sm border border-[var(--ios-separator)]"
           >
             <X size={18} />
           </button>
@@ -2334,7 +2333,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
         {/* Model Switcher Dropdown */}
         {showSwitcher && (
-          <div className="absolute left-5 right-5 top-20 bg-[#E0E5EC] rounded-2xl p-4 z-50 shadow-clay-inner border border-white/40 max-h-[300px] overflow-y-auto no-scrollbar">
+          <div className="absolute left-5 right-5 top-20 bg-[var(--ios-card-bg)] rounded-2xl p-4 z-50 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/40 max-h-[300px] overflow-y-auto no-scrollbar">
             <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-300/40">
               <span className="text-xs font-extrabold text-gray-500 uppercase">Quick Switch Model</span>
               <button onClick={() => setShowSwitcher(false)} className="text-[10px] text-gray-400 hover:text-red-500 font-bold">Close</button>
@@ -2402,14 +2401,14 @@ Format your response in a clear and readable manner. Cite the note titles you us
         
         {/* A. Image Generation Panel */}
         {isImageModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
-            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
+            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
               <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest pl-1">Text-to-Image Generation</h4>
               <textarea
                 value={imagePrompt}
                 onChange={e => setImagePrompt(e.target.value)}
                 placeholder="Describe what you want the model to generate..."
-                className="w-full p-4 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                className="w-full p-4 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
                 rows={3}
               />
               
@@ -2419,7 +2418,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   <select
                     value={imageSize}
                     onChange={e => setImageSize(e.target.value)}
-                    className="w-full p-2 rounded-xl text-xs bg-[#E0E5EC] border border-gray-300/40 text-gray-600 outline-none"
+                    className="w-full p-2 rounded-xl text-xs bg-[var(--ios-card-bg)] border border-gray-300/40 text-gray-600 outline-none"
                   >
                     <option value="1024x1024">Square (1:1)</option>
                     <option value="1024x576">Landscape (16:9)</option>
@@ -2441,7 +2440,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                 <h5 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider pl-1">Generated Output</h5>
                 <div className="grid grid-cols-1 gap-4">
                   {generatedImages.map((img, idx) => (
-                    <div key={idx} className="p-4 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/20 space-y-3">
+                    <div key={idx} className="p-4 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/20 space-y-3">
                       <img
                         src={img}
                         alt="Generated"
@@ -2467,14 +2466,14 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
         {/* B. Video Generation Panel */}
         {isVideoModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
-            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
+            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
               <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest pl-1">Text-to-Video Generation</h4>
               <textarea
                 value={videoPrompt}
                 onChange={e => setVideoPrompt(e.target.value)}
                 placeholder="Describe video context, movements, camera panning..."
-                className="w-full p-4 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                className="w-full p-4 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
                 rows={3}
               />
 
@@ -2484,7 +2483,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   <select
                     value={videoSize}
                     onChange={e => setVideoSize(e.target.value)}
-                    className="w-full p-2 rounded-xl text-xs bg-[#E0E5EC] border border-gray-300/40 text-gray-600 outline-none"
+                    className="w-full p-2 rounded-xl text-xs bg-[var(--ios-card-bg)] border border-gray-300/40 text-gray-600 outline-none"
                   >
                     <option value="1280x720">Landscape (16:9)</option>
                     <option value="720x1280">Portrait (9:16)</option>
@@ -2500,7 +2499,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
               </div>
 
               {videoProgressMsg && (
-                <div className="p-3.5 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10 text-xs font-bold flex items-center gap-2">
+                <div className="p-3.5 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 text-xs font-bold flex items-center gap-2">
                   {videoTaskStatus === 'processing' && <Activity className="animate-spin text-purple-500" size={14} />}
                   <span>{videoProgressMsg}</span>
                 </div>
@@ -2508,7 +2507,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
             </div>
 
             {generatedVideoUrl && (
-              <div className="p-4 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/20 space-y-3">
+              <div className="p-4 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/20 space-y-3">
                 <h5 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider pl-1">Video Output</h5>
                 <video src={generatedVideoUrl} controls className="w-full rounded-2xl shadow-md" />
                 <a
@@ -2527,14 +2526,14 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
         {/* C. Embedding RAG Panel */}
         {isEmbeddingModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
-            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
+            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
               <div className="flex justify-between items-center">
                 <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Vector Embedding RAG</h4>
                 <button
                   onClick={buildEmbeddingIndex}
                   disabled={isSyncingEmbeddings}
-                  className="px-3 py-1.5 rounded-xl text-[9px] font-extrabold bg-[#E0E5EC] text-purple-600 hover:scale-105 active:scale-95 transition shadow-clay-btn flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl text-[9px] font-extrabold bg-[var(--ios-card-bg)] text-purple-600 hover:scale-105 active:scale-95 transition shadow-sm border border-[var(--ios-separator)] flex items-center gap-1.5"
                 >
                   {isSyncingEmbeddings ? <Activity className="animate-spin" size={10} /> : <RefreshCw size={10} />}
                   Compute Embeddings
@@ -2545,7 +2544,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
               </p>
             </div>
 
-            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
               <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest pl-1">Cognitive Search</span>
               <div className="relative">
                 <input
@@ -2554,7 +2553,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   onChange={e => setEmbeddingQuery(e.target.value)}
                   placeholder="Query note contents semantically..."
                   onKeyDown={e => e.key === 'Enter' && semanticSearchVault()}
-                  className="w-full pl-4 pr-10 py-3 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                  className="w-full pl-4 pr-10 py-3 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
                 />
                 <button
                   onClick={semanticSearchVault}
@@ -2566,7 +2565,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
               </div>
 
               {ragAnswer && (
-                <div className="p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10 text-xs leading-relaxed space-y-2 text-gray-700">
+                <div className="p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 text-xs leading-relaxed space-y-2 text-gray-700">
                   <span className="font-extrabold text-purple-600 uppercase text-[9px] block">RAG Synthesis Answer</span>
                   <p className="whitespace-pre-wrap">{ragAnswer}</p>
                 </div>
@@ -2577,7 +2576,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   <span className="font-extrabold text-gray-400 uppercase text-[9px] block">Relevant Notes Matched</span>
                   <div className="space-y-1.5">
                     {embeddingResults.map((item, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-[#E0E5EC] border border-white/10 flex justify-between items-center text-[10px] shadow-clay-btn">
+                      <div key={idx} className="p-3 rounded-xl bg-[var(--ios-card-bg)] border border-white/10 flex justify-between items-center text-[10px] shadow-sm border border-[var(--ios-separator)]">
                         <span className="font-bold text-gray-700 truncate max-w-[75%]">📄 {item.note.title}</span>
                         <span className="text-purple-600 font-extrabold">{(item.score * 100).toFixed(0)}% match</span>
                       </div>
@@ -2591,15 +2590,15 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
         {/* D. Audio / Speech Panel */}
         {isAudioModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[#E0E5EC] no-scrollbar">
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
             {/* Speech synthesis */}
-            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
               <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Text-to-Speech synthesis</h4>
               <textarea
                 value={ttsText}
                 onChange={e => setTtsText(e.target.value)}
                 placeholder="Enter sentences to render as voice audio playback..."
-                className="w-full p-4 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-xs text-gray-700 shadow-clay-inner border border-white/10"
+                className="w-full p-4 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
                 rows={3}
               />
               <div className="flex justify-between items-center gap-3">
@@ -2608,7 +2607,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   <select
                     value={ttsVoice}
                     onChange={e => setTtsVoice(e.target.value)}
-                    className="w-full p-2 rounded-xl text-xs bg-[#E0E5EC] border border-gray-300/40 text-gray-600 outline-none"
+                    className="w-full p-2 rounded-xl text-xs bg-[var(--ios-card-bg)] border border-gray-300/40 text-gray-600 outline-none"
                   >
                     <option value="FunAudioLLM/CosyVoice2-0.5B:alex">Alex (CosyVoice Male)</option>
                     <option value="FunAudioLLM/CosyVoice2-0.5B:bella">Bella (CosyVoice Female)</option>
@@ -2624,14 +2623,14 @@ Format your response in a clear and readable manner. Cite the note titles you us
               </div>
 
               {generatedSpeechUrl && (
-                <div className="mt-4 p-3 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10">
+                <div className="mt-4 p-3 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10">
                   <audio src={generatedSpeechUrl} controls className="w-full" />
                 </div>
               )}
             </div>
 
             {/* Audio Speech to Text dictation */}
-            <div className="p-5 rounded-3xl bg-[#E0E5EC] shadow-clay-btn border border-white/40 space-y-4">
+            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
               <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Speech-to-Text Transcription</h4>
               <div className="flex flex-col items-center justify-center p-4">
                 <button
@@ -2639,7 +2638,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
                     isRecordingAudio 
                       ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/30' 
-                      : 'bg-[#E0E5EC] text-gray-500 shadow-clay-btn hover:text-blue-500 hover:scale-105 active:scale-95'
+                      : 'bg-[var(--ios-card-bg)] text-gray-500 shadow-sm border border-[var(--ios-separator)] hover:text-blue-500 hover:scale-105 active:scale-95'
                   }`}
                   style={!isRecordingAudio ? {
                     boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
@@ -2653,7 +2652,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
               </div>
 
               {(isTranscribing || transcriptionResult) && (
-                <div className="p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/10 text-xs leading-relaxed text-gray-700">
+                <div className="p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 text-xs leading-relaxed text-gray-700">
                   <span className="text-[9px] text-gray-400 uppercase tracking-wider block mb-1">Dictated Transcript</span>
                   {isTranscribing ? (
                     <span className="flex items-center gap-1 text-gray-400">
@@ -2672,16 +2671,16 @@ Format your response in a clear and readable manner. Cite the note titles you us
         {isChatModel && (
           <>
             {/* Message Container */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar bg-[#E0E5EC]">
+            <div className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar bg-[var(--ios-card-bg)]">
               {messages.map((msg, i) => (
                 <div key={msg.id || i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div 
                     className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed border break-all sm:break-words ${
                       msg.role === 'user' 
-                        ? 'bg-[#E0E5EC] text-gray-800 rounded-tr-md border-white/20 shadow-clay-inner' 
+                        ? 'bg-[var(--ios-card-bg)] text-gray-800 rounded-tr-md border-white/20 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)]' 
                         : msg.isError 
-                          ? 'bg-rose-50 border-rose-200 text-rose-700 rounded-tl-md shadow-clay-btn'
-                          : 'bg-[#E0E5EC] text-gray-800 rounded-tl-md border-white/30 shadow-clay-btn'
+                          ? 'bg-rose-50 border-rose-200 text-rose-700 rounded-tl-md shadow-sm border border-[var(--ios-separator)]'
+                          : "bg-[var(--ios-fill-tertiary)] text-[var(--ios-label-primary)] rounded-2xl rounded-tl-sm border border-[var(--ios-separator)]"
                     }`}
                   >
                     <div className="whitespace-pre-wrap font-medium break-all sm:break-words">{msg.content}</div>
@@ -2699,7 +2698,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
                     {/* Stock Analysis Card Widget */}
                     {msg.stockAnalysis && (
-                      <div className="mt-4 p-4 rounded-2xl bg-[#E0E5EC] shadow-clay-inner border border-white/40 space-y-4">
+                      <div className="mt-4 p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/40 space-y-4">
                         <div className="flex justify-between items-center border-b border-gray-300/40 pb-2">
                           <span className="font-extrabold text-blue-600 text-lg">{msg.stockAnalysis.symbol} Signal</span>
                           <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold text-white ${
@@ -2710,19 +2709,19 @@ Format your response in a clear and readable manner. Cite the note titles you us
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-gray-600">
-                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
                             <p className="text-[9px] text-gray-400 uppercase">Score</p>
                             <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.score.toFixed(1)}/10</p>
                           </div>
-                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
                             <p className="text-[9px] text-gray-400 uppercase">Action</p>
                             <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.action}</p>
                           </div>
-                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
                             <p className="text-[9px] text-gray-400 uppercase">Conviction</p>
                             <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.conviction}</p>
                           </div>
-                          <div className="p-2 rounded-xl bg-[#E0E5EC] shadow-clay-btn">
+                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
                             <p className="text-[9px] text-gray-400 uppercase">Confidence</p>
                             <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.confidence}</p>
                           </div>
@@ -2781,7 +2780,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
               ))}
               {isProcessing && (
                 <div className="flex justify-start w-full">
-                  <div className="bg-[#E0E5EC] p-5 rounded-[24px] rounded-tl-none shadow-clay-btn flex items-center gap-2 border border-white/40">
+                  <div className="bg-[var(--ios-card-bg)] p-5 rounded-[24px] rounded-tl-none shadow-sm border border-[var(--ios-separator)] flex items-center gap-2 border border-white/40">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                     <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                     <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
@@ -2793,12 +2792,12 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
             {/* Input Dock */}
             <div 
-              className="p-5 bg-[#E0E5EC]"
+              className="p-5 bg-[var(--ios-card-bg)]"
               style={{ borderTop: "1px solid rgba(0, 0, 0, 0.05)" }}
             >
               {/* Thumbnail image attachments preview */}
               {attachedImage && (
-                <div className="relative inline-block ml-4 mb-2 p-1.5 rounded-xl bg-[#E0E5EC] shadow-clay-inner border border-white/20">
+                <div className="relative inline-block ml-4 mb-2 p-1.5 rounded-xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/20">
                   <img src={attachedImage} alt="Preview" className="h-12 rounded-lg object-contain" />
                   <button 
                     onClick={() => setAttachedImage(null)} 
@@ -2815,7 +2814,7 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   <>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-3.5 rounded-2xl transition-all shadow-clay-btn bg-[#E0E5EC] text-gray-500 hover:text-blue-500"
+                      className="p-3.5 rounded-2xl transition-all shadow-sm border border-[var(--ios-separator)] bg-[var(--ios-card-bg)] text-gray-500 hover:text-blue-500"
                     >
                       <Paperclip size={20} className="rotate-45" />
                     </button>
@@ -2831,10 +2830,10 @@ Format your response in a clear and readable manner. Cite the note titles you us
 
                 <button
                   onClick={toggleListening}
-                  className={`p-3.5 rounded-2xl transition-all shadow-clay-btn ${
+                  className={`p-3.5 rounded-2xl transition-all shadow-sm border border-[var(--ios-separator)] ${
                     isListening 
                       ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/30' 
-                      : 'bg-[#E0E5EC] text-gray-500 hover:text-blue-500'
+                      : 'bg-[var(--ios-card-bg)] text-gray-500 hover:text-blue-500'
                   }`}
                 >
                   <Mic size={20} />
@@ -2846,14 +2845,14 @@ Format your response in a clear and readable manner. Cite the note titles you us
                   onChange={e => setInputText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
                   placeholder={supportsVision ? "Type request or attach image..." : "Record RM100, add task..."}
-                  className="flex-1 p-3.5 bg-[#E0E5EC] rounded-2xl outline-none font-bold text-sm text-gray-700 placeholder-gray-400/80 shadow-clay-inner border border-white/10 focus:ring-2 focus:ring-blue-500/10 transition-all"
+                  className="flex-1 p-3.5 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-sm text-gray-700 placeholder-gray-400/80 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 focus:ring-2 focus:ring-blue-500/10 transition-all"
                   disabled={isProcessing}
                 />
                 
                 <button
                   onClick={() => handleSend()}
                   disabled={!inputText.trim() || isProcessing}
-                  className="p-3.5 rounded-2xl text-white bg-gray-800 disabled:bg-gray-300 disabled:opacity-50 transition-all shadow-clay-btn"
+                  className="p-3.5 rounded-2xl text-white bg-gray-800 disabled:bg-gray-300 disabled:opacity-50 transition-all shadow-sm border border-[var(--ios-separator)]"
                 >
                   <Send size={18} />
                 </button>
