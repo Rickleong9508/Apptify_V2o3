@@ -16,17 +16,16 @@ import {
 import MyWealthApp from './components/MyWealthApp';
 import KnowledgeVault from './components/KnowledgeVault';
 import GlobalSettings from './components/GlobalSettings';
-import AutoCount from './components/AutoCount';
 import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal';
 import AskApptify from './components/AskApptify';
 
-type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'autocount' | 'newshub';
+type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'newshub';
 
 const getAppFromHash = (): AppMode => {
   if (typeof window === 'undefined') return 'launcher';
   const hash = window.location.hash.replace('#', '') as AppMode;
-  const validModes: AppMode[] = ['launcher', 'mywealth', 'knowledgevault', 'settings', 'autocount', 'newshub'];
+  const validModes: AppMode[] = ['launcher', 'mywealth', 'knowledgevault', 'settings', 'newshub'];
   return validModes.includes(hash) ? hash : 'launcher';
 };
 
@@ -201,12 +200,39 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const [liveNetWorth, setLiveNetWorth] = useState<string>('0.00');
+
+  useEffect(() => {
+    const updateNetWorth = () => {
+      try {
+        const raw = localStorage.getItem('mw_data_main');
+        if (raw) {
+          const data = JSON.parse(raw);
+          const accounts = data.accounts || [];
+          const cash = accounts.reduce((sum: number, a: any) => sum + (Number(a.balance) || 0), 0);
+          const stocks = data.stocks || [];
+          const stockVal = stocks.reduce((sum: number, s: any) => sum + ((Number(s.shares) || 0) * (Number(s.currentPrice) || 0)), 0);
+          const loans = data.loans || [];
+          const debts = loans.reduce((sum: number, l: any) => sum + (Number(l.remainingAmount) || 0), 0);
+          const nw = cash + stockVal - debts;
+          setLiveNetWorth(nw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        }
+      } catch {}
+    };
+    updateNetWorth();
+    window.addEventListener('apptify_data_changed', updateNetWorth);
+    window.addEventListener('storage', updateNetWorth);
+    return () => {
+      window.removeEventListener('apptify_data_changed', updateNetWorth);
+      window.removeEventListener('storage', updateNetWorth);
+    };
+  }, []);
+
   const getAppTitle = () => {
     switch (currentApp) {
       case 'mywealth': return 'MyWealth 资产';
-      case 'knowledgevault': return 'Knowledge Vault 知识库';
+      case 'knowledgevault': return 'Knowledge Vault 工作台';
       case 'settings': return '系统设置';
-      case 'autocount': return 'AutoCount 投研';
       case 'newshub': return 'NewsHub 资讯';
       default: return '';
     }
@@ -225,15 +251,11 @@ const App: React.FC = () => {
       return <GlobalSettings onExit={() => setCurrentApp('launcher')} />;
     }
 
-    if (currentApp === 'autocount') {
-      return <AutoCount onExit={() => setCurrentApp('launcher')} />;
-    }
-
     if (currentApp === 'newshub') {
       return <NewsHub onExit={() => setCurrentApp('launcher')} />;
     }
 
-    // Default Launcher View (iOS 27 Liquid Glass Centered)
+    // Default Launcher View (iOS 27 Liquid Glass 3-Core Apps Golden Layout)
     return (
       <div className="min-h-screen-safe w-full flex flex-col items-center justify-between px-4 sm:px-6 py-4 sm:py-8 max-w-lg mx-auto selection:bg-blue-500/20">
         {/* Centered Large Apptify Header & Absolute Top-Right Theme Toggle */}
@@ -241,7 +263,7 @@ const App: React.FC = () => {
           {/* Floating Theme Switcher at Top-Right */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="absolute right-0 top-6 sm:top-8 w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_0_rgba(0,0,0,0.06)] text-gray-700 dark:text-gray-200 active:scale-90 transition-all hover:bg-white/90 dark:hover:bg-white/20"
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_0_rgba(0,0,0,0.06)] text-gray-700 dark:text-gray-200 active:scale-90 transition-all hover:bg-white/90 dark:hover:bg-white/20 absolute right-0 top-6 sm:top-8"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-blue-600" />}
@@ -262,89 +284,120 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Main 2x2 App Grid with Frosted Glass Gradients (毛玻璃渐变色卡片) */}
-        <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-5 my-auto">
-          {[
-            { 
-              id: 'mywealth', 
-              icon: Wallet, 
-              title: 'MyWealth', 
-              desc: '个人资产与财务',
-              cardClass: 'liquid-card-emerald',
-              iconColor: 'bg-emerald-500 text-white shadow-emerald-500/30',
-              badgeText: '资产管理',
-              badgeClass: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-400/15'
-            },
-            { 
-              id: 'autocount', 
-              icon: Cpu, 
-              title: 'AutoCount', 
-              desc: 'AI 股票与估值研报',
-              cardClass: 'liquid-card-blue',
-              iconColor: 'bg-blue-600 text-white shadow-blue-500/30',
-              badgeText: '智能投研',
-              badgeClass: 'text-blue-700 dark:text-blue-300 bg-blue-500/15 dark:bg-blue-400/15'
-            },
-            { 
-              id: 'knowledgevault', 
-              icon: NotebookPen, 
-              title: 'Knowledge Vault', 
-              desc: 'Obsidian 与第二大脑',
-              cardClass: 'liquid-card-amber',
-              iconColor: 'bg-amber-500 text-white shadow-amber-500/30',
-              badgeText: '笔记专注',
-              badgeClass: 'text-amber-800 dark:text-amber-300 bg-amber-500/15 dark:bg-amber-400/15'
-            },
-            { 
-              id: 'newshub', 
-              icon: Sparkles, 
-              title: 'NewsHub Beta', 
-              desc: '多源科技与财经动态',
-              cardClass: 'liquid-card-purple',
-              iconColor: 'bg-fuchsia-600 text-white shadow-fuchsia-500/30',
-              badgeText: '全球资讯',
-              badgeClass: 'text-fuchsia-800 dark:text-fuchsia-300 bg-fuchsia-500/15 dark:bg-fuchsia-400/15'
-            },
-          ].map((item, index) => (
-            <button
-              key={item.id}
-              onClick={() => setCurrentApp(item.id as AppMode)}
-              className={`group aspect-[1/1.08] sm:aspect-square rounded-3xl ${item.cardClass} backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden`}
-            >
-              {/* Top Specular Shimmer */}
-              <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-white/20 dark:bg-white/10 blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+        {/* 3 Core Apps Layout: 1 Hero Wide Card (MyWealth) + 2 Standard Cards (Vault & News) */}
+        <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4 my-auto">
+          {/* 1. Hero Wide Card: MyWealth */}
+          <button
+            onClick={() => setCurrentApp('mywealth')}
+            className="col-span-2 group rounded-3xl liquid-card-emerald backdrop-blur-2xl p-5 sm:p-6 flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
+          >
+            {/* Shimmer Ambient Glow */}
+            <div className="absolute -top-16 -right-16 w-36 h-36 rounded-full bg-emerald-400/20 dark:bg-emerald-400/15 blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
-              {/* Icon and Tag Badge */}
-              <div className="flex items-center justify-between w-full relative z-10">
-                <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl ${item.iconColor} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
-                  <item.icon size={22} strokeWidth={2.2} />
+            <div className="flex items-center justify-between w-full relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-105 transition-transform duration-300">
+                  <Wallet size={24} strokeWidth={2.2} />
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badgeClass} backdrop-blur-md`}>
-                  {item.badgeText}
-                </span>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                    MyWealth
+                  </h2>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                    个人财务与资产全局工作台
+                  </p>
+                </div>
               </div>
 
-              {/* Title & Desc */}
-              <div className="mt-2 relative z-10">
-                <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
-                  {item.title}
-                </h2>
-                <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium mt-1 leading-snug line-clamp-2">
-                  {item.desc}
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  净资产
+                </span>
+                <p className="text-sm sm:text-base font-black font-mono text-gray-900 dark:text-white mt-1">
+                  RM {liveNetWorth}
                 </p>
               </div>
+            </div>
 
-              {/* Action Indicator Pill */}
-              <div className="flex items-center justify-between pt-1 relative z-10">
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  进入
-                </span>
-                <div className="w-6 h-6 rounded-full bg-white/60 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-200 group-hover:bg-blue-600 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200">
-                  <ArrowRight size={13} strokeWidth={2.5} />
-                </div>
+            <div className="mt-4 pt-3 border-t border-emerald-500/15 flex items-center justify-between text-xs relative z-10">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                多币种钱包 · 50/30/20 预算 · 负债追踪
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                进入资产中心 <ArrowRight size={13} strokeWidth={2.5} />
+              </span>
+            </div>
+          </button>
+
+          {/* 2. Knowledge Vault Card (Notes & Tasks) */}
+          <button
+            onClick={() => setCurrentApp('knowledgevault')}
+            className="group rounded-3xl liquid-card-amber backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden aspect-[1/1.1] sm:aspect-square"
+          >
+            <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-amber-400/20 dark:bg-amber-400/15 blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+
+            <div className="flex items-center justify-between w-full relative z-10">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-105 transition-transform duration-300">
+                <NotebookPen size={22} strokeWidth={2.2} />
               </div>
-            </button>
-          ))}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-800 dark:text-amber-300 bg-amber-500/15">
+                工作与笔记
+              </span>
+            </div>
+
+            <div className="mt-2 relative z-10">
+              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
+                Knowledge Vault
+              </h2>
+              <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium mt-1 leading-snug line-clamp-2">
+                日常随手记 · 待办任务 · 沉浸专注
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 relative z-10">
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                进入
+              </span>
+              <div className="w-6 h-6 rounded-full bg-white/60 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-200 group-hover:bg-amber-500 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200">
+                <ArrowRight size={13} strokeWidth={2.5} />
+              </div>
+            </div>
+          </button>
+
+          {/* 3. NewsHub Beta Card */}
+          <button
+            onClick={() => setCurrentApp('newshub')}
+            className="group rounded-3xl liquid-card-purple backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden aspect-[1/1.1] sm:aspect-square"
+          >
+            <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-purple-400/20 dark:bg-purple-400/15 blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+
+            <div className="flex items-center justify-between w-full relative z-10">
+              <div className="w-11 h-11 rounded-2xl bg-fuchsia-600 text-white flex items-center justify-center shadow-lg shadow-fuchsia-500/30 group-hover:scale-105 transition-transform duration-300">
+                <Sparkles size={22} strokeWidth={2.2} />
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-fuchsia-800 dark:text-fuchsia-300 bg-fuchsia-500/15">
+                全球资讯
+              </span>
+            </div>
+
+            <div className="mt-2 relative z-10">
+              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
+                NewsHub Beta
+              </h2>
+              <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium mt-1 leading-snug line-clamp-2">
+                多源科技 · 商业要闻 · AI 智能精炼
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 relative z-10">
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                进入
+              </span>
+              <div className="w-6 h-6 rounded-full bg-white/60 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-200 group-hover:bg-fuchsia-600 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200">
+                <ArrowRight size={13} strokeWidth={2.5} />
+              </div>
+            </div>
+          </button>
         </div>
 
         {/* Bottom Settings Button (iOS 27 Liquid Glass Touch Bar) */}

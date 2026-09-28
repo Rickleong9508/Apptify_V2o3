@@ -20,137 +20,133 @@ export interface Skill {
 export const skillRegistry: Skill[] = [
     {
         id: 'mywealth',
-        name: 'My Wealth Skill',
-        description: 'Manages personal finance, wallets, transactions, budgets, loans, and stock portfolio.',
+        name: 'MyWealth Finance Skill',
+        description: 'Manages personal finance, wallets, expenses, income, transfers, budgets, loans, and portfolio.',
         intents: {
             ADD_MONEY: {
-                description: 'Add, deposit, top up, increase, or save money into a specific wallet.',
+                description: 'Add, deposit, top up, increase, or save money into a specific wallet or record income.',
                 parameters: {
-                    walletName: { type: 'string', description: 'Name of the wallet to deposit money into', required: true },
-                    amount: { type: 'number', description: 'Amount of money to deposit', required: true },
-                    description: { type: 'string', description: 'Description of the deposit', required: false }
+                    walletName: { type: 'string', description: 'Name of the wallet to deposit money into (e.g. Maybank, Cash, CIMB)', required: true },
+                    amount: { type: 'number', description: 'Amount of money to deposit or add', required: true },
+                    description: { type: 'string', description: 'Description of the deposit or income source', required: false }
                 },
-                examples: ['Add RM100 to Cash Wallet', 'Top up RM50 in bank account', 'Deposit RM200 into savings']
+                examples: ['Add RM500 to Cash', 'Deposit RM2000 into Maybank', 'Top up RM100 to wallet', '存入 500 到 Maybank']
             },
             WITHDRAW_MONEY: {
-                description: 'Withdraw, take out, spend, deduct, or remove money from a specific wallet.',
+                description: 'Record an expense or deduct/withdraw money from a specific wallet.',
                 parameters: {
-                    walletName: { type: 'string', description: 'Name of the wallet to withdraw/spend from', required: true },
-                    amount: { type: 'number', description: 'Amount of money to withdraw or spend', required: true },
-                    description: { type: 'string', description: 'Description of the expense or withdrawal', required: false },
-                    category: { type: 'string', description: 'Expense category (e.g. Food, Utilities, Transport)', required: false }
+                    walletName: { type: 'string', description: 'Name of the wallet to spend from (defaults to first available or Cash)', required: false },
+                    amount: { type: 'number', description: 'Amount of money spent or withdrawn', required: true },
+                    description: { type: 'string', description: 'Description of the expense or item bought', required: false },
+                    category: { type: 'string', description: 'Expense category (Food, Transport, Utilities, Entertainment, Shopping, Health, Other)', required: false }
                 },
-                examples: ['Spent RM20 on lunch from Cash Wallet', 'Record RM50 lunch expense', 'Deduct RM15 from bank for coffee']
+                examples: ['Spent RM25 on lunch', 'Record RM80 grocery expense from Maybank', 'Bought coffee RM15 with Cash', '记录一笔支出：晚餐 45 块']
             },
             TRANSFER_MONEY: {
-                description: 'Transfer, move, send, or shift money from one wallet to another wallet.',
+                description: 'Transfer, move, or shift money from one wallet to another wallet.',
                 parameters: {
-                    sourceWallet: { type: 'string', description: 'Name of the source wallet/account', required: true },
-                    destinationWallet: { type: 'string', description: 'Name of the destination wallet/account', required: true },
-                    amount: { type: 'number', description: 'Amount of money to transfer', required: true },
+                    sourceWallet: { type: 'string', description: 'Source wallet to take money from', required: true },
+                    destinationWallet: { type: 'string', description: 'Destination wallet to receive money', required: true },
+                    amount: { type: 'number', description: 'Amount to transfer', required: true },
                     description: { type: 'string', description: 'Description of the transfer', required: false }
                 },
-                examples: ['Transfer RM200 from Savings to Cash', 'Move RM50 from Wallet to Bank']
+                examples: ['Transfer RM200 from Maybank to Cash', 'Move RM500 from Savings to Credit Card', '从 Maybank 转账 300 到 Cash']
             },
             ADD_BUDGET: {
-                description: 'Add a new budget expense allocation.',
+                description: 'Add a new monthly budget expense allocation.',
                 parameters: {
                     name: { type: 'string', description: 'Name of the budget allocation', required: true },
                     amount: { type: 'number', description: 'Allocated budget amount', required: true },
                     category: { type: 'string', description: 'Category (Food, Utilities, Travel, etc.)', required: false },
                     isFixed: { type: 'boolean', description: 'Whether it is a recurring fixed monthly expense', required: false }
                 },
-                examples: ['Add a food budget of RM300', 'Allocate RM150 for utilities', 'Create a fixed budget for rent of RM1200']
+                examples: ['Add a food budget of RM600', 'Allocate RM200 for utilities', '设定餐饮预算 800']
             },
             ADD_LOAN: {
-                description: 'Add a new loan to track.',
+                description: 'Add a new liability or loan to track.',
                 parameters: {
-                    name: { type: 'string', description: 'Name/Title of the loan (e.g. Car Loan)', required: true },
+                    name: { type: 'string', description: 'Name/Title of the loan (e.g. Car Loan, Mortgage)', required: true },
                     totalAmount: { type: 'number', description: 'Total principal loan amount', required: true },
-                    monthlyPayment: { type: 'number', description: 'Monthly payment amount', required: true }
+                    monthlyPayment: { type: 'number', description: 'Monthly repayment amount', required: true }
                 },
-                examples: ['Add loan: Car Loan, total RM50000, monthly RM800']
+                examples: ['Add loan: Car Loan, total RM45000, monthly RM750', '记录车贷：总额 50000，每月还款 800']
             },
             REPAY_LOAN: {
                 description: 'Record a repayment towards an active loan.',
                 parameters: {
-                    loanName: { type: 'string', description: 'Name of the loan to repay', required: true },
+                    loanName: { type: 'string', description: 'Name of the loan being repaid', required: true },
                     amount: { type: 'number', description: 'Repayment amount', required: true },
-                    accountName: { type: 'string', description: 'Name of the wallet/account to pay from', required: false }
+                    accountName: { type: 'string', description: 'Wallet to pay from', required: false }
                 },
-                examples: ['Pay RM800 towards Car Loan', 'Repay Loan Home Loan RM1500']
+                examples: ['Pay RM800 towards Car Loan', 'Repay Loan Home Loan RM1500', '还车贷 800']
             },
-            BUY_STOCK: {
-                description: 'Record purchase of shares of a stock in the portfolio.',
+            QUERY_WEALTH: {
+                description: 'Query current net worth, total balance, wallet breakdown, or monthly budget status.',
                 parameters: {
-                    symbol: { type: 'string', description: 'Stock ticker symbol (e.g. META, AAPL)', required: true },
-                    quantity: { type: 'number', description: 'Number of shares bought', required: true },
-                    price: { type: 'number', description: 'Purchase price per share', required: true },
-                    currency: { type: 'string', description: 'Currency (USD or MYR)', required: false }
+                    aspect: { type: 'string', description: 'Specific aspect to query (all, networth, wallets, budget, loans)', required: false }
                 },
-                examples: ['Buy 10 shares of META at $350', 'Buy AAPL 5 shares at 180 USD']
-            },
-            SELL_STOCK: {
-                description: 'Record sale of shares of a stock in the portfolio.',
-                parameters: {
-                    symbol: { type: 'string', description: 'Stock ticker symbol (e.g. META, AAPL)', required: true },
-                    quantity: { type: 'number', description: 'Number of shares sold', required: true },
-                    price: { type: 'number', description: 'Selling price per share', required: true },
-                    currency: { type: 'string', description: 'Currency (USD or MYR)', required: false }
-                },
-                examples: ['Sell 5 shares of META at $360', 'Sell AAPL 2 shares at 185 USD']
-            }
-        }
-    },
-    {
-        id: 'autocount',
-        name: 'AutoCount Skill',
-        description: 'Analyzes financial reports, stock performance, and runs stock valuation frameworks.',
-        intents: {
-            ANALYZE_STOCK: {
-                description: 'Trigger comprehensive investment research and analysis on a stock ticker.',
-                parameters: {
-                    symbol: { type: 'string', description: 'US stock ticker symbol (e.g. TSLA, NVDA)', required: true }
-                },
-                examples: ['Analyze META', 'Show latest NVDA report', 'Analyze TSLA stock']
+                examples: ['What is my current net worth?', 'Show my wallet balances', 'How much have I spent this month?', '查一下我的总资产和钱包余额']
             }
         }
     },
     {
         id: 'knowledgevault',
         name: 'Knowledge Vault Skill',
-        description: 'Manages personal notes, Second Brain, and Obsidian Integration.',
+        description: 'Manages personal quick notes, work records, task todos, and focus timer.',
         intents: {
             CREATE_NOTE: {
-                description: 'Create a new markdown note in the Obsidian Vault or local storage.',
+                description: 'Create a new note or work log in Knowledge Vault.',
                 parameters: {
                     title: { type: 'string', description: 'Title of the note', required: true },
-                    content: { type: 'string', description: 'Content body of the note', required: true },
-                    category: { type: 'string', description: 'Category/Folder to organize this note under', required: false },
-                    tags: { type: 'array', description: 'Tags to associate with this note', required: false }
+                    content: { type: 'string', description: 'Note content body', required: true },
+                    category: { type: 'string', description: 'Tag or category: work, idea, meeting, or life', required: false }
                 },
-                examples: ['Create a note called AI Agents with text: AI Agents are...', 'Save a note: Buy milk', 'Save Prompt Engineering notes under AI category']
+                examples: ['Create note: Apptify V3 with content: Design liquid glass UI', '记一下：明天下午开会讨论产品规划', 'Save note: Meeting notes with team']
             },
             SEARCH_NOTES: {
-                description: 'Search Obsidian notes and personal vault using AI to synthesize answers.',
+                description: 'Search personal notes in Knowledge Vault.',
                 parameters: {
-                    query: { type: 'string', description: 'The search query or question to answer from notes', required: true }
+                    query: { type: 'string', description: 'Search term or query', required: true }
                 },
-                examples: ['What notes do I have about AI Agents?', 'Find my Prompt Engineering notes', 'Summarize everything related to stock investing', 'Show all notes about design systems']
+                examples: ['Find my notes about UI design', 'Search notes: meeting', '搜索笔记']
+            },
+            CREATE_TASK: {
+                description: 'Create a new todo task in Knowledge Vault.',
+                parameters: {
+                    title: { type: 'string', description: 'Task title or action description', required: true },
+                    priority: { type: 'string', description: 'Priority level: high, medium, or low (default medium)', required: false },
+                    deadline: { type: 'string', description: 'Due date or time (optional)', required: false }
+                },
+                examples: ['Add task: Submit monthly report by Friday', '提醒我下午三点开会', 'Create high priority task: Finish Apptify redesign']
+            },
+            UPDATE_TASK: {
+                description: 'Mark a task as completed or update its status.',
+                parameters: {
+                    taskTitle: { type: 'string', description: 'Name of the task to update', required: true },
+                    completed: { type: 'boolean', description: 'Whether the task is completed (true/false)', required: true }
+                },
+                examples: ['Complete task Submit monthly report', '完成任务 提交周报', 'Mark finish Apptify as done']
+            },
+            QUERY_TASKS: {
+                description: 'Query active or pending todo tasks.',
+                parameters: {
+                    status: { type: 'string', description: 'all, pending, or completed', required: false }
+                },
+                examples: ['What are my pending tasks?', 'Show my todo list', '查看我的待办清单']
             }
         }
     },
     {
-        id: 'videosummary',
-        name: 'Video Summary Skill',
-        description: 'Extracts transcripts from YouTube video URLs and formats them into structured markdown notes.',
+        id: 'system',
+        name: 'System Navigation Skill',
+        description: 'Controls navigation between Apptify modules and settings.',
         intents: {
-            SUMMARIZE_VIDEO: {
-                description: 'Extract transcript and summarize a YouTube video URL.',
+            NAVIGATE: {
+                description: 'Navigate to any module inside Apptify (launcher, mywealth, knowledgevault, newshub, settings).',
                 parameters: {
-                    url: { type: 'string', description: 'The complete YouTube video URL (e.g., https://www.youtube.com/watch?v=...)', required: true }
+                    target: { type: 'string', description: 'Target module (launcher, mywealth, knowledgevault, newshub, settings)', required: true }
                 },
-                examples: ['Summarize this YouTube video https://www.youtube.com/watch?v=UVrfBw44sQ8', 'Extract transcript from https://youtu.be/somevideo']
+                examples: ['Go to My Wealth', 'Open Knowledge Vault', 'Switch to NewsHub', '打开记事本', '返回主页']
             }
         }
     }

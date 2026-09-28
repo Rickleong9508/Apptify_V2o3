@@ -122,7 +122,9 @@ const NewsCard: React.FC<{ item: NewsItem; lang: 'en' | 'cn' }> = ({ item, lang 
     };
 
     return (
-        <div className="ios-card p-4 sm:p-5 flex flex-col justify-between transition-all group">
+        <div className="ios-glass p-4 sm:p-5 rounded-3xl border border-white/50 dark:border-white/10 flex flex-col justify-between transition-all group shadow-md hover:shadow-2xl hover:border-purple-500/30 hover:scale-[1.01] duration-300 relative overflow-hidden bg-white/70 dark:bg-white/5 backdrop-blur-2xl">
+            {/* Top glass reflection line */}
+            <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 dark:via-white/20 to-transparent pointer-events-none" />
             <div>
                 {/* Media Image Thumbnail */}
                 <div className="w-full h-40 sm:h-44 rounded-2xl overflow-hidden mb-3.5 relative bg-[var(--ios-fill-tertiary)]">

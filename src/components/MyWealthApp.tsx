@@ -251,7 +251,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     fetchData();
   }, [session, user]);
 
-  // --- Auto-Sync on Window Focus ---
+  // --- Auto-Sync on Window Focus & Custom Event ---
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && user) {
@@ -259,8 +259,30 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         fetchData();
       }
     };
+    const handleDataChanged = () => {
+      const savedJSON = localStorage.getItem(STORAGE_KEY);
+      if (savedJSON) {
+        try {
+          const localData = JSON.parse(savedJSON);
+          if (localData.accounts) setAccounts(localData.accounts);
+          if (localData.monthlyData) setMonthlyData(localData.monthlyData);
+          if (localData.budgetHistory) setBudgetHistory(localData.budgetHistory);
+          if (localData.fixedExpenses) setFixedExpenses(localData.fixedExpenses);
+          if (localData.loans) setLoans(localData.loans);
+          if (localData.stocks) setStocks(localData.stocks);
+          if (localData.cash) setCash(localData.cash);
+          if (localData.exchangeRate) setExchangeRate(localData.exchangeRate);
+        } catch (e) {
+          console.error("Failed to reload data on apptify_data_changed", e);
+        }
+      }
+    };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("apptify_data_changed", handleDataChanged);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("apptify_data_changed", handleDataChanged);
+    };
   }, [user]);
 
   // --- Realtime Sync Subscription ---

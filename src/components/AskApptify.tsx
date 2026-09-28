@@ -1,74 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Mic, Send, X, ChevronRight, Check, AlertTriangle, Play, RefreshCw, BarChart2, FileText, ArrowRight, TrendingUp, TrendingDown, Activity, Paperclip } from 'lucide-react';
+import { 
+  Sparkles, Send, X, Check, AlertTriangle, ArrowRight, 
+  Wallet, FileText, CheckSquare, TrendingUp, RefreshCw, 
+  Compass, ChevronRight, PieChart, ShieldCheck, Zap
+} from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { supabase } from '../services/supabaseClient';
-import { aiService, AIProvider } from '../services/aiService';
-import { stockService } from '../services/stockService';
-import { investSkillService, InvestmentSignal } from '../services/investSkillService';
+import { aiService } from '../services/aiService';
 import { Account, Expense, Loan, Stock, MonthlyData } from '../types';
 import { skillRegistry } from '../services/skillRegistry';
-import { videoSummarySkillService } from '../services/videoSummarySkillService';
-
-interface ValidationResult {
-  isValid: boolean;
-  error?: string;
-}
-
-const validateWalletOperation = (intent: string, data: any, accounts: Account[]): ValidationResult => {
-  if (!data) {
-    return { isValid: false, error: "No parameters were provided for the wallet operation." };
-  }
-
-  // 1. Verify amount is valid
-  const amount = Number(data.amount);
-  if (isNaN(amount) || amount <= 0) {
-    return { isValid: false, error: `Invalid amount "${data.amount}". Amount must be a positive number.` };
-  }
-
-  // Helper to find wallet by name (case-insensitive, match or contains)
-  const findWallet = (name: string) => {
-    if (!name) return null;
-    return accounts.find(a => a.name.toLowerCase() === name.toLowerCase() || a.name.toLowerCase().includes(name.toLowerCase()));
-  };
-
-  // 2. Verify wallets exist
-  if (intent === 'ADD_MONEY' || intent === 'WITHDRAW_MONEY') {
-    const walletName = data.walletName || data.accountName;
-    if (!walletName) {
-      return { isValid: false, error: "No wallet name was specified in the request." };
-    }
-    const wallet = findWallet(walletName);
-    if (!wallet) {
-      return { isValid: false, error: `Wallet "${walletName}" does not exist. Available wallets: ${accounts.map(a => a.name).join(', ')}.` };
-    }
-  } else if (intent === 'TRANSFER_MONEY') {
-    const sourceName = data.sourceWallet || data.sourceAccount;
-    const destName = data.destinationWallet || data.destinationAccount;
-
-    if (!sourceName) {
-      return { isValid: false, error: "Source wallet was not specified for the transfer." };
-    }
-    if (!destName) {
-      return { isValid: false, error: "Destination wallet was not specified for the transfer." };
-    }
-
-    const sourceWallet = findWallet(sourceName);
-    const destWallet = findWallet(destName);
-
-    if (!sourceWallet) {
-      return { isValid: false, error: `Source wallet "${sourceName}" does not exist. Available wallets: ${accounts.map(a => a.name).join(', ')}.` };
-    }
-    if (!destWallet) {
-      return { isValid: false, error: `Destination wallet "${destName}" does not exist. Available wallets: ${accounts.map(a => a.name).join(', ')}.` };
-    }
-  }
-
-  return { isValid: true };
-};
 
 interface AskApptifyProps {
   currentApp: string;
   setCurrentApp: (app: any) => void;
+}
+
+interface ActionPayload {
+  intent: string;
+  data: any;
+  message?: string;
+  confirmationRequired?: boolean;
+  confirmationMessage?: string;
 }
 
 interface Message {
@@ -76,2793 +28,978 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   isError?: boolean;
-  stockAnalysis?: {
-    symbol: string;
-    signal: InvestmentSignal;
-    report: string;
-  };
-  videoSummary?: {
-    url: string;
+  actionResult?: {
+    type: 'finance' | 'note' | 'task' | 'wealth' | 'nav';
     title: string;
-    markdown: string;
+    details: string[];
+    badge?: string;
   };
-  pendingAction?: {
-    intent: string;
-    data: any;
-    message: string;
-  };
-  images?: string[];
+  pendingAction?: ActionPayload;
 }
 
-interface VideoSummaryWidgetProps {
-  summary: {
-    url: string;
-    title: string;
-    markdown: string;
-  };
-  onSaveSuccess: (msg: string) => void;
-  onSaveError: (msg: string) => void;
-}
-
-const VideoSummaryWidget: React.FC<VideoSummaryWidgetProps> = ({ summary, onSaveSuccess, onSaveError }) => {
-  const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const kv = (window as any).__apptify_knowledgevault;
-  const hasObsidian = !!(kv && kv.vaultPath);
-
-  // Extract excerpt and tags
-  const summaryMatch = summary.markdown.match(/## Executive Summary\r?\n([\s\S]+?)(?:\r?\n##|$)/);
-  const excerpt = summaryMatch ? summaryMatch[1].trim() : (summary.markdown.slice(0, 200) + '...');
-  
-  const tagsMatch = summary.markdown.match(/Tags:\r?\n([^\r\n]+)/i);
-  const tags = tagsMatch ? tagsMatch[1].split(/\s+/).map((t: string) => t.trim()).filter(Boolean) : [];
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      if (hasObsidian) {
-        // Save to local Obsidian Vault
-        await videoSummarySkillService.saveToVault(
-          kv.vaultPath,
-          summary.title,
-          summary.markdown,
-          'Video Summary'
-        );
-        // Reload notes in KnowledgeVault state
-        const res = await fetch('/api/obsidian/notes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vaultPath: kv.vaultPath })
-        });
-        const data = await res.json();
-        if (res.ok && data.notes && kv.setNotes) {
-          kv.setNotes(data.notes);
-        }
-        setSaved(true);
-        onSaveSuccess(`Saved video summary "${summary.title}" to Obsidian vault successfully!`);
-      } else {
-        // Fallback to internal Storage / Supabase
-        let notes: any[] = [];
-        let todos: any[] = [];
-
-        if (kv) {
-          notes = [...kv.notes];
-          todos = [...kv.todos];
-        } else {
-          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-          todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
-        }
-
-        const exists = notes.some(n => n.title === summary.title);
-        if (exists) {
-          throw new Error(`A note with the title "${summary.title}" already exists.`);
-        }
-
-        const newNote = {
-          id: Date.now().toString(),
-          title: summary.title,
-          content: summary.markdown,
-          date: new Date().toISOString(),
-          ai_category: 'Video Summary',
-          ai_processed: true,
-          ai_summary: excerpt.slice(0, 150),
-          ai_keywords: tags.map(t => t.replace(/^#/, ''))
-        };
-
-        notes = [newNote, ...notes];
-
-        if (kv) {
-          kv.setNotes(notes);
-        } else {
-          localStorage.setItem('gn_notes', JSON.stringify(notes));
-          localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-        }
-        setSaved(true);
-        onSaveSuccess(`Saved video summary "${summary.title}" to local Knowledge Vault!`);
-      }
-    } catch (err: any) {
-      console.error(err);
-      onSaveError(err.message || "Failed to save summary.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="mt-4 p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/40 space-y-4">
-      <div className="border-b border-gray-300/40 pb-2">
-        <p className="font-extrabold text-indigo-600 text-sm">YouTube Summary Widget</p>
-        <p className="text-xs text-gray-500 line-clamp-1">{summary.title}</p>
-      </div>
-
-      <div className="p-3 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] text-xs text-gray-700 italic space-y-1">
-        <span className="font-extrabold text-gray-500 block uppercase text-[9px]">Excerpt</span>
-        <p className="line-clamp-3 leading-relaxed">{excerpt}</p>
-      </div>
-
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {tags.map((tag, idx) => (
-            <span key={idx} className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-bold">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <button
-        onClick={handleSave}
-        disabled={isSaving || saved}
-        className={`w-full py-2.5 rounded-xl text-white font-bold text-xs transition flex items-center justify-center gap-1.5 ${
-          saved
-            ? 'bg-green-500 shadow-none cursor-default'
-            : isSaving
-              ? 'bg-indigo-400 cursor-wait'
-              : 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
-        }`}
-      >
-        {saved ? (
-          <>
-            <Check size={14} /> Saved to {hasObsidian ? 'Obsidian' : 'Knowledge Vault'}
-          </>
-        ) : isSaving ? (
-          <>
-            <RefreshCw size={14} className="animate-spin" /> Saving...
-          </>
-        ) : (
-          <>
-            <FileText size={14} /> Save to {hasObsidian ? 'Obsidian Vault' : 'Knowledge Vault'}
-          </>
-        )}
-      </button>
-    </div>
-  );
-};
-
-const buildSystemInstruction = (skills: any[], contextInfo: string) => {
-  const intentsList = skills.flatMap(s => Object.keys(s.intents));
-  
-  let skillsDoc = '';
-  skills.forEach(skill => {
-    skillsDoc += `### Skill: ${skill.name} (${skill.id})\nDescription: ${skill.description}\n`;
-    Object.entries(skill.intents).forEach(([intentName, intentDef]: [string, any]) => {
-      skillsDoc += `- **Intent**: ${intentName}\n  Description: ${intentDef.description}\n  Parameters:\n`;
-      Object.entries(intentDef.parameters).forEach(([paramName, paramDef]: [string, any]) => {
-        skillsDoc += `    * \`${paramName}\` (${paramDef.type}): ${paramDef.description}${paramDef.required ? ' (Required)' : ''}\n`;
-      });
-      if (intentDef.examples && intentDef.examples.length > 0) {
-        skillsDoc += `  Examples:\n`;
-        intentDef.examples.forEach((ex: string) => {
-          skillsDoc += `    * "${ex}"\n`;
-        });
-      }
-    });
-    skillsDoc += `\n`;
-  });
-
-  return `You are "Ask Apptify", the system-wide intelligent command layer and Personal Operating System assistant for the Apptify platform.
-Your focus is execution first, chat second. Parse instructions into structural actions based on the available skills registry.
-
-Respond ONLY with a valid JSON matching this schema:
-{
-  "intent": ${intentsList.map(i => `"${i}"`).join(' | ')} | "CHAT",
-  "data": { ... },
-  "confirmationRequired": boolean,
-  "confirmationMessage": "Description of destructive action requiring user consent",
-  "message": "Assistant conversational response"
-}
-
-### AVAILABLE SKILLS & INTENTS REGISTERED:
-${skillsDoc}
-
-CRITICAL RULES:
-1. Wallet Action Rules:
-   - ADD_MONEY: Use this intent when the user wants to add, deposit, top up, increase, or save money into a specific wallet.
-     Do NOT infer transfers or deduct from other wallets. Only increase this wallet.
-   - WITHDRAW_MONEY: Use this intent when the user wants to withdraw, take out, spend, deduct, or remove money from a specific wallet.
-     Do NOT infer transfers. Only decrease this wallet.
-   - TRANSFER_MONEY: Use this intent ONLY when the user explicitly asks to transfer, move, send, or shift money from one wallet to another.
-     Never assume/infer transfer actions unless explicitly requested with source and destination.
-   
-2. Confirmation Rules:
-   - You MUST set "confirmationRequired" to true if the user wants to delete records, overwrite records, or make bulk changes (e.g., "delete note X", "delete task Y", "delete all notes").
-   - Read, Create, and Update actions do not require confirmation.
-
-3. Do NOT output markdown formatting (no \`\`\`json). Return only the JSON object.
-
---- CONTEXT ---
-${contextInfo}
-`;
-};
-
-const getModelCapabilities = (modelId: string, provider: string) => {
-  const caps = {
-    isChatModel: false,
-    isImageModel: false,
-    isVideoModel: false,
-    isAudioModel: false,
-    isEmbeddingModel: false,
-    supportsVision: false
-  };
-
-  if (!modelId) return caps;
-
-  const lower = modelId.toLowerCase();
-
-  if (provider === 'siliconflow') {
-    try {
-      const cached = localStorage.getItem('app_siliconflow_models_cache');
-      if (cached) {
-        const models: any[] = JSON.parse(cached);
-        const found = models.find(m => m.id === modelId);
-        if (found && found.capabilities) {
-          const c = found.capabilities;
-          return {
-            isChatModel: c.includes('chat') || c.includes('coding') || c.includes('reasoning'),
-            isImageModel: c.includes('image'),
-            isVideoModel: c.includes('video'),
-            isAudioModel: c.includes('audio'),
-            isEmbeddingModel: c.includes('embedding'),
-            supportsVision: c.includes('vision')
-          };
-        }
-      }
-    } catch (e) {}
-
-    if (lower.includes('embedding') || lower.includes('bge') || lower.includes('text2vec')) {
-      caps.isEmbeddingModel = true;
-    } else if (lower.includes('stable-diffusion') || lower.includes('flux') || lower.includes('sdxl') || lower.includes('image') || lower.includes('diff') || lower.includes('kolors') || lower.includes('cogview')) {
-      caps.isImageModel = true;
-    } else if (lower.includes('video') || lower.includes('cogvideo') || lower.includes('luma') || lower.includes('wan2.')) {
-      caps.isVideoModel = true;
-    } else if (lower.includes('audio') || lower.includes('speech') || lower.includes('tts') || lower.includes('whisper') || lower.includes('voice') || lower.includes('sensevoice')) {
-      caps.isAudioModel = true;
-    } else {
-      caps.isChatModel = true;
-    }
-
-    if (lower.includes('-vl') || lower.includes('vision') || lower.includes('multimodal')) {
-      caps.supportsVision = true;
-    }
-    return caps;
-  }
-
-  if (provider === 'google') {
-    caps.isChatModel = true;
-    caps.supportsVision = true;
-    return caps;
-  }
-
-  if (provider === 'openai') {
-    caps.isChatModel = true;
-    if (lower.includes('gpt-4o')) {
-      caps.supportsVision = true;
-    }
-    return caps;
-  }
-
-  if (provider === 'anthropic') {
-    caps.isChatModel = true;
-    if (lower.includes('sonnet') || lower.includes('claude-3-7')) {
-      caps.supportsVision = true;
-    }
-    return caps;
-  }
-
-  caps.isChatModel = true;
-  if (lower.includes('vision') || lower.includes('vl') || lower.includes('sonnet') || lower.includes('gpt-4o')) {
-    caps.supportsVision = true;
-  }
-  return caps;
-};
-
-const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) => {
+export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentApp }) => {
   const { session, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [inputText, setInputText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<ActionPayload | null>(null);
+
+  // Model & Provider settings
+  const [activeProvider, setActiveProvider] = useState<string>('google');
+  const [activeModel, setActiveModel] = useState<string>('gemini-2.5-flash');
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Initial welcome message
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: "Hello, I am Ask Apptify, your Personal OS assistant. What would you like to execute? e.g., 'spent RM15 on coffee', 'save a note: Buy milk', or 'analyze TSLA'."
+      content: `你好！我是你的 **Apptify 专属私人 AI 助手**。\n\n我精通当前 App 的全部功能，你可以随时向我咨询或直接下达命令来**更新 App 的数据**：\n\n• 💳 **财务记账**：如 *“记一笔午餐 28 块”*、*“存入 1000 到 Maybank”*\n• 📝 **灵感随手记**：如 *“记录笔记：明天下午讨论 Apptify UI 优化”*\n• 🎯 **任务待办**：如 *“新建待办：周五前提交财务周报”*、*“完成待办 提交财务周报”*\n• 📊 **资产查询**：如 *“查一下我的净资产和钱包余额”*`,
+      actionResult: {
+        type: 'wealth',
+        title: '专属私人助理已就绪',
+        details: ['全面联动 MyWealth 财富中心', '全面联动 Knowledge Vault 灵感空间', '支持语音与自然语言命令实时更新'],
+        badge: 'iOS 27 Copilot'
+      }
     }
   ]);
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [pendingConfirm, setPendingConfirm] = useState<Message['pendingAction'] | null>(null);
 
-  // --- SiliconFlow Model Hub States ---
-  const [activeProvider, setActiveProvider] = useState<AIProvider>(() => (localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
-  const [activeModel, setActiveModel] = useState(() => localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
-
-  const caps = getModelCapabilities(activeModel, activeProvider);
-  const isChatModel = caps.isChatModel;
-  const isImageModel = caps.isImageModel;
-  const isVideoModel = caps.isVideoModel;
-  const isAudioModel = caps.isAudioModel;
-  const isEmbeddingModel = caps.isEmbeddingModel;
-  const supportsVision = caps.supportsVision;
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('app_ai_favorites') || '[]'); } catch (e) { return []; }
-  });
-  const [recentModels, setRecentModels] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('app_ai_recent') || '[]'); } catch (e) { return []; }
-  });
-  const [modelsList, setModelsList] = useState<any[]>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [showSwitcher, setShowSwitcher] = useState(false);
-  const [activeImagePreview, setActiveImagePreview] = useState<string | null>(null);
-  const [attachedImage, setAttachedImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Capability UI States
-  // 1. Image
-  const [imagePrompt, setImagePrompt] = useState('');
-  const [imageSize, setImageSize] = useState('1024x1024');
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-  
-  // 2. Video
-  const [videoPrompt, setVideoPrompt] = useState('');
-  const [videoSize, setVideoSize] = useState('1280x720');
-  const [videoTaskId, setVideoTaskId] = useState('');
-  const [videoTaskStatus, setVideoTaskStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
-  const [videoProgressMsg, setVideoProgressMsg] = useState('');
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState('');
-
-  // 3. Embedding / RAG
-  const [embeddingQuery, setEmbeddingQuery] = useState('');
-
-  // Dynamic trigger event from launcher robot
-  useEffect(() => {
-    const handleOpen = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setIsOpen(true);
-      if (customEvent.detail && customEvent.detail.query) {
-        setInputText(customEvent.detail.query);
-        setTimeout(() => {
-          handleSend(customEvent.detail.query);
-        }, 150);
-      }
-    };
-    window.addEventListener('open_ask_apptify', handleOpen);
-    return () => window.removeEventListener('open_ask_apptify', handleOpen);
-  }, [activeProvider, activeModel, currentApp, isProcessing, attachedImage]);
-  const [embeddingResults, setEmbeddingResults] = useState<any[]>([]);
-  const [isSyncingEmbeddings, setIsSyncingEmbeddings] = useState(false);
-  const [ragAnswer, setRagAnswer] = useState('');
-  const [isGeneratingRag, setIsGeneratingRag] = useState(false);
-
-  // 4. Audio
-  const [ttsText, setTtsText] = useState('');
-  const [ttsVoice, setTtsVoice] = useState('FunAudioLLM/CosyVoice2-0.5B:alex');
-  const [isGeneratingTts, setIsGeneratingTts] = useState(false);
-  const [generatedSpeechUrl, setGeneratedSpeechUrl] = useState('');
-  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [transcriptionResult, setTranscriptionResult] = useState('');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
-  // --- Draggable Floating Button State & Logic ---
-  const [position, setPosition] = useState({ x: 0, y: 0 }); // offset from bottom-right
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartOffsetRef = useRef({ x: 0, y: 0 });
-  const dragStartCoordsRef = useRef({ x: 0, y: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    setIsDragging(true);
-    dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
-    dragStartOffsetRef.current = {
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    };
-    e.preventDefault();
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setIsDragging(true);
-    dragStartCoordsRef.current = { x: touch.clientX, y: touch.clientY };
-    dragStartOffsetRef.current = {
-      x: touch.clientX - position.x,
-      y: touch.clientY - position.y
-    };
-  };
-
-  const handleButtonClick = (e: React.MouseEvent) => {
-    const distance = Math.sqrt(
-      Math.pow(dragStartCoordsRef.current.x - e.clientX, 2) +
-      Math.pow(dragStartCoordsRef.current.y - e.clientY, 2)
-    );
-    if (distance > 5) {
-      e.preventDefault();
-      return;
-    }
-    setIsOpen(true);
-  };
-
-  useEffect(() => {
-    const updatePosition = (clientX: number, clientY: number) => {
-      let newX = clientX - dragStartOffsetRef.current.x;
-      let newY = clientY - dragStartOffsetRef.current.y;
-      
-      const rect = buttonRef.current?.getBoundingClientRect();
-      if (rect) {
-        const btnWidth = rect.width;
-        const btnHeight = rect.height;
-        const defaultLeft = window.innerWidth - btnWidth - 24;
-        const defaultTop = window.innerHeight - btnHeight - 24;
-        
-        const targetLeft = defaultLeft + newX;
-        const targetTop = defaultTop + newY;
-        
-        const boundedLeft = Math.max(10, Math.min(window.innerWidth - btnWidth - 10, targetLeft));
-        const boundedTop = Math.max(10, Math.min(window.innerHeight - btnHeight - 10, targetTop));
-        
-        newX = boundedLeft - defaultLeft;
-        newY = boundedTop - defaultTop;
-      }
-      setPosition({ x: newX, y: newY });
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      updatePosition(e.clientX, e.clientY);
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!isDragging) return;
-      const touch = e.touches[0];
-      updatePosition(touch.clientX, touch.clientY);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      window.addEventListener('touchmove', handleTouchMove, { passive: false });
-      window.addEventListener('touchend', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleMouseUp);
-    };
-  }, [isDragging, position]);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
-
-  // Sync settings and models
+  // Sync settings
   useEffect(() => {
     const syncSettings = () => {
-      setActiveProvider((localStorage.getItem('app_global_ai_provider') as AIProvider) || 'google');
+      setActiveProvider(localStorage.getItem('app_global_ai_provider') || 'google');
       setActiveModel(localStorage.getItem('app_global_ai_model') || 'gemini-2.5-flash');
-      try {
-        setFavorites(JSON.parse(localStorage.getItem('app_ai_favorites') || '[]'));
-        setRecentModels(JSON.parse(localStorage.getItem('app_ai_recent') || '[]'));
-      } catch (e) {}
     };
+    syncSettings();
     window.addEventListener('storage', syncSettings);
-    window.addEventListener('apptify_settings_change', syncSettings);
-    return () => {
-      window.removeEventListener('storage', syncSettings);
-      window.removeEventListener('apptify_settings_change', syncSettings);
-    };
+    return () => window.removeEventListener('storage', syncSettings);
   }, []);
 
-  const getProviderFromModelId = (modelId: string, currentProvider?: AIProvider): AIProvider => {
-    if (!modelId) return 'google';
-    if (modelId.startsWith('gemini-')) return 'google';
-    if (modelId.startsWith('gpt-') || modelId.startsWith('o1') || modelId.startsWith('o3-')) return 'openai';
-    if (modelId.startsWith('claude-')) return 'anthropic';
-    if (modelId === 'deepseek-chat' || modelId === 'deepseek-reasoner') return 'deepseek';
-    
-    try {
-      const sfCache = localStorage.getItem('app_siliconflow_models_cache');
-      if (sfCache) {
-        const sfModels: any[] = JSON.parse(sfCache);
-        if (sfModels.some(m => m.id === modelId)) {
-          return 'siliconflow';
-        }
-      }
-    } catch (e) {}
-
-    if (modelId.startsWith('deepseek/') || modelId.startsWith('anthropic/') || modelId.startsWith('openai/') || modelId.startsWith('qwen/')) {
-      return 'openrouter';
-    }
-
-    if (modelId.includes('/')) {
-      return 'siliconflow';
-    }
-
-    return currentProvider || 'google';
-  };
-
-  const handleSelectModel = (modelId: string) => {
-    const provider = getProviderFromModelId(modelId, activeProvider);
-    
-    localStorage.setItem('app_global_ai_model', modelId);
-    localStorage.setItem('app_global_ai_provider', provider);
-    
-    const key = localStorage.getItem('app_api_key_' + provider) || localStorage.getItem('app_global_api_key') || '';
-    localStorage.setItem('app_global_api_key', key);
-    
-    setActiveModel(modelId);
-    setActiveProvider(provider);
-    
-    if (!recentModels.includes(modelId)) {
-      const updated = [modelId, ...recentModels.filter(id => id !== modelId).slice(0, 4)];
-      setRecentModels(updated);
-      localStorage.setItem('app_ai_recent', JSON.stringify(updated));
-    }
-    
-    setShowSwitcher(false);
-    window.dispatchEvent(new Event('apptify_settings_change'));
-  };
-
+  // Auto scroll to bottom
   useEffect(() => {
-    const loadModels = async () => {
-      const apiKey = localStorage.getItem('app_global_api_key') || '';
-      if (!apiKey) return;
-      setIsLoadingModels(true);
-      try {
-        if (activeProvider === 'siliconflow') {
-          const cached = localStorage.getItem('app_siliconflow_models_cache');
-          if (cached) {
-            setModelsList(JSON.parse(cached));
-          } else {
-            const list = await aiService.getModels('siliconflow', apiKey);
-            setModelsList(list);
-            localStorage.setItem('app_siliconflow_models_cache', JSON.stringify(list));
-          }
-        } else {
-          const list = await aiService.getModels(activeProvider, apiKey);
-          setModelsList(list);
-        }
-      } catch (e) {
-        console.error("Failed to load models list for AskApptify:", e);
-      } finally {
-        setIsLoadingModels(false);
-      }
-    };
     if (isOpen) {
-      loadModels();
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [activeProvider, isOpen]);
+  }, [messages, isOpen]);
 
-  // Video Polling Status
-  useEffect(() => {
-    if (!videoTaskId || videoTaskStatus !== 'processing') return;
-    let active = true;
-    const checkStatus = async () => {
-      try {
-        const apiKey = localStorage.getItem('app_global_api_key') || '';
-        const res = await fetch('/api/siliconflow/v1/video/status', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({ requestId: videoTaskId })
-        });
-        if (!res.ok) throw new Error("Status query failed");
-        const data = await res.json();
-        
-        const status = data.status || data.data?.status;
-        const url = data.videoUrl || data.data?.videoUrl;
-        
-        if (!active) return;
-        
-        if (status === 'Success' && url) {
-          setGeneratedVideoUrl(url);
-          setVideoTaskStatus('success');
-          setVideoProgressMsg('Video generated successfully!');
-        } else if (status === 'Failed') {
-          setVideoTaskStatus('failed');
-          setVideoProgressMsg(data.reason || data.data?.reason || 'Video generation failed.');
-        } else {
-          setVideoProgressMsg(`Processing... status: ${status || 'In Progress'}`);
-        }
-      } catch (e) {
-        console.error("Video status polling failed:", e);
-      }
-    };
-    
-    const interval = setInterval(checkStatus, 5000);
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, [videoTaskId, videoTaskStatus]);
-
-  // Cosine Similarity
-  const cosineSimilarity = (vecA: number[], vecB: number[]) => {
-    let dotProduct = 0.0;
-    let normA = 0.0;
-    let normB = 0.0;
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
-    }
-    if (normA === 0 || normB === 0) return 0;
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  };
-
-  // Vector Indexing & RAG
-  const buildEmbeddingIndex = async () => {
-    const apiKey = localStorage.getItem('app_global_api_key') || '';
-    if (!apiKey) {
-      alert("API Key is missing. Add it in settings.");
-      return;
-    }
-    setIsSyncingEmbeddings(true);
-    try {
-      let notes: any[] = [];
-      const kv = (window as any).__apptify_knowledgevault;
-      
-      if (kv && kv.vaultPath) {
-        const res = await fetch('/api/obsidian/notes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vaultPath: kv.vaultPath })
-        });
-        const data = await res.json();
-        if (res.ok && data.notes) {
-          notes = data.notes;
-        }
-      } else {
-        notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-      }
-      
-      if (notes.length === 0) {
-        alert("No notes found in Knowledge Vault to index.");
-        setIsSyncingEmbeddings(false);
-        return;
-      }
-
-      const indexed: Record<string, { title: string; content: string; embedding: number[] }> = {};
-      
-      for (let i = 0; i < notes.length; i++) {
-        const note = notes[i];
-        const textToEmbed = `Title: ${note.title || ''}\nContent: ${note.content || ''}`;
-        
-        const vectors = await aiService.embeddings(activeProvider, activeModel, apiKey, textToEmbed);
-        if (vectors && vectors[0]) {
-          indexed[note.id] = {
-            title: note.title,
-            content: note.content,
-            embedding: vectors[0]
-          };
-        }
-      }
-      
-      localStorage.setItem('app_notes_embeddings', JSON.stringify(indexed));
-      alert(`Indexed ${Object.keys(indexed).length} notes successfully.`);
-    } catch (e: any) {
-      console.error(e);
-      alert("Failed to build index: " + e.message);
-    } finally {
-      setIsSyncingEmbeddings(false);
-    }
-  };
-
-  const semanticSearchVault = async () => {
-    if (!embeddingQuery.trim()) return;
-    const apiKey = localStorage.getItem('app_global_api_key') || '';
-    if (!apiKey) return;
-    
-    setIsGeneratingRag(true);
-    setRagAnswer('');
-    try {
-      const indexedStr = localStorage.getItem('app_notes_embeddings');
-      if (!indexedStr) {
-        alert("Build note vector index first.");
-        setIsGeneratingRag(false);
-        return;
-      }
-      
-      const indexed = JSON.parse(indexedStr);
-      const queryVector = await aiService.embeddings(activeProvider, activeModel, apiKey, embeddingQuery);
-      if (!queryVector || !queryVector[0]) {
-        throw new Error("Failed to embed query.");
-      }
-      
-      const scored = Object.keys(indexed).map(id => {
-        const note = indexed[id];
-        const score = cosineSimilarity(queryVector[0], note.embedding);
-        return { note, score };
-      });
-      
-      const matches = scored
-        .filter(item => item.score > 0.1)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3);
-      
-      setEmbeddingResults(matches);
-
-      if (matches.length > 0) {
-        let context = "";
-        matches.forEach(item => {
-          context += `Note: ${item.note.title}\nContent: ${item.note.content}\n\n`;
-        });
-        
-        const systemPrompt = `You are a RAG assistant. Answer the question based on the provided context notes from their Second Brain vault. Cite the note titles.`;
-        const prompt = `Context Notes:\n${context}\nQuestion: ${embeddingQuery}`;
-        
-        let chatModel = activeModel;
-        let chatProvider = activeProvider;
-        if (activeModel.includes('embedding')) {
-          chatModel = 'gemini-2.5-flash';
-          chatProvider = 'google';
-        }
-        const fallbackKey = localStorage.getItem('app_api_key_' + chatProvider) || apiKey;
-        
-        const answer = await aiService.generate(chatProvider, chatModel, fallbackKey, prompt, systemPrompt);
-        setRagAnswer(answer);
-      } else {
-        setRagAnswer("No relevant notes match your query.");
-      }
-    } catch (e: any) {
-      console.error(e);
-      alert("RAG query failed: " + e.message);
-    } finally {
-      setIsGeneratingRag(false);
-    }
-  };
-
-  // Image attach handlers
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Audio recording handlers
-  const transcribeAudio = async (audioBlob: Blob) => {
-    setIsTranscribing(true);
-    setTranscriptionResult('Transcribing audio speech...');
-    try {
-      const apiKey = localStorage.getItem('app_global_api_key') || '';
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'speech.mp3');
-      formData.append('model', activeModel);
-
-      const res = await fetch('/api/siliconflow/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: formData
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Transcription API error");
-      }
-      const data = await res.json();
-      const textResult = data.text || '';
-      setTranscriptionResult(textResult);
-      if (textResult.trim()) {
-        setInputText(textResult);
-      }
-    } catch (e: any) {
-      console.error(e);
-      setTranscriptionResult(`Transcription error: ${e.message}`);
-    } finally {
-      setIsTranscribing(false);
-    }
-  };
-
-  const startAudioRecording = async () => {
-    audioChunksRef.current = [];
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-      recorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
-        transcribeAudio(audioBlob);
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecordingAudio(true);
-    } catch (err) {
-      console.error("Recording start error", err);
-      alert("Microphone connection failed. Check permissions.");
-    }
-  };
-
-  const stopAudioRecording = () => {
-    if (mediaRecorderRef.current && isRecordingAudio) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      setIsRecordingAudio(false);
-    }
-  };
-
-  // Generation triggers
-  const triggerImageGeneration = async () => {
-    if (!imagePrompt.trim()) return;
-    const apiKey = localStorage.getItem('app_global_api_key') || '';
-    if (!apiKey) {
-      alert("Add API Key in Settings.");
-      return;
-    }
-    setIsGeneratingImage(true);
-    try {
-      const urls = await aiService.image(activeProvider, activeModel, apiKey, imagePrompt, { image_size: imageSize });
-      if (urls && urls.length > 0) {
-        setGeneratedImages(prev => [urls[0], ...prev]);
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: 'user',
-          content: `Generate image: "${imagePrompt}"`
-        }, {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Generated image successfully for prompt: "${imagePrompt}"`,
-          images: [urls[0]]
-        }]);
-      }
-    } catch (e: any) {
-      console.error(e);
-      alert("Image Generation failed: " + e.message);
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
-
-  const triggerVideoGeneration = async () => {
-    if (!videoPrompt.trim()) return;
-    const apiKey = localStorage.getItem('app_global_api_key') || '';
-    if (!apiKey) {
-      alert("Add API Key in Settings.");
-      return;
-    }
-    setGeneratedVideoUrl('');
-    setVideoTaskStatus('processing');
-    setVideoProgressMsg('Submitting video task to SiliconFlow...');
-    try {
-      const id = await aiService.video(activeProvider, activeModel, apiKey, videoPrompt, { image_size: videoSize });
-      setVideoTaskId(id);
-    } catch (e: any) {
-      console.error(e);
-      setVideoTaskStatus('failed');
-      setVideoProgressMsg(`Video Generation submission failed: ${e.message}`);
-    }
-  };
-
-  const triggerSpeechGeneration = async () => {
-    if (!ttsText.trim()) return;
-    const apiKey = localStorage.getItem('app_global_api_key') || '';
-    if (!apiKey) {
-      alert("Add API Key in Settings.");
-      return;
-    }
-    setIsGeneratingTts(true);
-    setGeneratedSpeechUrl('');
-    try {
-      const audioUrl = await aiService.audio(activeProvider, activeModel, apiKey, ttsText, { voice: ttsVoice });
-      setGeneratedSpeechUrl(audioUrl);
-    } catch (e: any) {
-      console.error(e);
-      alert("Speech synthesis failed: " + e.message);
-    } finally {
-      setIsGeneratingTts(false);
-    }
-  };
-
-  // Scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOpen, isProcessing]);
-
-  // Speech Recognition Setup
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText(transcript);
-        handleSend(transcript);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error", event.error);
-        setIsListening(false);
-      };
-    }
-  }, []);
-
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      alert("Voice recognition is not supported in this browser.");
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      recognitionRef.current.start();
-      setIsListening(true);
-    }
-  };
-
-  // --- Cloud Sync Helpers ---
+  // Cloud Sync Helper for MyWealth
   const syncMyWealthToCloud = async (dataToSave: any) => {
-    if (!user) return;
+    if (!session || !user) return;
     try {
       const { data: existing } = await supabase.from('user_data').select('id, data').eq('user_id', user.id).single();
       let finalData = existing?.data || {};
       finalData.mywealth = dataToSave;
+
       if (existing?.id) {
-        await supabase.from('user_data').update({ data: finalData, updated_at: new Date().toISOString() }).eq('user_id', user.id);
+        await supabase.from('user_data').update({
+          data: finalData,
+          updated_at: new Date().toISOString()
+        }).eq('user_id', user.id);
       } else {
-        await supabase.from('user_data').insert({ user_id: user.id, data: finalData, updated_at: new Date().toISOString() });
+        await supabase.from('user_data').insert({
+          user_id: user.id,
+          data: finalData,
+          updated_at: new Date().toISOString()
+        });
       }
     } catch (e) {
-      console.error("AskApptify: MyWealth cloud sync failed", e);
+      console.warn("AskApptify: Background cloud sync failed", e);
     }
   };
 
-  const syncGetNoteToCloud = async (notes: any[], todos: any[]) => {
-    if (!user) return;
+  // Helper to load MyWealth data safely
+  const loadMyWealthData = () => {
+    const raw = localStorage.getItem('mw_data_main');
+    if (!raw) {
+      return {
+        accounts: [
+          { id: '1', name: 'Cash', balance: 500, history: [] },
+          { id: '2', name: 'Maybank', balance: 3500, history: [] }
+        ],
+        monthlyData: { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) },
+        fixedExpenses: [],
+        loans: [],
+        stocks: [],
+        cash: { myr: 0, usd: 0, hkd: 0 },
+        exchangeRate: 4.5,
+        budgetHistory: []
+      };
+    }
     try {
-      const { data: existing } = await supabase.from('user_data').select('id, data').eq('user_id', user.id).single();
-      let finalData = existing?.data || {};
-      finalData.getnote = { notes, todos, lastUpdated: new Date().toISOString() };
-      if (existing?.id) {
-        await supabase.from('user_data').update({ data: finalData, updated_at: new Date().toISOString() }).eq('user_id', user.id);
-      } else {
-        await supabase.from('user_data').insert({ user_id: user.id, data: finalData, updated_at: new Date().toISOString() });
-      }
-    } catch (e) {
-      console.error("AskApptify: GetNote cloud sync failed", e);
+      const parsed = JSON.parse(raw);
+      return {
+        accounts: parsed.accounts || [],
+        monthlyData: parsed.monthlyData || { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) },
+        fixedExpenses: parsed.fixedExpenses || [],
+        loans: parsed.loans || [],
+        stocks: parsed.stocks || [],
+        cash: parsed.cash || { myr: 0, usd: 0, hkd: 0 },
+        exchangeRate: parsed.exchangeRate || 4.5,
+        budgetHistory: parsed.budgetHistory || []
+      };
+    } catch {
+      return {
+        accounts: [],
+        monthlyData: { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) },
+        fixedExpenses: [],
+        loans: [],
+        stocks: [],
+        cash: { myr: 0, usd: 0, hkd: 0 },
+        exchangeRate: 4.5,
+        budgetHistory: []
+      };
     }
   };
 
-  // --- State Execution Action ---
-  const executeAction = async (intent: string, data: any): Promise<string> => {
-    const mw = (window as any).__apptify_mywealth;
-    const kv = (window as any).__apptify_knowledgevault;
+  // Helper to save MyWealth data
+  const saveMyWealthData = async (mwData: any) => {
+    const toSave = { ...mwData, lastUpdated: new Date().toISOString() };
+    localStorage.setItem('mw_data_main', JSON.stringify(toSave));
+    window.dispatchEvent(new Event('apptify_data_changed'));
+    await syncMyWealthToCloud(toSave);
+  };
 
-    // 1. NAVIGATE
-    if (intent === 'NAVIGATE') {
-      let target = data.target?.toLowerCase() || '';
-      if (target === 'getnote' || target === 'notes' || target === 'notebook' || target === 'secondbrain') {
-        target = 'knowledgevault';
-      }
-
-      const mwTabMap: any = { wallet: 'accounts', budget: 'budget', loan: 'loans', portfolio: 'investments', overview: 'dashboard' };
-      const kvTabMap: any = { note: 'notes', notes: 'notes', video: 'video', videosummary: 'video', todo: 'todo', todos: 'todo', task: 'todo', tasks: 'todo', focus: 'focus' };
-      
-      if (['mywealth', 'knowledgevault', 'settings', 'autocount', 'newshub', 'launcher'].includes(target)) {
-        setCurrentApp(target === 'launcher' ? 'launcher' : (target as any));
-        return `Navigated to ${data.target}.`;
-      } else if (mwTabMap[target]) {
-        setCurrentApp('mywealth');
-        setTimeout(() => {
-          const freshMw = (window as any).__apptify_mywealth;
-          if (freshMw) {
-            freshMw.setActiveTab(mwTabMap[target]);
-          }
-        }, 150);
-        return `Navigated My Wealth to ${data.target}.`;
-      } else if (kvTabMap[target]) {
-        setCurrentApp('knowledgevault');
-        setTimeout(() => {
-          const freshKv = (window as any).__apptify_knowledgevault;
-          if (freshKv) {
-            freshKv.setActiveTab(kvTabMap[target]);
-          }
-        }, 150);
-        return `Navigated Knowledge Vault to ${data.target}.`;
-      }
-      return `Target ${data.target} not recognized.`;
+  // Helper to load Knowledge Vault notes
+  const loadNotes = (): any[] => {
+    try {
+      return JSON.parse(localStorage.getItem('apptify_notes') || '[]');
+    } catch {
+      return [];
     }
+  };
 
-    // 2a. ADD_MONEY
-    if (intent === 'ADD_MONEY') {
-      const { walletName, amount, description } = data;
-      const transactionAmt = Number(amount) || 0;
+  // Helper to save Knowledge Vault notes
+  const saveNotes = (notes: any[]) => {
+    localStorage.setItem('apptify_notes', JSON.stringify(notes));
+    window.dispatchEvent(new Event('apptify_data_changed'));
+  };
 
-      let accounts: Account[] = [];
-      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      let fixedExpenses: Expense[] = [];
-      let loans: Loan[] = [];
-      let stocks: Stock[] = [];
-      let cash = { myr: 0, usd: 0, hkd: 0 };
-      let exchangeRate = 4.50;
-      let budgetHistory: any[] = [];
-
-      if (mw) {
-        accounts = [...mw.accounts];
-        monthlyData = { ...mw.monthlyData };
-        fixedExpenses = [...mw.fixedExpenses];
-        loans = [...mw.loans];
-        stocks = [...mw.stocks];
-        cash = { ...mw.cash };
-        exchangeRate = mw.exchangeRate;
-        budgetHistory = [...mw.budgetHistory];
-      } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          const parsed = JSON.parse(savedMW);
-          accounts = parsed.accounts || [];
-          monthlyData = parsed.monthlyData || monthlyData;
-          fixedExpenses = parsed.fixedExpenses || [];
-          loans = parsed.loans || [];
-          stocks = parsed.stocks || [];
-          cash = parsed.cash || cash;
-          exchangeRate = parsed.exchangeRate || exchangeRate;
-          budgetHistory = parsed.budgetHistory || [];
-        }
-      }
-
-      const targetAcc = accounts.find(a => a.name.toLowerCase() === walletName?.toLowerCase() || a.name.toLowerCase().includes(walletName?.toLowerCase()));
-      if (!targetAcc) throw new Error(`Wallet "${walletName}" not found.`);
-
-      const newTx = {
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        type: 'IN' as const,
-        amount: transactionAmt,
-        description: description || 'Deposit'
-      };
-
-      targetAcc.balance += transactionAmt;
-      targetAcc.history = [newTx, ...targetAcc.history];
-
-      // Save My Wealth state
-      if (mw) {
-        mw.setAccounts(accounts);
-      } else {
-        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
-        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
-        await syncMyWealthToCloud(dataToSave);
-      }
-
-      return `Deposited RM${transactionAmt} into ${targetAcc.name} Wallet.`;
+  // Helper to load Knowledge Vault tasks
+  const loadTasks = (): any[] => {
+    try {
+      return JSON.parse(localStorage.getItem('apptify_tasks') || '[]');
+    } catch {
+      return [];
     }
+  };
 
-    // 2b. WITHDRAW_MONEY
-    if (intent === 'WITHDRAW_MONEY') {
-      const { walletName, amount, description, category } = data;
-      const transactionAmt = Number(amount) || 0;
+  // Helper to save Knowledge Vault tasks
+  const saveTasks = (tasks: any[]) => {
+    localStorage.setItem('apptify_tasks', JSON.stringify(tasks));
+    window.dispatchEvent(new Event('apptify_data_changed'));
+  };
 
-      let accounts: Account[] = [];
-      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      let fixedExpenses: Expense[] = [];
-      let loans: Loan[] = [];
-      let stocks: Stock[] = [];
-      let cash = { myr: 0, usd: 0, hkd: 0 };
-      let exchangeRate = 4.50;
-      let budgetHistory: any[] = [];
+  // Core Action Execution Engine: Directly updates app data!
+  const executeAction = async (intent: string, data: any): Promise<{ message: string; result?: Message['actionResult'] }> => {
+    // 1. RECORD EXPENSE / WITHDRAW MONEY
+    if (intent === 'WITHDRAW_MONEY' || intent === 'RECORD_EXPENSE') {
+      const mwData = loadMyWealthData();
+      const amount = Number(data.amount) || 0;
+      if (amount <= 0) throw new Error("支出金额必须大于 0");
 
-      if (mw) {
-        accounts = [...mw.accounts];
-        monthlyData = { ...mw.monthlyData };
-        fixedExpenses = [...mw.fixedExpenses];
-        loans = [...mw.loans];
-        stocks = [...mw.stocks];
-        cash = { ...mw.cash };
-        exchangeRate = mw.exchangeRate;
-        budgetHistory = [...mw.budgetHistory];
-      } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          const parsed = JSON.parse(savedMW);
-          accounts = parsed.accounts || [];
-          monthlyData = parsed.monthlyData || monthlyData;
-          fixedExpenses = parsed.fixedExpenses || [];
-          loans = parsed.loans || [];
-          stocks = parsed.stocks || [];
-          cash = parsed.cash || cash;
-          exchangeRate = parsed.exchangeRate || exchangeRate;
-          budgetHistory = parsed.budgetHistory || [];
-        }
+      const category = data.category || 'Food';
+      const desc = data.description || '日常消费';
+      const walletName = data.walletName || '';
+
+      // Find matching wallet
+      let targetAcc = mwData.accounts.find((a: any) => 
+        walletName ? a.name.toLowerCase().includes(walletName.toLowerCase()) : false
+      );
+      if (!targetAcc && mwData.accounts.length > 0) {
+        // Default to Cash, or first wallet
+        targetAcc = mwData.accounts.find((a: any) => a.name.toLowerCase().includes('cash')) || mwData.accounts[0];
       }
 
-      const targetAcc = accounts.find(a => a.name.toLowerCase() === walletName?.toLowerCase() || a.name.toLowerCase().includes(walletName?.toLowerCase()));
-      if (!targetAcc) throw new Error(`Wallet "${walletName}" not found.`);
-
-      const newTx = {
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        type: 'OUT' as const,
-        amount: transactionAmt,
-        description: description || 'Withdrawal'
-      };
-
-      targetAcc.balance -= transactionAmt;
-      targetAcc.history = [newTx, ...targetAcc.history];
-
-      // Cross-Module: Update Budget Planner if expense
-      const newExpense = {
-        id: (Date.now() + 1).toString(),
-        name: description || 'Withdrawal Expense',
-        amount: transactionAmt,
-        category: category || 'Other',
-        isFixed: false
-      };
-      monthlyData.expenses = [newExpense, ...monthlyData.expenses];
-
-      // Save My Wealth state
-      if (mw) {
-        mw.setAccounts(accounts);
-        mw.setMonthlyData(monthlyData);
-      } else {
-        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
-        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
-        await syncMyWealthToCloud(dataToSave);
-      }
-
-      return `Withdrew RM${transactionAmt} from ${targetAcc.name} Wallet. Recorded as expense.`;
-    }
-
-    // 2c. TRANSFER_MONEY
-    if (intent === 'TRANSFER_MONEY') {
-      const { sourceWallet, destinationWallet, amount, description } = data;
-      const transactionAmt = Number(amount) || 0;
-
-      let accounts: Account[] = [];
-      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      let fixedExpenses: Expense[] = [];
-      let loans: Loan[] = [];
-      let stocks: Stock[] = [];
-      let cash = { myr: 0, usd: 0, hkd: 0 };
-      let exchangeRate = 4.50;
-      let budgetHistory: any[] = [];
-
-      if (mw) {
-        accounts = [...mw.accounts];
-        monthlyData = { ...mw.monthlyData };
-        fixedExpenses = [...mw.fixedExpenses];
-        loans = [...mw.loans];
-        stocks = [...mw.stocks];
-        cash = { ...mw.cash };
-        exchangeRate = mw.exchangeRate;
-        budgetHistory = [...mw.budgetHistory];
-      } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          const parsed = JSON.parse(savedMW);
-          accounts = parsed.accounts || [];
-          monthlyData = parsed.monthlyData || monthlyData;
-          fixedExpenses = parsed.fixedExpenses || [];
-          loans = parsed.loans || [];
-          stocks = parsed.stocks || [];
-          cash = parsed.cash || cash;
-          exchangeRate = parsed.exchangeRate || exchangeRate;
-          budgetHistory = parsed.budgetHistory || [];
-        }
-      }
-
-      const sourceAcc = accounts.find(a => a.name.toLowerCase() === sourceWallet?.toLowerCase() || a.name.toLowerCase().includes(sourceWallet?.toLowerCase()));
-      const destAcc = accounts.find(a => a.name.toLowerCase() === destinationWallet?.toLowerCase() || a.name.toLowerCase().includes(destinationWallet?.toLowerCase()));
-
-      if (!sourceAcc) throw new Error(`Source wallet "${sourceWallet}" not found.`);
-      if (!destAcc) throw new Error(`Destination wallet "${destinationWallet}" not found.`);
-
-      const outTx = {
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        type: 'OUT' as const,
-        amount: transactionAmt,
-        description: description || `Transfer to ${destAcc.name}`
-      };
-
-      const inTx = {
-        id: (Date.now() + 1).toString(),
-        date: new Date().toISOString(),
-        type: 'IN' as const,
-        amount: transactionAmt,
-        description: description || `Transfer from ${sourceAcc.name}`
-      };
-
-      sourceAcc.balance -= transactionAmt;
-      sourceAcc.history = [outTx, ...sourceAcc.history];
-
-      destAcc.balance += transactionAmt;
-      destAcc.history = [inTx, ...destAcc.history];
-
-      // Save My Wealth state
-      if (mw) {
-        mw.setAccounts(accounts);
-      } else {
-        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
-        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
-        await syncMyWealthToCloud(dataToSave);
-      }
-
-      return `Transferred RM${transactionAmt} from ${sourceAcc.name} to ${destAcc.name}.`;
-    }
-
-    // 3. ADD_BUDGET
-    if (intent === 'ADD_BUDGET') {
-      const { name, amount, category, isFixed } = data;
-      const budgetAmt = Number(amount) || 0;
-
-      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      let fixedExpenses: Expense[] = [];
-      let accounts: Account[] = [];
-      let loans: Loan[] = [];
-      let stocks: Stock[] = [];
-      let cash = { myr: 0, usd: 0, hkd: 0 };
-      let exchangeRate = 4.50;
-      let budgetHistory: any[] = [];
-
-      if (mw) {
-        monthlyData = { ...mw.monthlyData };
-        fixedExpenses = [...mw.fixedExpenses];
-      } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          const parsed = JSON.parse(savedMW);
-          accounts = parsed.accounts || [];
-          monthlyData = parsed.monthlyData || monthlyData;
-          fixedExpenses = parsed.fixedExpenses || [];
-          loans = parsed.loans || [];
-          stocks = parsed.stocks || [];
-          cash = parsed.cash || cash;
-          exchangeRate = parsed.exchangeRate || exchangeRate;
-          budgetHistory = parsed.budgetHistory || [];
-        }
-      }
-
-      const newExpense = {
-        id: Date.now().toString(),
-        name: name || 'Budget Allocation',
-        amount: budgetAmt,
-        category: category || 'Other',
-        isFixed: !!isFixed
-      };
-
-      if (isFixed) {
-        fixedExpenses = [newExpense, ...fixedExpenses];
-      } else {
-        monthlyData.expenses = [newExpense, ...monthlyData.expenses];
-      }
-
-      if (mw) {
-        if (isFixed) mw.setFixedExpenses(fixedExpenses);
-        else mw.setMonthlyData(monthlyData);
-      } else {
-        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
-        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
-        await syncMyWealthToCloud(dataToSave);
-      }
-
-      return `Added ${isFixed ? 'Fixed' : 'Variable'} budget allocation: ${name} (RM${budgetAmt}) under ${category || 'Other'}.`;
-    }
-
-    // 4. ADD_LOAN
-    if (intent === 'ADD_LOAN') {
-      const { name, totalAmount, monthlyPayment } = data;
-      const total = Number(totalAmount) || 0;
-      const pay = Number(monthlyPayment) || 0;
-
-      let loans: Loan[] = [];
-      let accounts: Account[] = [];
-      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      let fixedExpenses: Expense[] = [];
-      let stocks: Stock[] = [];
-      let cash = { myr: 0, usd: 0, hkd: 0 };
-      let exchangeRate = 4.50;
-      let budgetHistory: any[] = [];
-
-      if (mw) {
-        loans = [...mw.loans];
-      } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          const parsed = JSON.parse(savedMW);
-          accounts = parsed.accounts || [];
-          monthlyData = parsed.monthlyData || monthlyData;
-          fixedExpenses = parsed.fixedExpenses || [];
-          loans = parsed.loans || [];
-          stocks = parsed.stocks || [];
-          cash = parsed.cash || cash;
-          exchangeRate = parsed.exchangeRate || exchangeRate;
-          budgetHistory = parsed.budgetHistory || [];
-        }
-      }
-
-      const newLoan = {
-        id: Date.now().toString(),
-        name: name || 'New Loan',
-        totalAmount: total,
-        monthlyPayment: pay,
-        remainingAmount: total,
-        remainingMonths: pay > 0 ? Math.ceil(total / pay) : 0
-      };
-
-      loans = [newLoan, ...loans];
-
-      if (mw) {
-        mw.setLoans(loans);
-      } else {
-        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
-        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
-        await syncMyWealthToCloud(dataToSave);
-      }
-
-      return `Added loan: ${name} (Principal: RM${total}).`;
-    }
-
-    // 5. REPAY_LOAN
-    if (intent === 'REPAY_LOAN') {
-      const { loanName, amount, accountName } = data;
-      const repayAmt = Number(amount) || 0;
-
-      let loans: Loan[] = [];
-      let accounts: Account[] = [];
-      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      let fixedExpenses: Expense[] = [];
-      let stocks: Stock[] = [];
-      let cash = { myr: 0, usd: 0, hkd: 0 };
-      let exchangeRate = 4.50;
-      let budgetHistory: any[] = [];
-
-      if (mw) {
-        loans = [...mw.loans];
-        accounts = [...mw.accounts];
-        monthlyData = { ...mw.monthlyData };
-      } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          const parsed = JSON.parse(savedMW);
-          accounts = parsed.accounts || [];
-          monthlyData = parsed.monthlyData || monthlyData;
-          fixedExpenses = parsed.fixedExpenses || [];
-          loans = parsed.loans || [];
-          stocks = parsed.stocks || [];
-          cash = parsed.cash || cash;
-          exchangeRate = parsed.exchangeRate || exchangeRate;
-          budgetHistory = parsed.budgetHistory || [];
-        }
-      }
-
-      const loan = loans.find(l => l.name.toLowerCase().includes(loanName?.toLowerCase() || ''));
-      if (!loan) return `I couldn't find a loan named "${loanName}".`;
-
-      loan.remainingAmount = Math.max(0, loan.remainingAmount - repayAmt);
-      loan.remainingMonths = loan.monthlyPayment > 0 ? Math.ceil(loan.remainingAmount / loan.monthlyPayment) : 0;
-
-      // Add OUT transaction to wallet
-      let targetAcc = accounts.find(a => a.name.toLowerCase().includes(accountName?.toLowerCase() || ''));
-      if (!targetAcc && accounts.length > 0) targetAcc = accounts[0];
       if (targetAcc) {
-        targetAcc.balance -= repayAmt;
-        const newTx = {
-          id: Date.now().toString(),
-          date: new Date().toISOString(),
-          type: 'OUT' as const,
-          amount: repayAmt,
-          description: `Repayment for ${loan.name}`
-        };
-        targetAcc.history = [newTx, ...targetAcc.history];
+        targetAcc.balance -= amount;
+        targetAcc.history = [
+          {
+            id: Date.now().toString(),
+            date: new Date().toISOString(),
+            type: 'OUT',
+            amount: amount,
+            description: desc
+          },
+          ...targetAcc.history
+        ];
       }
 
-      // Add to variable expenses
-      const repaymentExpense = {
+      // Add to monthly variable expenses
+      const newExpense: Expense = {
         id: Date.now().toString(),
-        name: `Repayment: ${loan.name}`,
-        amount: repayAmt,
-        category: 'Loan',
+        name: desc,
+        amount: amount,
+        category: category as any,
         isFixed: false
       };
-      monthlyData.expenses = [repaymentExpense, ...monthlyData.expenses];
+      mwData.monthlyData.expenses = [newExpense, ...mwData.monthlyData.expenses];
 
-      if (mw) {
-        mw.setLoans(loans);
-        mw.setAccounts(accounts);
-        mw.setMonthlyData(monthlyData);
-      } else {
-        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
-        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
-        await syncMyWealthToCloud(dataToSave);
-      }
+      await saveMyWealthData(mwData);
 
-      return `Recorded RM${repayAmt} repayment for ${loan.name}. Remaining Balance: RM${loan.remainingAmount}.`;
+      return {
+        message: `已为你成功记录这笔支出！\n• 金额：**RM${amount.toFixed(2)}**\n• 类别：${category}\n• 支付钱包：${targetAcc ? targetAcc.name : '未指定'}${targetAcc ? `（当前余额：RM${targetAcc.balance.toFixed(2)}）` : ''}`,
+        result: {
+          type: 'finance',
+          title: '已记入 MyWealth 支出',
+          details: [
+            `金额: RM${amount.toFixed(2)}`,
+            `类别: ${category} · 描述: ${desc}`,
+            targetAcc ? `${targetAcc.name} 钱包扣除后余额: RM${targetAcc.balance.toFixed(2)}` : '未绑定特定钱包'
+          ],
+          badge: '记账完成'
+        }
+      };
     }
 
-    // 6. BUY_STOCK / SELL_STOCK
-    if (intent === 'BUY_STOCK' || intent === 'SELL_STOCK') {
-      const { symbol, name, quantity, price, currency } = data;
-      const qty = Number(quantity) || 0;
-      const prc = Number(price) || 0;
-      const curr = currency || 'MYR';
+    // 2. ADD MONEY / RECORD INCOME
+    if (intent === 'ADD_MONEY' || intent === 'RECORD_INCOME') {
+      const mwData = loadMyWealthData();
+      const amount = Number(data.amount) || 0;
+      if (amount <= 0) throw new Error("存入金额必须大于 0");
 
-      let stocks: Stock[] = [];
-      let cash = { myr: 0, usd: 0, hkd: 0 };
-      let accounts: Account[] = [];
-      let monthlyData: MonthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      let fixedExpenses: Expense[] = [];
-      let loans: Loan[] = [];
-      let exchangeRate = 4.50;
-      let budgetHistory: any[] = [];
+      const desc = data.description || '存入款项';
+      const walletName = data.walletName || '';
 
-      if (mw) {
-        stocks = [...mw.stocks];
-        cash = { ...mw.cash };
-      } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          const parsed = JSON.parse(savedMW);
-          accounts = parsed.accounts || [];
-          monthlyData = parsed.monthlyData || monthlyData;
-          fixedExpenses = parsed.fixedExpenses || [];
-          loans = parsed.loans || [];
-          stocks = parsed.stocks || [];
-          cash = parsed.cash || cash;
-          exchangeRate = parsed.exchangeRate || exchangeRate;
-          budgetHistory = parsed.budgetHistory || [];
-        }
+      let targetAcc = mwData.accounts.find((a: any) => 
+        walletName ? a.name.toLowerCase().includes(walletName.toLowerCase()) : false
+      );
+      if (!targetAcc && mwData.accounts.length > 0) {
+        targetAcc = mwData.accounts[0];
       }
 
-      const ticker = symbol?.toUpperCase() || '';
-      let existingStock = stocks.find(s => s.symbol === ticker);
-
-      if (intent === 'BUY_STOCK') {
-        const totalCost = qty * prc;
-        if (curr === 'USD') cash.usd -= totalCost;
-        else cash.myr -= totalCost;
-
-        if (existingStock) {
-          const totalOld = existingStock.quantity * existingStock.buyPrice;
-          const totalNew = qty * prc;
-          existingStock.quantity += qty;
-          existingStock.buyPrice = (totalOld + totalNew) / existingStock.quantity;
-          existingStock.currentPrice = prc;
-        } else {
-          stocks.push({
+      if (targetAcc) {
+        targetAcc.balance += amount;
+        targetAcc.history = [
+          {
             id: Date.now().toString(),
-            symbol: ticker,
-            name: name || ticker,
-            buyPrice: prc,
-            currentPrice: prc,
-            quantity: qty,
-            currency: curr as any
-          });
-        }
-      } else {
-        // SELL
-        if (!existingStock) return `You don't own stock ${ticker}.`;
-        if (existingStock.quantity < qty) return `Insufficient shares. You only own ${existingStock.quantity} shares of ${ticker}.`;
-
-        const totalProceeds = qty * prc;
-        if (curr === 'USD') cash.usd += totalProceeds;
-        else cash.myr += totalProceeds;
-
-        existingStock.quantity -= qty;
-        existingStock.currentPrice = prc;
-
-        if (existingStock.quantity <= 0) {
-          stocks = stocks.filter(s => s.symbol !== ticker);
-        }
+            date: new Date().toISOString(),
+            type: 'IN',
+            amount: amount,
+            description: desc
+          },
+          ...targetAcc.history
+        ];
       }
 
-      if (mw) {
-        mw.setStocks(stocks);
-        mw.setCash(cash);
-      } else {
-        const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: new Date().toISOString() };
-        localStorage.setItem('mw_data_main', JSON.stringify(dataToSave));
-        await syncMyWealthToCloud(dataToSave);
-      }
+      await saveMyWealthData(mwData);
 
-      return `${intent === 'BUY_STOCK' ? 'Bought' : 'Sold'} ${qty} shares of ${ticker} at $${prc}. Adjusted Cash Balance: ${curr === 'USD' ? 'USD ' + cash.usd : 'MYR ' + cash.myr}.`;
+      return {
+        message: `已成功为你存入钱包！\n• 存入金额：**RM${amount.toFixed(2)}**\n• 目标账户：${targetAcc ? targetAcc.name : '钱包'}\n• 最新余额：**RM${targetAcc ? targetAcc.balance.toFixed(2) : amount.toFixed(2)}**`,
+        result: {
+          type: 'finance',
+          title: '钱包入账成功',
+          details: [
+            `存入: RM${amount.toFixed(2)}`,
+            `账户: ${targetAcc ? targetAcc.name : '主账户'}`,
+            `当前最新余额: RM${targetAcc ? targetAcc.balance.toFixed(2) : amount.toFixed(2)}`
+          ],
+          badge: '已存入'
+        }
+      };
     }
 
-    // 7. CREATE_NOTE
-    if (intent === 'CREATE_NOTE') {
-      const { title, content, category, tags } = data;
-      let notes: any[] = [];
-      let todos: any[] = [];
+    // 3. TRANSFER MONEY
+    if (intent === 'TRANSFER_MONEY') {
+      const mwData = loadMyWealthData();
+      const amount = Number(data.amount) || 0;
+      if (amount <= 0) throw new Error("转账金额必须大于 0");
 
-      if (kv && kv.vaultPath) {
-        // Obsidian flow
-        const res = await fetch('/api/obsidian/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            vaultPath: kv.vaultPath,
-            title: title || 'New Note',
-            content: content || '',
-            category: category || 'General',
-            keywords: tags || [category || 'General'],
-            summary: (content || '').slice(0, 100),
-            date: new Date().toISOString()
-          })
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to create Obsidian note');
-        }
-        const resData = await res.json();
-        if (kv.setNotes) {
-          kv.setNotes((prev: any[]) => [resData.note, ...prev]);
-        }
-        return `Created Obsidian Note: "${resData.note.title}" under category "${resData.note.ai_category}".`;
-      } else {
-        // Standard flow
-        if (kv) {
-          notes = [...kv.notes];
-          todos = [...kv.todos];
-        } else {
-          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-          todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
-        }
+      const srcName = data.sourceWallet || '';
+      const dstName = data.destinationWallet || '';
 
-        const newNote = {
+      const srcAcc = mwData.accounts.find((a: any) => a.name.toLowerCase().includes(srcName.toLowerCase()));
+      const dstAcc = mwData.accounts.find((a: any) => a.name.toLowerCase().includes(dstName.toLowerCase()));
+
+      if (!srcAcc) throw new Error(`未找到源钱包 "${srcName}"，现有钱包: ${mwData.accounts.map((a: any) => a.name).join(', ')}`);
+      if (!dstAcc) throw new Error(`未找到目标钱包 "${dstName}"，现有钱包: ${mwData.accounts.map((a: any) => a.name).join(', ')}`);
+
+      srcAcc.balance -= amount;
+      srcAcc.history = [
+        {
           id: Date.now().toString(),
-          title: title || 'New Note',
-          content: content || '',
           date: new Date().toISOString(),
-          ai_category: category || 'General',
-          ai_processed: true,
-          ai_summary: (content || '').slice(0, 100),
-          ai_keywords: tags || [category || 'General']
-        };
+          type: 'OUT',
+          amount: amount,
+          description: `转账至 ${dstAcc.name}`
+        },
+        ...srcAcc.history
+      ];
 
-        notes = [newNote, ...notes];
+      dstAcc.balance += amount;
+      dstAcc.history = [
+        {
+          id: (Date.now() + 1).toString(),
+          date: new Date().toISOString(),
+          type: 'IN',
+          amount: amount,
+          description: `从 ${srcAcc.name} 转入`
+        },
+        ...dstAcc.history
+      ];
 
-        if (kv) {
-          kv.setNotes(notes);
-        } else {
-          localStorage.setItem('gn_notes', JSON.stringify(notes));
-          localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-          await syncGetNoteToCloud(notes, todos);
+      await saveMyWealthData(mwData);
+
+      return {
+        message: `转账成功！已从 **${srcAcc.name}** 转出 RM${amount.toFixed(2)} 到 **${dstAcc.name}**。`,
+        result: {
+          type: 'finance',
+          title: '内部钱包转账成功',
+          details: [
+            `转账金额: RM${amount.toFixed(2)}`,
+            `${srcAcc.name} 当前余额: RM${srcAcc.balance.toFixed(2)}`,
+            `${dstAcc.name} 当前余额: RM${dstAcc.balance.toFixed(2)}`
+          ],
+          badge: '划转完成'
         }
-
-        return `Created Note: "${newNote.title}" under category "${newNote.ai_category}".`;
-      }
+      };
     }
 
-    // 8. CREATE_TODO
-    if (intent === 'CREATE_TODO') {
-      const { title, priority, deadline } = data;
-      let notes: any[] = [];
-      let todos: any[] = [];
+    // 4. CREATE NOTE (Knowledge Vault)
+    if (intent === 'CREATE_NOTE') {
+      const title = data.title || '随手笔记';
+      const content = data.content || '';
+      const tag = data.category || data.tag || 'work';
 
-      if (kv) {
-        notes = [...kv.notes];
-        todos = [...kv.todos];
-      } else {
-        notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-        todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
-      }
-
-      const newTodo = {
+      const notes = loadNotes();
+      const newNote = {
         id: Date.now().toString(),
-        title: title || 'New Task',
-        priority: priority || 'T3',
-        deadline: deadline || undefined,
-        completed: false
+        title,
+        content,
+        tag: ['work', 'idea', 'meeting', 'life'].includes(tag.toLowerCase()) ? tag.toLowerCase() : 'work',
+        isPinned: false,
+        createdAt: new Date().toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       };
 
-      todos = [newTodo, ...todos];
+      notes.unshift(newNote);
+      saveNotes(notes);
 
-      if (kv) {
-        kv.setTodos(todos);
-      } else {
-        localStorage.setItem('gn_todos', JSON.stringify(todos));
-        localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-        await syncGetNoteToCloud(notes, todos);
-      }
-
-      return `Created Task: "${newTodo.title}" (Priority: ${newTodo.priority}).`;
+      return {
+        message: `已为你记录到 **Knowledge Vault 随手记**：\n• 标题：**${title}**\n• 分类：#${newNote.tag}\n• 内容摘要：${content.slice(0, 60)}${content.length > 60 ? '...' : ''}`,
+        result: {
+          type: 'note',
+          title: '笔记创建成功',
+          details: [
+            `标题: ${title}`,
+            `分类标签: #${newNote.tag}`,
+            `创建时间: ${newNote.createdAt}`
+          ],
+          badge: '已保存'
+        }
+      };
     }
 
-    // 9. UPDATE_TODO
-    if (intent === 'UPDATE_TODO') {
-      const { todoTitle, completed } = data;
-      let notes: any[] = [];
-      let todos: any[] = [];
+    // 5. CREATE TASK (Knowledge Vault)
+    if (intent === 'CREATE_TASK' || intent === 'CREATE_TODO') {
+      const title = data.title || '新待办任务';
+      const priority = (data.priority || 'medium').toLowerCase();
+      const dueDate = data.deadline || data.dueDate || '今天';
 
-      if (kv) {
-        notes = [...kv.notes];
-        todos = [...kv.todos];
-      } else {
-        notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-        todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
-      }
+      const tasks = loadTasks();
+      const newTask = {
+        id: Date.now().toString(),
+        title,
+        priority: ['high', 'medium', 'low'].includes(priority) ? priority : 'medium',
+        completed: false,
+        createdAt: new Date().toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
+        dueDate
+      };
 
-      const targetTask = todos.find(t => t.title.toLowerCase().includes(todoTitle?.toLowerCase() || ''));
-      if (!targetTask) return `I couldn't find a task named "${todoTitle}".`;
+      tasks.unshift(newTask);
+      saveTasks(tasks);
 
-      targetTask.completed = completed;
-      targetTask.completedAt = completed ? new Date().toISOString() : undefined;
-
-      if (kv) {
-        kv.setTodos([...todos]);
-      } else {
-        localStorage.setItem('gn_todos', JSON.stringify(todos));
-        localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-        await syncGetNoteToCloud(notes, todos);
-      }
-
-      return `Updated Task: "${targetTask.title}" marked as ${completed ? 'Completed' : 'Pending'}.`;
+      return {
+        message: `已为你添加到 **Knowledge Vault 待办清单**：\n• 任务：**${title}**\n• 优先级：${newTask.priority.toUpperCase()}\n• 截止提醒：${dueDate}`,
+        result: {
+          type: 'task',
+          title: '待办任务已添加',
+          details: [
+            `任务项: ${title}`,
+            `优先级: ${newTask.priority === 'high' ? '🔴 高优' : newTask.priority === 'low' ? '🟢 低优' : '🟡 中等'}`,
+            `截止提醒: ${dueDate}`
+          ],
+          badge: '任务就绪'
+        }
+      };
     }
 
-    // 10. DELETE_NOTE
-    if (intent === 'DELETE_NOTE') {
-      const { id, title } = data;
-      let notes: any[] = [];
-      let todos: any[] = [];
+    // 6. UPDATE TASK (Complete/Uncomplete)
+    if (intent === 'UPDATE_TASK' || intent === 'COMPLETE_TASK') {
+      const targetTitle = (data.taskTitle || data.title || '').toLowerCase();
+      const tasks = loadTasks();
+      const match = tasks.find(t => t.title.toLowerCase().includes(targetTitle));
 
-      if (kv && kv.vaultPath) {
-        // Obsidian flow
-        let noteToDelete = kv.notes.find((n: any) => n.id === id || n.title.toLowerCase() === title?.toLowerCase());
-        if (!noteToDelete) {
-          return `I couldn't find any note matching title "${title || id}".`;
-        }
-        const res = await fetch('/api/obsidian/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            vaultPath: kv.vaultPath,
-            id: noteToDelete.id
-          })
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to delete Obsidian note');
-        }
-        if (kv.setNotes) {
-          kv.setNotes((prev: any[]) => prev.filter(n => n.id !== noteToDelete.id));
-        }
-        return `Deleted Obsidian note: "${noteToDelete.title}".`;
-      } else {
-        // Standard flow
-        if (kv) {
-          notes = [...kv.notes];
-          todos = [...kv.todos];
-        } else {
-          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-          todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
-        }
+      if (!match) {
+        throw new Error(`未找到包含 "${data.taskTitle || data.title}" 的任务。当前待办：${tasks.map(t => t.title).join('、')}`);
+      }
 
-        const beforeLen = notes.length;
-        notes = notes.filter(n => n.id !== id && n.title.toLowerCase() !== title?.toLowerCase());
-        
-        if (notes.length === beforeLen) return `I couldn't find any note matching ID "${id}" or title "${title}".`;
+      match.completed = data.completed !== undefined ? Boolean(data.completed) : true;
+      saveTasks(tasks);
 
-        if (kv) {
-          kv.setNotes(notes);
-        } else {
-          localStorage.setItem('gn_notes', JSON.stringify(notes));
-          localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-          await syncGetNoteToCloud(notes, todos);
+      return {
+        message: `已将任务 **"${match.title}"** 状态更新为：${match.completed ? '✅ **已完成**' : '⏳ **待处理**'}！`,
+        result: {
+          type: 'task',
+          title: match.completed ? '待办任务已标记完成' : '待办任务已重新激活',
+          details: [`任务: ${match.title}`, `状态: ${match.completed ? '已达成' : '进行中'}`],
+          badge: match.completed ? '完成达成' : '已重置'
         }
+      };
+    }
 
-        return `Deleted note: "${title || id}".`;
+    // 7. QUERY WEALTH STATUS
+    if (intent === 'QUERY_WEALTH') {
+      const mwData = loadMyWealthData();
+      const totalCash = mwData.accounts.reduce((sum: number, a: any) => sum + (Number(a.balance) || 0), 0);
+      const totalLoan = mwData.loans.reduce((sum: number, l: any) => sum + (Number(l.remainingAmount) || 0), 0);
+      const netWorth = totalCash - totalLoan;
+      const totalMonthlyExpenses = mwData.monthlyData.expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+
+      const walletLines = mwData.accounts.map((a: any) => `• ${a.name}: RM${Number(a.balance).toFixed(2)}`).join('\n');
+
+      return {
+        message: `📊 **MyWealth 实时财务速报**：\n• **总净资产**：**RM${netWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n• 钱包总现金：RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 负债贷款：RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 本月累计支出：RM${totalMonthlyExpenses.toFixed(2)}\n\n**各钱包余额分布：**\n${walletLines}`,
+        result: {
+          type: 'wealth',
+          title: '实时财富资产快报',
+          details: [
+            `总净资产: RM${netWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `钱包总现金: RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `借贷负债: RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `本月支出: RM${totalMonthlyExpenses.toFixed(2)}`
+          ],
+          badge: '实时财务'
+        }
+      };
+    }
+
+    // 8. QUERY TASKS
+    if (intent === 'QUERY_TASKS') {
+      const tasks = loadTasks();
+      const pending = tasks.filter(t => !t.completed);
+      const done = tasks.filter(t => t.completed);
+
+      const lines = pending.length > 0 
+        ? pending.map((t, idx) => `${idx + 1}. [${t.priority.toUpperCase()}] ${t.title} (${t.dueDate || '待定'})`).join('\n')
+        : '暂无未完成待办事项，太棒了！';
+
+      return {
+        message: `📋 **Knowledge Vault 待办任务清单**：\n未完成 (${pending.length}) 项 / 已完成 (${done.length}) 项：\n\n${lines}`,
+        result: {
+          type: 'task',
+          title: `待办任务进度 (${pending.length} 待处理 / ${done.length} 已达成)`,
+          details: pending.slice(0, 4).map(t => `${t.priority === 'high' ? '🔴' : '🟡'} ${t.title}`),
+          badge: '待办汇总'
+        }
+      };
+    }
+
+    // 9. NAVIGATE MODULES
+    if (intent === 'NAVIGATE') {
+      const target = (data.target || '').toLowerCase();
+      if (['launcher', 'mywealth', 'knowledgevault', 'newshub', 'settings'].includes(target)) {
+        setCurrentApp(target === 'launcher' ? 'launcher' : (target as any));
+        return {
+          message: `已为你无缝切换至 **${target.toUpperCase()}** 模块。`,
+          result: {
+            type: 'nav',
+            title: '页面跳转',
+            details: [`已进入: ${target}`],
+            badge: '导航'
+          }
+        };
       }
     }
 
-    // 11. DELETE_TODO
-    if (intent === 'DELETE_TODO') {
-      const { id, title } = data;
-      let notes: any[] = [];
-      let todos: any[] = [];
-
-      if (kv) {
-        notes = [...kv.notes];
-        todos = [...kv.todos];
-      } else {
-        notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
-        todos = JSON.parse(localStorage.getItem('gn_todos') || '[]');
-      }
-
-      const beforeLen = todos.length;
-      todos = todos.filter(t => t.id !== id && t.title.toLowerCase() !== title?.toLowerCase());
-
-      if (todos.length === beforeLen) return `I couldn't find any task matching ID "${id}" or title "${title}".`;
-
-      if (kv) {
-        kv.setTodos(todos);
-      } else {
-        localStorage.setItem('gn_todos', JSON.stringify(todos));
-        localStorage.setItem('gn_meta', JSON.stringify({ lastUpdated: new Date().toISOString() }));
-        await syncGetNoteToCloud(notes, todos);
-      }
-
-      return `Deleted task: "${title || id}".`;
-    }
-
-    return `Action not executed. Intent not recognized.`;
+    return { message: "命令已处理。" };
   };
 
-  const handleSend = async (text: string = inputText) => {
-    if (!text.trim() || isProcessing) return;
+  // Smart Offline/Rule-based Command Parser (Zero-latency direct execution)
+  const tryLocalRuleParser = (text: string): ActionPayload | null => {
+    const trimmed = text.trim();
 
-    // Add user message with image attachments if present
-    const userMsgId = Date.now().toString();
-    const imagesToSend = attachedImage ? [attachedImage] : undefined;
-    const userMsg: Message = { id: userMsgId, role: 'user', content: text, images: imagesToSend };
+    // 1. 记账 / 支出：记一笔晚餐 35 / 消费 20 咖啡 / 记录支出 50
+    // Examples: "记一笔晚餐 35", "支出 50 买菜", "用Cash支付 30 午餐", "花了 45", "record expense 25 lunch"
+    const expenseRegex = /(?:记一笔|记录支出|记账|花费|支出|花了|消费|买|用)\s*([^\d\s]+)?\s*(\d+(?:\.\d+)?)\s*(?:元|块|rm)?\s*(?:在|买|为|做|于|用)?\s*(.*)/i;
+    const expenseMatch = trimmed.match(expenseRegex);
+    if (expenseMatch) {
+      const rawCategoryOrItem = expenseMatch[1] || '';
+      const amount = parseFloat(expenseMatch[2]);
+      const rest = expenseMatch[3] || '';
+      let desc = (rawCategoryOrItem + ' ' + rest).trim() || '日常消费';
+      
+      // Infer category
+      let category = 'Food';
+      if (/车|汽油|打车|地铁|交通|bus|grab|petrol/i.test(desc)) category = 'Transport';
+      else if (/水费|电费|网费|房租|话费|utility|rent/i.test(desc)) category = 'Utilities';
+      else if (/玩|电影|游戏|娱乐|game|movie/i.test(desc)) category = 'Entertainment';
+      else if (/衣服|购物|买东西|淘宝|shopee/i.test(desc)) category = 'Shopping';
+      else if (/药|医院|看病|体检|health/i.test(desc)) category = 'Health';
+
+      // Infer wallet
+      let walletName = '';
+      if (/cash|现金/i.test(desc) || /cash|现金/i.test(trimmed)) walletName = 'Cash';
+      else if (/maybank/i.test(desc) || /maybank/i.test(trimmed)) walletName = 'Maybank';
+      else if (/cimb/i.test(desc) || /cimb/i.test(trimmed)) walletName = 'CIMB';
+
+      return {
+        intent: 'WITHDRAW_MONEY',
+        data: { amount, description: desc, category, walletName }
+      };
+    }
+
+    // 2. 存入 / 入账：存入 500 到 Maybank / 收入 3000
+    const incomeRegex = /(?:存入|进账|收入|充值|入账)\s*(\d+(?:\.\d+)?)\s*(?:元|块|rm)?\s*(?:到|至|在)?\s*(.*)/i;
+    const incomeMatch = trimmed.match(incomeRegex);
+    if (incomeMatch) {
+      const amount = parseFloat(incomeMatch[1]);
+      const target = incomeMatch[2].trim();
+      let walletName = '';
+      if (/maybank/i.test(target)) walletName = 'Maybank';
+      else if (/cimb/i.test(target)) walletName = 'CIMB';
+      else if (/cash|现金/i.test(target)) walletName = 'Cash';
+
+      return {
+        intent: 'ADD_MONEY',
+        data: { amount, description: target ? `存入 ${target}` : '充值入账', walletName }
+      };
+    }
+
+    // 3. 转账：从 Maybank 转账 200 到 Cash
+    const transferRegex = /(?:从)?\s*([a-zA-Z0-9_\u4e00-\u9fa5]+)\s*(?:转账|转)?\s*(\d+(?:\.\d+)?)\s*(?:元|块|rm)?\s*(?:到|至)\s*([a-zA-Z0-9_\u4e00-\u9fa5]+)/i;
+    const transferMatch = trimmed.match(transferRegex);
+    if (transferMatch) {
+      const sourceWallet = transferMatch[1].trim();
+      const amount = parseFloat(transferMatch[2]);
+      const destinationWallet = transferMatch[3].trim();
+      return {
+        intent: 'TRANSFER_MONEY',
+        data: { sourceWallet, destinationWallet, amount, description: `转账到 ${destinationWallet}` }
+      };
+    }
+
+    // 4. 新建待办：添加待办：下午3点开会 / 新建任务：准备设计稿
+    const taskRegex = /(?:添加待办|新建待办|添加任务|新建任务|提醒我|待办|todo)[:：\s]\s*(.*)/i;
+    const taskMatch = trimmed.match(taskRegex);
+    if (taskMatch) {
+      const title = taskMatch[1].trim();
+      let priority = 'medium';
+      if (/重要|紧急|必须|urgent|high/i.test(title)) priority = 'high';
+      else if (/有空|低|low/i.test(title)) priority = 'low';
+
+      return {
+        intent: 'CREATE_TASK',
+        data: { title, priority, deadline: '尽快' }
+      };
+    }
+
+    // 5. 完成待办：完成待办 准备设计稿 / 完成任务 下午开会
+    const completeTaskRegex = /(?:完成待办|完成任务|标记完成|搞定)[:：\s]\s*(.*)/i;
+    const completeMatch = trimmed.match(completeTaskRegex);
+    if (completeMatch) {
+      return {
+        intent: 'UPDATE_TASK',
+        data: { taskTitle: completeMatch[1].trim(), completed: true }
+      };
+    }
+
+    // 6. 新建笔记：记笔记：... / 记录灵感：...
+    const noteRegex = /(?:记笔记|新建笔记|记录笔记|随手记|记录想法|笔记)[:：\s]\s*(.*)/i;
+    const noteMatch = trimmed.match(noteRegex);
+    if (noteMatch) {
+      const content = noteMatch[1].trim();
+      const parts = content.split(/[:：\-\s]/);
+      const title = parts.length > 1 && parts[0].length < 15 ? parts[0] : content.slice(0, 16);
+      return {
+        intent: 'CREATE_NOTE',
+        data: { title, content, category: 'idea' }
+      };
+    }
+
+    // 7. 资产查询：查资产 / 净资产 / 我有多少钱 / 查账
+    if (/(?:查资产|净资产|总资产|余额|查账|我有多少钱|财务速报)/i.test(trimmed)) {
+      return {
+        intent: 'QUERY_WEALTH',
+        data: {}
+      };
+    }
+
+    // 8. 待办查询：查待办 / 我的任务 / 有什么事 / 待办清单
+    if (/(?:查待办|待办事项|我的任务|未完成任务|有什么事|待办清单)/i.test(trimmed)) {
+      return {
+        intent: 'QUERY_TASKS',
+        data: {}
+      };
+    }
+
+    // 9. 模块跳转
+    if (/(?:打开|切换到|前往|去)?\s*(?:mywealth|财富|记账)/i.test(trimmed) && trimmed.length < 12) {
+      return { intent: 'NAVIGATE', data: { target: 'mywealth' } };
+    }
+    if (/(?:打开|切换到|前往|去)?\s*(?:knowledge|笔记|记事本|待办|vault)/i.test(trimmed) && trimmed.length < 12) {
+      return { intent: 'NAVIGATE', data: { target: 'knowledgevault' } };
+    }
+    if (/(?:打开|切换到|前往|去)?\s*(?:newshub|新闻|资讯)/i.test(trimmed) && trimmed.length < 12) {
+      return { intent: 'NAVIGATE', data: { target: 'newshub' } };
+    }
+    if (/(?:返回|回到)?\s*(?:主页|桌面|launcher)/i.test(trimmed) && trimmed.length < 8) {
+      return { intent: 'NAVIGATE', data: { target: 'launcher' } };
+    }
+
+    return null;
+  };
+
+  // Main Handle Send
+  const handleSend = async (textToSend: string = inputText) => {
+    const query = textToSend.trim();
+    if (!query || isProcessing) return;
+
+    // Append user message
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: query };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
-    setAttachedImage(null);
     setIsProcessing(true);
 
-    const apiKey = localStorage.getItem('app_global_api_key');
-    const provider = activeProvider;
-    const model = activeModel;
+    // 1. Try local rule-based intent parser first (instant execution, zero API key required)
+    const localAction = tryLocalRuleParser(query);
+    if (localAction) {
+      try {
+        const { message, result } = await executeAction(localAction.intent, localAction.data);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: message,
+            actionResult: result
+          }
+        ]);
+        setIsProcessing(false);
+        return;
+      } catch (err: any) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: `⚠️ 执行出错: ${err.message}`,
+            isError: true
+          }
+        ]);
+        setIsProcessing(false);
+        return;
+      }
+    }
 
+    // 2. If no direct local rule matched, send to LLM (if API key available)
+    const apiKey = localStorage.getItem('app_global_api_key');
     if (!apiKey) {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "⚠️ Config Error: Please set your AI API Key in Settings (click this warning or the gear icon on launcher) to use Ask Apptify.",
-        isError: true
-      }]);
+      // Friendly message guiding user
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `💡 你可以直接下达精准命令让我更新数据：\n• **记支出**：如 *“记一笔午餐 25 块”*\n• **存钱包**：如 *“存入 500 到 Maybank”*\n• **转账**：如 *“从 Maybank 转账 200 到 Cash”*\n• **加待办**：如 *“新建待办：准备周报”*\n• **记想法**：如 *“新建笔记：Apptify V3 架构”*\n• **查资产**：如 *“查资产”*\n\n若需进行深层自由对话，请点击右下角设置配置您的 **AI API Key**。`,
+          actionResult: {
+            type: 'wealth',
+            title: '本地快速命令就绪',
+            details: ['记账/存入/划转/待办/笔记均支持免 Key 毫秒级执行'],
+            badge: '命令引擎'
+          }
+        }
+      ]);
       setIsProcessing(false);
       return;
     }
 
-    // Read context
-    const mw = (window as any).__apptify_mywealth;
-    const kv = (window as any).__apptify_knowledgevault;
-    
-    const contextInfo = `
-    CURRENT STATE & CONTEXT:
-    Active Module: ${currentApp}
-    Active Sub-tab: ${currentApp === 'mywealth' && mw ? mw.activeTab : currentApp === 'knowledgevault' && kv ? kv.activeTab : 'None'}
-    
-    EXISITING DATABASE:
-    My Wealth Wallets: ${mw ? JSON.stringify(mw.accounts.map((a: any) => ({ name: a.name, balance: a.balance }))) : localStorage.getItem('mw_data_main') || '[]'}
-    My Wealth Stocks: ${mw ? JSON.stringify(mw.stocks.map((s: any) => s.symbol)) : '[]'}
-    Knowledge Vault Todos: ${kv ? JSON.stringify(kv.todos.filter((t: any) => !t.completed).map((t: any) => t.title)) : localStorage.getItem('gn_todos') ? JSON.stringify(JSON.parse(localStorage.getItem('gn_todos') || '[]').filter((t: any) => !t.completed).map((t: any) => t.title)) : '[]'}
-    Knowledge Vault Notes: ${kv ? JSON.stringify(kv.notes.map((n: any) => ({ id: n.id, title: n.title }))) : localStorage.getItem('gn_notes') ? JSON.stringify(JSON.parse(localStorage.getItem('gn_notes') || '[]').map((n: any) => ({ id: n.id, title: n.title }))) : '[]'}
-    `;
+    // Construct live context for LLM
+    const mwData = loadMyWealthData();
+    const tasks = loadTasks();
+    const notes = loadNotes();
 
-    const systemInstruction = buildSystemInstruction(skillRegistry, contextInfo);
+    const contextPrompt = `
+You are the dedicated "Personal AI Executive Assistant" for Apptify (Apptify 专属私人 AI 助手).
+Current Active Page: ${currentApp}
+
+CURRENT LIVE APP STATE:
+- Wallets: ${JSON.stringify(mwData.accounts.map((a: any) => ({ name: a.name, balance: a.balance })))}
+- Current Month Total Expenses: RM${mwData.monthlyData.expenses.reduce((s: number, e: any) => s + (e.amount || 0), 0)}
+- Active Pending Tasks: ${JSON.stringify(tasks.filter(t => !t.completed).map(t => ({ id: t.id, title: t.title, priority: t.priority })))}
+- Recent Notes: ${JSON.stringify(notes.slice(0, 5).map(n => ({ id: n.id, title: n.title })))}
+
+CAPABILITIES:
+You can directly update Apptify's database by returning a JSON action:
+1. "WITHDRAW_MONEY" -> { "amount": number, "category": "Food"|"Transport"|"Utilities"|"Entertainment"|"Shopping"|"Health"|"Other", "description": string, "walletName": string }
+2. "ADD_MONEY" -> { "amount": number, "description": string, "walletName": string }
+3. "TRANSFER_MONEY" -> { "sourceWallet": string, "destinationWallet": string, "amount": number, "description": string }
+4. "CREATE_NOTE" -> { "title": string, "content": string, "category": "work"|"idea"|"meeting"|"life" }
+5. "CREATE_TASK" -> { "title": string, "priority": "high"|"medium"|"low", "deadline": string }
+6. "UPDATE_TASK" -> { "taskTitle": string, "completed": boolean }
+7. "QUERY_WEALTH" -> {}
+8. "QUERY_TASKS" -> {}
+9. "NAVIGATE" -> { "target": "mywealth"|"knowledgevault"|"newshub"|"launcher"|"settings" }
+10. "CHAT" -> General conversational response.
+
+OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
+{
+  "intent": "WITHDRAW_MONEY" | "ADD_MONEY" | "TRANSFER_MONEY" | "CREATE_NOTE" | "CREATE_TASK" | "UPDATE_TASK" | "QUERY_WEALTH" | "QUERY_TASKS" | "NAVIGATE" | "CHAT",
+  "data": { ... },
+  "message": "Friendly and concise Chinese response to user"
+}
+`;
 
     try {
-      const responseText = await aiService.generate(provider, model, apiKey, text, systemInstruction, imagesToSend);
+      const responseText = await aiService.generate(activeProvider as any, activeModel, apiKey, query, contextPrompt);
       const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      const action = JSON.parse(cleanJson);
+      const parsedAction = JSON.parse(cleanJson);
 
-      // Force confirmation for DELETE/Destructive actions
-      const isDeleteAction = ['DELETE_NOTE', 'DELETE_TODO'].includes(action.intent);
-      const isDestructive = action.intent?.includes('DELETE') || action.intent?.includes('REMOVE') || action.intent?.includes('CLEAR');
-      
-      if (isDeleteAction || isDestructive) {
-        action.confirmationRequired = true;
-        if (!action.confirmationMessage) {
-          action.confirmationMessage = `Are you sure you want to perform this destructive action (${action.intent})?`;
-        }
-      }
-
-      // Read current accounts for validation
-      let currentAccounts: Account[] = [];
-      if (mw) {
-        currentAccounts = [...mw.accounts];
+      if (parsedAction.intent && parsedAction.intent !== 'CHAT') {
+        const { message, result } = await executeAction(parsedAction.intent, parsedAction.data || {});
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: parsedAction.message || message,
+            actionResult: result
+          }
+        ]);
       } else {
-        const savedMW = localStorage.getItem('mw_data_main');
-        if (savedMW) {
-          try {
-            currentAccounts = JSON.parse(savedMW).accounts || [];
-          } catch {}
-        }
-      }
-
-      // Mandatory Validation Layer for Wallet Operations
-      if (['ADD_MONEY', 'WITHDRAW_MONEY', 'TRANSFER_MONEY'].includes(action.intent)) {
-        const validation = validateWalletOperation(action.intent, action.data, currentAccounts);
-        if (!validation.isValid) {
-          setMessages(prev => [...prev, {
+        setMessages(prev => [
+          ...prev,
+          {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: `⚠️ **Validation Error:** ${validation.error}\n\nPlease clarify your request.`,
-            isError: true
-          }]);
-          setIsProcessing(false);
-          return;
-        }
-      }
-
-      // Check for Confirmation Required
-      if (action.confirmationRequired) {
-        const confirmMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: action.confirmationMessage || "Do you confirm this action?",
-          pendingAction: {
-            intent: action.intent,
-            data: action.data,
-            message: action.confirmationMessage
+            content: parsedAction.message || responseText
           }
-        };
-        setPendingConfirm(confirmMsg.pendingAction || null);
-        setMessages(prev => [...prev, confirmMsg]);
-        setIsProcessing(false);
-        return;
+        ]);
       }
-
-      // Handle custom routes: SUMMARIZE_VIDEO
-      if (action.intent === 'SUMMARIZE_VIDEO') {
-        const url = action.data.url;
-        if (!url) throw new Error("YouTube video URL is missing.");
-
-        const summaryResult = await videoSummarySkillService.generateSummary(url, provider, model, apiKey);
-        
-        setMessages(prev => [...prev, {
+    } catch (err: any) {
+      console.error("Ask Apptify AI generate error:", err);
+      setMessages(prev => [
+        ...prev,
+        {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `Successfully generated summary for YouTube video: **${summaryResult.title}**`,
-          videoSummary: {
-            url,
-            title: summaryResult.title,
-            markdown: summaryResult.markdown
-          }
-        }]);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Handle custom routes: SEARCH_NOTES
-      if (action.intent === 'SEARCH_NOTES') {
-        const query = action.data.query;
-        if (!query) throw new Error("Search query is missing.");
-
-        let notes: any[] = [];
-        if (kv) {
-          notes = kv.notes;
-        } else {
-          notes = JSON.parse(localStorage.getItem('gn_notes') || '[]');
+          content: `⚠️ 处理请求时出错: ${err.message || '网络或接口异常'}\n提示：常用记账和任务指令支持本地秒级执行，可尝试直接输入 *“记一笔午餐 25”*。`,
+          isError: true
         }
-
-        if (notes.length === 0) {
-          setMessages(prev => [...prev, {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: `You don't have any notes in your Knowledge Vault to search yet.`
-          }]);
-          setIsProcessing(false);
-          return;
-        }
-
-        const queryTokens = query.toLowerCase().split(/\s+/).filter((t: string) => t.length > 1);
-        const scored = notes.map(note => {
-          let score = 0;
-          const title = (note.title || '').toLowerCase();
-          const content = (note.content || '').toLowerCase();
-          const category = (note.ai_category || '').toLowerCase();
-          const keywords = (note.ai_keywords || []).map((k: string) => k.toLowerCase());
-
-          if (queryTokens.length === 0) {
-            if (title.includes(query.toLowerCase())) score += 10;
-            if (content.includes(query.toLowerCase())) score += 3;
-          } else {
-            queryTokens.forEach(token => {
-              if (title.includes(token)) score += 10;
-              if (category.includes(token)) score += 8;
-              keywords.forEach((keyword: string) => {
-                if (keyword.includes(token) || token.includes(keyword)) {
-                  score += 6;
-                }
-              });
-              if (content.includes(token)) score += 3;
-            });
-          }
-          return { note, score };
-        });
-
-        const matchedNotes = scored
-          .filter(item => item.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .map(item => item.note)
-          .slice(0, 5);
-
-        if (matchedNotes.length === 0) {
-          setMessages(prev => [...prev, {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: `No notes matched the query "${query}" in your vault.`
-          }]);
-          setIsProcessing(false);
-          return;
-        }
-
-        let retrievedNotesContext = "";
-        matchedNotes.forEach(n => {
-          retrievedNotesContext += `Title: ${n.title || 'Untitled'}\n`;
-          if (n.ai_category) retrievedNotesContext += `Category: ${n.ai_category}\n`;
-          if (n.ai_summary) retrievedNotesContext += `Summary: ${n.ai_summary}\n`;
-          if (n.ai_keywords && n.ai_keywords.length > 0) retrievedNotesContext += `Keywords: ${n.ai_keywords.join(', ')}\n`;
-          retrievedNotesContext += `Content: ${n.content || '(Empty)'}\n`;
-          retrievedNotesContext += `----------------------------------------\n\n`;
-        });
-
-        const systemPrompt = `You are an AI Knowledge Assistant.
-Analyze the following notes from the user's personal knowledge vault and synthesize a comprehensive answer to their query: "${query}".
-
-If the notes don't contain enough information, explain that.
-
-Format your response in a clear and readable manner. Cite the note titles you used to answer the query.`;
-
-        const userPrompt = `Notes Context:\n${retrievedNotesContext}\n\nUser Question: ${query}`;
-        const synthesis = await aiService.generate(provider, model, apiKey, userPrompt, systemPrompt);
-
-        setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: synthesis
-        }]);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Handle custom routes: ANALYZE_STOCK (Orchestrate AutoCount Engine)
-      if (action.intent === 'ANALYZE_STOCK') {
-        const symbol = action.data.symbol?.toUpperCase();
-        if (!symbol) throw new Error("Stock symbol missing.");
-
-        // 1. Route to AutoCount app mode
-        setCurrentApp('autocount');
-
-        // 2. Wait for AutoCount to initialize
-        const getAutoCount = () => (window as any).__apptify_autocount;
-        const waitForAutoCount = () => {
-          return new Promise<any>((resolve, reject) => {
-            let attempts = 0;
-            const interval = setInterval(() => {
-              const ac = getAutoCount();
-              if (ac) {
-                clearInterval(interval);
-                resolve(ac);
-              } else {
-                attempts++;
-                if (attempts > 50) {
-                  clearInterval(interval);
-                  reject(new Error("AutoCount engine failed to initialize."));
-                }
-              }
-            }, 100);
-          });
-        };
-
-        const autocount = await waitForAutoCount();
-        autocount.setSymbol(symbol);
-
-        // 3. Search and Run framework analysis inside AutoCount
-        const searchResult = await autocount.handleSearch(symbol);
-        const analysisResult = await autocount.handleRunAnalysis(searchResult);
-
-        if (!analysisResult) {
-          throw new Error("Analysis failed to run.");
-        }
-
-        setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Stock analysis completed for ${symbol} using AutoCount. Here is the summary:`,
-          stockAnalysis: {
-            symbol,
-            signal: analysisResult.signal,
-            report: analysisResult.report
-          }
-        }]);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Handle custom routes: SEARCH_NEWS
-      if (action.intent === 'SEARCH_NEWS') {
-        const query = action.data.query || 'AI';
-        const newsResponse = await fetch('/api/news', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: 'rss', url: 'https://wired.com/feed/tag/ai/latest/rss' })
-        });
-        const newsData = await newsResponse.json();
-        
-        const summaryPrompt = `
-        Summarize the following latest news articles for the topic "${query}". Focus on technology trends. Provide 3-4 bullet points.
-        
-        Articles:
-        ${JSON.stringify(newsData.slice(0, 8))}
-        `;
-        const newsSummary = await aiService.generate(provider, model, apiKey, summaryPrompt);
-
-        setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Here is the tech news summary for **${query}**:\n\n${newsSummary}`
-        }]);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Execute Action
-      const confirmText = await executeAction(action.intent, action.data);
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `${action.message || 'Action executed successfully.'}\n\n*System Update: ${confirmText}*`
-      }]);
-
-    } catch (e: any) {
-      console.error(e);
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `Error executing command: ${e.message}`,
-        isError: true
-      }]);
+      ]);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleConfirmAction = async (confirm: boolean) => {
-    if (!pendingConfirm) return;
-    
-    setIsProcessing(true);
-    const action = pendingConfirm;
-    setPendingConfirm(null);
-
-    // Remove buttons from message bubble by setting pendingAction to undefined
-    setMessages(prev => prev.map(m => m.pendingAction ? { ...m, pendingAction: undefined } : m));
-
-    if (confirm) {
-      try {
-        const confirmText = await executeAction(action.intent, action.data);
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `✅ Action Confirmed.\n\n*System Update: ${confirmText}*`
-        }]);
-      } catch (err: any) {
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `❌ Error executing confirmed action: ${err.message}`,
-          isError: true
-        }]);
-      }
-    } else {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: `❌ Action Cancelled.`
-      }]);
-    }
-    setIsProcessing(false);
-  };
-
-  const handleExportHtml = async (symbol: string, report: string, signal: InvestmentSignal) => {
-    try {
-      const dateStr = new Date().toISOString().split('T')[0];
-      const fileName = `${symbol}_InvestReport_stock-eval_${dateStr}.html`;
-      const scoreColor = signal.signal === 'BULLISH' ? '#319795' : (signal.signal === 'BEARISH' ? '#E53E3E' : '#D69E2E');
-      
-      const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${symbol} - InvestReport</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0F172A; color: #F8FAFC; font-family: 'Inter', sans-serif; margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
-        .container { max-width: 900px; width: 100%; background: "var(--ios-card-bg)"; padding: 40px; border-radius: 40px; box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5); }
-        h1 { color: #2D3748; font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 30px; }
-        .signal-grid { display: grid; grid-template-cols: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 40px; }
-        .signal-card { background: "var(--ios-card-bg)"; padding: 15px; border-radius: 20px; text-align: center; box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff; }
-        .signal-val { font-size: 18px; font-weight: 700; margin-top: 5px; color: #2D3748; }
-        .signal-label { font-size: 10px; font-weight: 600; color: #718096; text-transform: uppercase; }
-        .score-card { border: 2px solid ${scoreColor}; }
-        .score-val { font-size: 28px; font-weight: 800; color: ${scoreColor}; }
-        .report-content { line-height: 1.8; font-size: 15px; color: #2D3748; border-top: 2px solid rgba(0,0,0,0.05); padding-top: 30px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>${symbol} Ask Apptify InvestReport</h1>
-        <div class="signal-grid">
-            <div class="signal-card score-card">
-                <div class="signal-label">Overall Score</div>
-                <div class="score-val">${signal.score.toFixed(1)}/10</div>
-            </div>
-            <div class="signal-card">
-                <div class="signal-label">Signal</div>
-                <div class="signal-val" style="color: ${scoreColor}">${signal.signal}</div>
-            </div>
-            <div class="signal-card">
-                <div class="signal-label">Action</div>
-                <div class="signal-val">${signal.action}</div>
-            </div>
-            <div class="signal-card">
-                <div class="signal-label">Conviction</div>
-                <div class="signal-val">${signal.conviction}</div>
-            </div>
-        </div>
-        <div class="report-content">
-            ${report
-              .replace(/\n\n/g, '</p><p>')
-              .replace(/### (.*)/g, '<h3>$1</h3>')
-              .replace(/## (.*)/g, '<h2>$1</h2>')
-              .replace(/^- (.*)/gm, '<li>$1</li>')
-            }
-        </div>
-    </div>
-</body>
-</html>
-`;
-      const path = await investSkillService.saveReport(fileName, htmlContent);
-      alert(`Report exported successfully to:\n${path}`);
-    } catch (e: any) {
-      alert("Failed to export: " + e.message);
-    }
-  };
-
-  if (!isOpen) {
-    return (
-      <button
-        ref={buttonRef}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onClick={handleButtonClick}
-        style={{
-          transform: `translate(${position.x}px, ${position.y}px)`,
-          touchAction: 'none'
-        }}
-        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-3.5 py-2.5 rounded-full ios-glass border border-white/20 dark:border-white/10 text-[var(--ios-label-primary)] font-bold transition-all duration-200 tap-scale select-none cursor-grab active:cursor-grabbing shadow-2xl ${isDragging ? 'scale-105' : 'hover:scale-105'}`}
-      >
-        <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-          <Sparkles size={14} className="fill-white" />
-        </div>
-        <span className="text-xs font-bold hidden sm:inline">Ask Apptify</span>
-      </button>
-    );
-  }
+  // Quick Action Chips
+  const quickActions = [
+    { label: '⚡ 记午餐 RM25', query: '记一笔午餐 25 块' },
+    { label: '💰 存入 RM500', query: '存入 500 到 Maybank' },
+    { label: '📝 随手记灵感', query: '新建笔记：关于 Apptify 全新 iOS 27 设计' },
+    { label: '🎯 加高优待办', query: '新建待办：本周完成财务核算' },
+    { label: '📊 查总资产', query: '查资产' },
+    { label: '📋 查待办清单', query: '查待办' }
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Dark blur overlay */}
-      <div 
-        className="absolute inset-0 bg-black/10 backdrop-blur-sm transition-opacity duration-300" 
-        onClick={() => setIsOpen(false)}
-      />
-
-      {/* Fullscreen Image Preview Lightbox */}
-      {activeImagePreview && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
-          onClick={() => setActiveImagePreview(null)}
+    <>
+      {/* 1. iOS 27 Liquid Glass Floating Assistant Pill (Always Visible in Corner) */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full ios-glass border border-white/40 dark:border-white/15 text-gray-900 dark:text-white font-bold transition-all duration-300 tap-scale select-none hover:scale-105 shadow-2xl group bg-white/70 dark:bg-[#16181F]/80 backdrop-blur-2xl"
+          style={{
+            boxShadow: '0 12px 35px -8px rgba(59, 130, 246, 0.35), 0 0 0 1px rgba(255,255,255,0.2) inset'
+          }}
+          aria-label="打开专属私人 AI 助手"
         >
-          <img src={activeImagePreview} alt="Preview" className="max-w-full max-h-full rounded-2xl shadow-2xl object-contain animate-scale-in" />
-        </div>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md relative overflow-hidden group-hover:rotate-12 transition-transform duration-300">
+            <Sparkles size={16} className="fill-white animate-pulse" />
+            <div className="absolute inset-0 bg-white/20 rounded-full blur-[2px]" />
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-bold leading-tight flex items-center gap-1.5">
+              Ask Apptify
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+            </span>
+            <span className="text-[9px] text-gray-500 dark:text-gray-400 font-medium hidden sm:inline">专属私人 AI</span>
+          </div>
+        </button>
       )}
 
-      {/* Floating Neumorphic Panel */}
-      <div 
-        className="w-full max-w-[450px] bg-[var(--ios-card-bg)] h-full shadow-2xl relative flex flex-col border-l border-white/40 animate-slide-in-right"
-        style={{
-          boxShadow: "-10px 0 30px rgba(163,177,198,0.2)"
-        }}
-      >
-        {/* Header */}
-        <div 
-          className="p-5 pt-6 sticky top-0 flex justify-between items-center z-10"
-          style={{ 
-            background: "var(--ios-card-bg)", 
-            borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.02)"
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm border border-[var(--ios-separator)] border border-white/20">
-              <Sparkles size={18} className="fill-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-800 text-sm leading-none flex items-center gap-1">
-                Ask Apptify
-              </h3>
-              
-              {/* Quick Model Switcher Trigger */}
-              <div className="relative inline-block text-left mt-1">
-                <button
-                  onClick={() => setShowSwitcher(!showSwitcher)}
-                  className="text-[9px] font-extrabold uppercase tracking-wider text-purple-600 hover:text-purple-700 flex items-center gap-1 transition-colors"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                  Model: {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel} ▼
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <button
+      {/* 2. Slide-out iOS 27 Liquid Glass Copilot Drawer */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop blur */}
+          <div 
+            className="absolute inset-0 bg-black/25 dark:bg-black/50 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
             onClick={() => setIsOpen(false)}
-            className="w-10 h-10 flex items-center justify-center rounded-2xl text-gray-500 hover:text-red-500 hover:scale-105 active:scale-95 transition-all shadow-sm border border-[var(--ios-separator)]"
+          />
+
+          {/* Liquid Glass Drawer Panel */}
+          <div 
+            className="w-full sm:w-[440px] h-full relative z-10 flex flex-col bg-white/80 dark:bg-[#12141A]/90 backdrop-blur-3xl border-l border-white/40 dark:border-white/10 shadow-2xl animate-slide-in-right overflow-hidden"
+            style={{
+              boxShadow: '-15px 0 50px rgba(0, 0, 0, 0.25)'
+            }}
           >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Model Switcher Dropdown */}
-        {showSwitcher && (
-          <div className="absolute left-5 right-5 top-20 bg-[var(--ios-card-bg)] rounded-2xl p-4 z-50 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/40 max-h-[300px] overflow-y-auto no-scrollbar">
-            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-300/40">
-              <span className="text-xs font-extrabold text-gray-500 uppercase">Quick Switch Model</span>
-              <button onClick={() => setShowSwitcher(false)} className="text-[10px] text-gray-400 hover:text-red-500 font-bold">Close</button>
-            </div>
-            
-            {/* Pinned Favorites */}
-            {favorites.length > 0 && (
-              <div className="mb-4">
-                <span className="text-[9px] font-extrabold text-amber-500 uppercase tracking-wider block mb-1">⭐ Pinned Favorites</span>
-                <div className="space-y-1">
-                  {favorites.map(id => (
-                    <button
-                      key={id}
-                      onClick={() => handleSelectModel(id)}
-                      className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === id ? 'text-purple-600' : 'text-gray-600'}`}
-                    >
-                      {id.includes('/') ? id.split('/').pop() : id}
-                    </button>
-                  ))}
+            {/* Header */}
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-black/5 dark:border-white/10 bg-white/40 dark:bg-white/5 backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                  <Sparkles size={18} className="fill-white" />
                 </div>
-              </div>
-            )}
-
-            {/* Recently Used */}
-            {recentModels.length > 0 && (
-              <div className="mb-4">
-                <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">🕒 Recently Used</span>
-                <div className="space-y-1">
-                  {recentModels.filter(id => !favorites.includes(id)).map(id => (
-                    <button
-                      key={id}
-                      onClick={() => handleSelectModel(id)}
-                      className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === id ? 'text-purple-600' : 'text-gray-600'}`}
-                    >
-                      {id.includes('/') ? id.split('/').pop() : id}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* All Retrieved Models */}
-            <div>
-              <span className="text-[9px] font-extrabold text-blue-500 uppercase tracking-wider block mb-1">📋 Retrieved Models</span>
-              <div className="space-y-1 max-h-[150px] overflow-y-auto">
-                {modelsList.length > 0 ? (
-                  modelsList.map(m => (
-                    <button
-                      key={m.id}
-                      onClick={() => handleSelectModel(m.id)}
-                      className={`w-full text-left p-2 rounded-xl text-xs font-bold transition-all truncate hover:bg-black/5 ${activeModel === m.id ? 'text-purple-600' : 'text-gray-600'}`}
-                    >
-                      {m.name || (m.id.includes('/') ? m.id.split('/').pop() : m.id)}
-                    </button>
-                  ))
-                ) : (
-                  <p className="text-[10px] text-gray-400 italic p-2">No models found in index.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic Capability-Aware Content Panels */}
-        
-        {/* A. Image Generation Panel */}
-        {isImageModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
-            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
-              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest pl-1">Text-to-Image Generation</h4>
-              <textarea
-                value={imagePrompt}
-                onChange={e => setImagePrompt(e.target.value)}
-                placeholder="Describe what you want the model to generate..."
-                className="w-full p-4 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
-                rows={3}
-              />
-              
-              <div className="flex justify-between items-center gap-3">
-                <div className="flex-1">
-                  <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1 pl-1">Size Option</label>
-                  <select
-                    value={imageSize}
-                    onChange={e => setImageSize(e.target.value)}
-                    className="w-full p-2 rounded-xl text-xs bg-[var(--ios-card-bg)] border border-gray-300/40 text-gray-600 outline-none"
-                  >
-                    <option value="1024x1024">Square (1:1)</option>
-                    <option value="1024x576">Landscape (16:9)</option>
-                    <option value="768x1024">Portrait (3:4)</option>
-                  </select>
-                </div>
-                <button
-                  onClick={triggerImageGeneration}
-                  disabled={isGeneratingImage || !imagePrompt.trim()}
-                  className="mt-4 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition shadow-lg flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isGeneratingImage ? <Activity className="animate-spin" size={14} /> : 'Generate'}
-                </button>
-              </div>
-            </div>
-
-            {generatedImages.length > 0 && (
-              <div className="space-y-4">
-                <h5 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider pl-1">Generated Output</h5>
-                <div className="grid grid-cols-1 gap-4">
-                  {generatedImages.map((img, idx) => (
-                    <div key={idx} className="p-4 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/20 space-y-3">
-                      <img
-                        src={img}
-                        alt="Generated"
-                        className="w-full rounded-2xl shadow-md cursor-pointer hover:opacity-95 object-contain"
-                        onClick={() => setActiveImagePreview(img)}
-                      />
-                      <a
-                        href={img}
-                        download={`Apptify_${Date.now()}.png`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full py-2 rounded-xl bg-gray-800 text-white font-bold text-xs text-center hover:bg-gray-900 transition block"
-                      >
-                        Open / Save Image
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* B. Video Generation Panel */}
-        {isVideoModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
-            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
-              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest pl-1">Text-to-Video Generation</h4>
-              <textarea
-                value={videoPrompt}
-                onChange={e => setVideoPrompt(e.target.value)}
-                placeholder="Describe video context, movements, camera panning..."
-                className="w-full p-4 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
-                rows={3}
-              />
-
-              <div className="flex justify-between items-center gap-3">
-                <div className="flex-1">
-                  <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1 pl-1">Aspect Ratio</label>
-                  <select
-                    value={videoSize}
-                    onChange={e => setVideoSize(e.target.value)}
-                    className="w-full p-2 rounded-xl text-xs bg-[var(--ios-card-bg)] border border-gray-300/40 text-gray-600 outline-none"
-                  >
-                    <option value="1280x720">Landscape (16:9)</option>
-                    <option value="720x1280">Portrait (9:16)</option>
-                  </select>
-                </div>
-                <button
-                  onClick={triggerVideoGeneration}
-                  disabled={videoTaskStatus === 'processing' || !videoPrompt.trim()}
-                  className="mt-4 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition shadow-lg flex items-center gap-2 disabled:opacity-50"
-                >
-                  {videoTaskStatus === 'processing' ? <Activity className="animate-spin" size={14} /> : 'Generate'}
-                </button>
-              </div>
-
-              {videoProgressMsg && (
-                <div className="p-3.5 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 text-xs font-bold flex items-center gap-2">
-                  {videoTaskStatus === 'processing' && <Activity className="animate-spin text-purple-500" size={14} />}
-                  <span>{videoProgressMsg}</span>
-                </div>
-              )}
-            </div>
-
-            {generatedVideoUrl && (
-              <div className="p-4 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/20 space-y-3">
-                <h5 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider pl-1">Video Output</h5>
-                <video src={generatedVideoUrl} controls className="w-full rounded-2xl shadow-md" />
-                <a
-                  href={generatedVideoUrl}
-                  download={`Apptify_${Date.now()}.mp4`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full py-2 rounded-xl bg-gray-800 text-white font-bold text-xs text-center hover:bg-gray-900 transition block"
-                >
-                  Download Video
-                </a>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* C. Embedding RAG Panel */}
-        {isEmbeddingModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
-            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
-              <div className="flex justify-between items-center">
-                <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Vector Embedding RAG</h4>
-                <button
-                  onClick={buildEmbeddingIndex}
-                  disabled={isSyncingEmbeddings}
-                  className="px-3 py-1.5 rounded-xl text-[9px] font-extrabold bg-[var(--ios-card-bg)] text-purple-600 hover:scale-105 active:scale-95 transition shadow-sm border border-[var(--ios-separator)] flex items-center gap-1.5"
-                >
-                  {isSyncingEmbeddings ? <Activity className="animate-spin" size={10} /> : <RefreshCw size={10} />}
-                  Compute Embeddings
-                </button>
-              </div>
-              <p className="text-[11px] text-gray-400 leading-relaxed">
-                Generates vector indexes for Knowledge Vault notes locally so you can search semantically using cognitive match.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
-              <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest pl-1">Cognitive Search</span>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={embeddingQuery}
-                  onChange={e => setEmbeddingQuery(e.target.value)}
-                  placeholder="Query note contents semantically..."
-                  onKeyDown={e => e.key === 'Enter' && semanticSearchVault()}
-                  className="w-full pl-4 pr-10 py-3 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
-                />
-                <button
-                  onClick={semanticSearchVault}
-                  disabled={isGeneratingRag || !embeddingQuery.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-purple-600 text-white hover:scale-105 active:scale-95 transition"
-                >
-                  {isGeneratingRag ? <Activity className="animate-spin" size={12} /> : <Send size={12} />}
-                </button>
-              </div>
-
-              {ragAnswer && (
-                <div className="p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 text-xs leading-relaxed space-y-2 text-gray-700">
-                  <span className="font-extrabold text-purple-600 uppercase text-[9px] block">RAG Synthesis Answer</span>
-                  <p className="whitespace-pre-wrap">{ragAnswer}</p>
-                </div>
-              )}
-
-              {embeddingResults.length > 0 && (
-                <div className="space-y-2">
-                  <span className="font-extrabold text-gray-400 uppercase text-[9px] block">Relevant Notes Matched</span>
-                  <div className="space-y-1.5">
-                    {embeddingResults.map((item, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-[var(--ios-card-bg)] border border-white/10 flex justify-between items-center text-[10px] shadow-sm border border-[var(--ios-separator)]">
-                        <span className="font-bold text-gray-700 truncate max-w-[75%]">📄 {item.note.title}</span>
-                        <span className="text-purple-600 font-extrabold">{(item.score * 100).toFixed(0)}% match</span>
-                      </div>
-                    ))}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-sm text-gray-900 dark:text-white leading-none">
+                      Ask Apptify
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      专属私人助理
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                      全功能数据联动 · {activeModel.split('/').pop()}
+                    </span>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* D. Audio / Speech Panel */}
-        {isAudioModel && (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-[var(--ios-card-bg)] no-scrollbar">
-            {/* Speech synthesis */}
-            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
-              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Text-to-Speech synthesis</h4>
-              <textarea
-                value={ttsText}
-                onChange={e => setTtsText(e.target.value)}
-                placeholder="Enter sentences to render as voice audio playback..."
-                className="w-full p-4 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-xs text-gray-700 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10"
-                rows={3}
-              />
-              <div className="flex justify-between items-center gap-3">
-                <div className="flex-1">
-                  <label className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1 pl-1">Voice Profile</label>
-                  <select
-                    value={ttsVoice}
-                    onChange={e => setTtsVoice(e.target.value)}
-                    className="w-full p-2 rounded-xl text-xs bg-[var(--ios-card-bg)] border border-gray-300/40 text-gray-600 outline-none"
-                  >
-                    <option value="FunAudioLLM/CosyVoice2-0.5B:alex">Alex (CosyVoice Male)</option>
-                    <option value="FunAudioLLM/CosyVoice2-0.5B:bella">Bella (CosyVoice Female)</option>
-                  </select>
-                </div>
-                <button
-                  onClick={triggerSpeechGeneration}
-                  disabled={isGeneratingTts || !ttsText.trim()}
-                  className="mt-4 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 active:scale-95 transition shadow-lg flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isGeneratingTts ? <Activity className="animate-spin" size={14} /> : 'Synthesize'}
-                </button>
               </div>
 
-              {generatedSpeechUrl && (
-                <div className="mt-4 p-3 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10">
-                  <audio src={generatedSpeechUrl} controls className="w-full" />
-                </div>
-              )}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors tap-scale"
+                aria-label="关闭抽屉"
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            {/* Audio Speech to Text dictation */}
-            <div className="p-5 rounded-3xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)] border border-white/40 space-y-4">
-              <h4 className="font-extrabold text-xs text-purple-600 uppercase tracking-widest">Speech-to-Text Transcription</h4>
-              <div className="flex flex-col items-center justify-center p-4">
+            {/* Quick Action Chips Bar */}
+            <div className="px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/5 dark:border-white/5 overflow-x-auto no-scrollbar flex items-center gap-2">
+              {quickActions.map((action, idx) => (
                 <button
-                  onClick={isRecordingAudio ? stopAudioRecording : startAudioRecording}
-                  className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                    isRecordingAudio 
-                      ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/30' 
-                      : 'bg-[var(--ios-card-bg)] text-gray-500 shadow-sm border border-[var(--ios-separator)] hover:text-blue-500 hover:scale-105 active:scale-95'
-                  }`}
-                  style={!isRecordingAudio ? {
-                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
-                  } : {}}
+                  key={idx}
+                  onClick={() => handleSend(action.query)}
+                  disabled={isProcessing}
+                  className="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-200 border border-black/5 dark:border-white/10 hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400 transition-all tap-scale shadow-sm disabled:opacity-50"
                 >
-                  <Mic size={24} />
+                  {action.label}
                 </button>
-                <span className="text-[10px] font-extrabold text-gray-400 mt-3 uppercase tracking-wider">
-                  {isRecordingAudio ? 'Recording... click to stop' : 'Click to dictate audio'}
-                </span>
-              </div>
-
-              {(isTranscribing || transcriptionResult) && (
-                <div className="p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 text-xs leading-relaxed text-gray-700">
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wider block mb-1">Dictated Transcript</span>
-                  {isTranscribing ? (
-                    <span className="flex items-center gap-1 text-gray-400">
-                      <Activity className="animate-spin" size={12} /> Transcribing audio payload...
-                    </span>
-                  ) : (
-                    <p className="font-medium">{transcriptionResult}</p>
-                  )}
-                </div>
-              )}
+              ))}
             </div>
-          </div>
-        )}
 
-        {/* E. Chat / Vision Standard Assistant Panel */}
-        {isChatModel && (
-          <>
-            {/* Message Container */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar bg-[var(--ios-card-bg)]">
-              {messages.map((msg, i) => (
-                <div key={msg.id || i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div 
-                    className={`p-5 rounded-[24px] max-w-[85%] text-sm leading-relaxed border break-all sm:break-words ${
-                      msg.role === 'user' 
-                        ? 'bg-[var(--ios-card-bg)] text-gray-800 rounded-tr-md border-white/20 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)]' 
-                        : msg.isError 
-                          ? 'bg-rose-50 border-rose-200 text-rose-700 rounded-tl-md shadow-sm border border-[var(--ios-separator)]'
-                          : "bg-[var(--ios-fill-tertiary)] text-[var(--ios-label-primary)] rounded-2xl rounded-tl-sm border border-[var(--ios-separator)]"
+            {/* Messages Chat Feed */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 no-scrollbar">
+              {messages.map((msg) => (
+                <div 
+                  key={msg.id} 
+                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-fade-in-up`}
+                >
+                  {/* Message Bubble */}
+                  <div
+                    className={`max-w-[88%] p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed transition-all shadow-sm ${
+                      msg.role === 'user'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-tr-none shadow-blue-500/20'
+                        : msg.isError
+                        ? 'bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 rounded-tl-none'
+                        : 'ios-glass border border-white/60 dark:border-white/10 text-gray-800 dark:text-gray-100 rounded-tl-none bg-white/70 dark:bg-white/10'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap font-medium break-all sm:break-words">{msg.content}</div>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
 
-                    {/* Inline Sent Images (for Vision) */}
-                    {msg.images && msg.images.map((img, idx) => (
-                      <img 
-                        key={idx} 
-                        src={img} 
-                        alt="Attached Preview" 
-                        className="mt-3 rounded-xl max-w-full max-h-[160px] object-cover cursor-pointer hover:opacity-95 shadow-md border border-white/30"
-                        onClick={() => setActiveImagePreview(img)}
-                      />
-                    ))}
-
-                    {/* Stock Analysis Card Widget */}
-                    {msg.stockAnalysis && (
-                      <div className="mt-4 p-4 rounded-2xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/40 space-y-4">
-                        <div className="flex justify-between items-center border-b border-gray-300/40 pb-2">
-                          <span className="font-extrabold text-blue-600 text-lg">{msg.stockAnalysis.symbol} Signal</span>
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold text-white ${
-                            msg.stockAnalysis.signal.signal === 'BULLISH' ? 'bg-teal-500' : msg.stockAnalysis.signal.signal === 'BEARISH' ? 'bg-rose-500' : 'bg-amber-500'
-                          }`}>
-                            {msg.stockAnalysis.signal.signal}
-                          </span>
+                    {/* Action Execution Result Card */}
+                    {msg.actionResult && (
+                      <div className="mt-3 p-3 rounded-xl bg-white/60 dark:bg-black/30 border border-black/5 dark:border-white/10 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white">
+                            <Check size={14} className="text-emerald-500" />
+                            <span>{msg.actionResult.title}</span>
+                          </div>
+                          {msg.actionResult.badge && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              {msg.actionResult.badge}
+                            </span>
+                          )}
                         </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-gray-600">
-                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
-                            <p className="text-[9px] text-gray-400 uppercase">Score</p>
-                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.score.toFixed(1)}/10</p>
-                          </div>
-                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
-                            <p className="text-[9px] text-gray-400 uppercase">Action</p>
-                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.action}</p>
-                          </div>
-                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
-                            <p className="text-[9px] text-gray-400 uppercase">Conviction</p>
-                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.conviction}</p>
-                          </div>
-                          <div className="p-2 rounded-xl bg-[var(--ios-card-bg)] shadow-sm border border-[var(--ios-separator)]">
-                            <p className="text-[9px] text-gray-400 uppercase">Confidence</p>
-                            <p className="text-base text-gray-800 mt-0.5">{msg.stockAnalysis.signal.confidence}</p>
-                          </div>
+                        <div className="space-y-1 text-[11px] text-gray-600 dark:text-gray-300">
+                          {msg.actionResult.details.map((item, dIdx) => (
+                            <div key={dIdx} className="flex items-center gap-1.5">
+                              <span className="w-1 h-1 rounded-full bg-blue-500" />
+                              <span>{item}</span>
+                            </div>
+                          ))}
                         </div>
-
-                        <button 
-                          onClick={() => handleExportHtml(msg.stockAnalysis!.symbol, msg.stockAnalysis!.report, msg.stockAnalysis!.signal)}
-                          className="w-full py-2.5 rounded-xl bg-blue-500 text-white font-bold text-xs hover:bg-blue-600 transition shadow-md flex items-center justify-center gap-1.5"
-                        >
-                          <FileText size={14} /> Export HTML Research Report
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Video Summary Card Widget */}
-                    {msg.videoSummary && (
-                      <VideoSummaryWidget
-                        summary={msg.videoSummary}
-                        onSaveSuccess={(successMsg) => {
-                          setMessages(prev => [...prev, {
-                            id: Date.now().toString(),
-                            role: 'assistant',
-                            content: `✅ ${successMsg}`
-                          }]);
-                        }}
-                        onSaveError={(errorMsg) => {
-                          setMessages(prev => [...prev, {
-                            id: Date.now().toString(),
-                            role: 'assistant',
-                            content: `❌ ${errorMsg}`,
-                            isError: true
-                          }]);
-                        }}
-                      />
-                    )}
-
-                    {/* Pending Confirmation Buttons */}
-                    {msg.pendingAction && (
-                      <div className="mt-4 flex gap-3">
-                        <button
-                          onClick={() => handleConfirmAction(true)}
-                          className="flex-1 py-2 rounded-xl bg-teal-500 text-white font-bold text-xs hover:bg-teal-600 transition flex items-center justify-center gap-1"
-                        >
-                          <Check size={14} /> Confirm
-                        </button>
-                        <button
-                          onClick={() => handleConfirmAction(false)}
-                          className="flex-1 py-2 rounded-xl bg-gray-400 text-white font-bold text-xs hover:bg-gray-500 transition flex items-center justify-center gap-1"
-                        >
-                          <X size={14} /> Cancel
-                        </button>
                       </div>
                     )}
                   </div>
+                  <span className="text-[9px] text-gray-400 mt-1 px-1 font-medium">
+                    {msg.role === 'user' ? '你' : 'Ask Apptify'}
+                  </span>
                 </div>
               ))}
+
               {isProcessing && (
-                <div className="flex justify-start w-full">
-                  <div className="bg-[var(--ios-card-bg)] p-5 rounded-[24px] rounded-tl-none shadow-sm border border-[var(--ios-separator)] flex items-center gap-2 border border-white/40">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="flex items-start gap-2 animate-pulse">
+                  <div className="ios-glass p-3 rounded-2xl rounded-tl-none border border-white/40 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <Sparkles size={14} className="animate-spin text-blue-500" />
+                    <span>专属 AI 正在解析指令并执行更新...</span>
                   </div>
                 </div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Dock */}
-            <div 
-              className="p-5 bg-[var(--ios-card-bg)]"
-              style={{ borderTop: "1px solid rgba(0, 0, 0, 0.05)" }}
-            >
-              {/* Thumbnail image attachments preview */}
-              {attachedImage && (
-                <div className="relative inline-block ml-4 mb-2 p-1.5 rounded-xl bg-[var(--ios-card-bg)] bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/20">
-                  <img src={attachedImage} alt="Preview" className="h-12 rounded-lg object-contain" />
-                  <button 
-                    onClick={() => setAttachedImage(null)} 
-                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[8px] hover:bg-rose-600 transition"
-                  >
-                    <X size={8} />
-                  </button>
-                </div>
-              )}
-
-              <div className="relative flex items-center gap-2">
-                {/* Conditional Vision uploader */}
-                {supportsVision && (
-                  <>
+            {/* Input Bar */}
+            <div className="p-3 sm:p-4 border-t border-black/5 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-md">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="flex items-center gap-2"
+              >
+                <div className="flex-1 relative flex items-center">
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="输入记账、待办、笔记或查询指令..."
+                    disabled={isProcessing}
+                    className="w-full pl-4 pr-10 py-3 rounded-2xl bg-white/70 dark:bg-black/30 border border-black/5 dark:border-white/10 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner"
+                  />
+                  {inputText && (
                     <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-3.5 rounded-2xl transition-all shadow-sm border border-[var(--ios-separator)] bg-[var(--ios-card-bg)] text-gray-500 hover:text-blue-500"
+                      type="button"
+                      onClick={() => setInputText('')}
+                      className="absolute right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                     >
-                      <Paperclip size={20} className="rotate-45" />
+                      <X size={14} />
                     </button>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handleFileSelect} 
-                    />
-                  </>
-                )}
+                  )}
+                </div>
 
                 <button
-                  onClick={toggleListening}
-                  className={`p-3.5 rounded-2xl transition-all shadow-sm border border-[var(--ios-separator)] ${
-                    isListening 
-                      ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/30' 
-                      : 'bg-[var(--ios-card-bg)] text-gray-500 hover:text-blue-500'
-                  }`}
-                >
-                  <Mic size={20} />
-                </button>
-                
-                <input
-                  type="text"
-                  value={inputText}
-                  onChange={e => setInputText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  placeholder={supportsVision ? "Type request or attach image..." : "Record RM100, add task..."}
-                  className="flex-1 p-3.5 bg-[var(--ios-card-bg)] rounded-2xl outline-none font-bold text-sm text-gray-700 placeholder-gray-400/80 bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] border border-white/10 focus:ring-2 focus:ring-blue-500/10 transition-all"
-                  disabled={isProcessing}
-                />
-                
-                <button
-                  onClick={() => handleSend()}
+                  type="submit"
                   disabled={!inputText.trim() || isProcessing}
-                  className="p-3.5 rounded-2xl text-white bg-gray-800 disabled:bg-gray-300 disabled:opacity-50 transition-all shadow-sm border border-[var(--ios-separator)]"
+                  className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/25 tap-scale disabled:opacity-40 disabled:scale-100 transition-all"
+                  aria-label="发送指令"
                 >
-                  <Send size={18} />
+                  <Send size={16} />
                 </button>
+              </form>
+              <div className="mt-2 text-center">
+                <span className="text-[10px] text-gray-400">
+                  支持自然语言直接更新数据：如 “记一笔午餐 25 块” 或 “新建待办：下午开会”
+                </span>
               </div>
-              {isListening && <p className="text-[10px] text-center text-rose-500 font-extrabold uppercase mt-2 animate-pulse tracking-wider">Voice Listener Active...</p>}
             </div>
-          </>
-        )}
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
