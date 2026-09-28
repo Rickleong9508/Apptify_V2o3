@@ -249,8 +249,30 @@ const LauncherRobot: React.FC = () => {
   );
 };
 
+const getAppFromHash = (): AppMode => {
+  if (typeof window === 'undefined') return 'launcher';
+  const hash = window.location.hash.replace('#', '') as AppMode;
+  const validModes: AppMode[] = ['launcher', 'mywealth', 'knowledgevault', 'settings', 'autocount', 'newshub'];
+  return validModes.includes(hash) ? hash : 'launcher';
+};
+
 const App: React.FC = () => {
-  const [currentApp, setCurrentApp] = useState<AppMode>('launcher');
+  const [currentApp, setCurrentAppState] = useState<AppMode>(getAppFromHash);
+
+  const setCurrentApp = (mode: AppMode) => {
+    setCurrentAppState(mode);
+    if (window.location.hash !== `#${mode}`) {
+      window.location.hash = mode;
+    }
+  };
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentAppState(getAppFromHash());
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Global theme state
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
