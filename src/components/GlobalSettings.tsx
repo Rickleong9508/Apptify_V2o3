@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     ArrowLeft,
+    ChevronLeft,
     Server,
     Key,
     Cpu,
@@ -359,23 +360,34 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     const [confirmLogout, setConfirmLogout] = useState(false);
 
     return (
-        <div className="min-h-screen bg-[#E0E5EC] text-gray-700 flex flex-col items-center px-6 pb-6 pt-0 animate-fade-in font-sans">
-            <div className="max-w-4xl w-full space-y-8 pb-20">
+        <div className="min-h-screen pb-24 text-[var(--ios-label-primary)] flex flex-col items-center px-6 pb-6 pt-0 animate-fade-in font-sans">
+            <div className="max-w-4xl w-full space-y-6 pb-20">
+                {/* Header Back Button */}
+                <div className="flex items-center justify-between pt-2">
+                    <button
+                        onClick={onExit}
+                        className="flex items-center gap-1.5 text-blue-500 font-semibold text-sm tap-scale"
+                    >
+                        <ChevronLeft size={20} />
+                        <span>Back to Launcher</span>
+                    </button>
+                    <span className="text-xs font-semibold text-[var(--ios-label-secondary)]">Apptify System Settings</span>
+                </div>
 
                 {/* Account Actions Section */}
                 <div
-                    className="p-8 rounded-[32px] animate-scale-in"
+                    className="ios-card p-6 sm:p-8 animate-scale-in"
                     style={{
-                        background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "var(--ios-card-shadow)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-6">
                         <div
                             className="w-12 h-12 rounded-2xl flex items-center justify-center text-red-500"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                             }}
                         >
                             <Key size={24} />
@@ -386,8 +398,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[#E0E5EC]"
-                        style={{ boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff" }}>
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--ios-card-bg)]"
+                        style={{ boxShadow: "none" }}>
 
                         {session ? (
                             <>
@@ -429,18 +441,18 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                 {/* AI Configuration Card */}
                 <div
-                    className="p-8 rounded-[32px] animate-scale-in"
+                    className="ios-card p-6 sm:p-8 animate-scale-in"
                     style={{
-                        background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "var(--ios-card-shadow)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-8">
                         <div
                             className="w-12 h-12 rounded-2xl flex items-center justify-center text-purple-600"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                             }}
                         >
                             <BrainCircuit size={24} />
@@ -469,10 +481,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     }}
                                     className={`py-4 px-2 rounded-2xl text-sm font-bold transition-all ${aiProvider === p.id ? 'text-purple-600' : 'text-gray-400 hover:text-gray-600'}`}
                                     style={{
-                                        background: "#E0E5EC",
+                                        background: "var(--ios-card-bg)",
                                         boxShadow: aiProvider === p.id
-                                            ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                            ? "none"
+                                            : "0 2px 8px rgba(0,0,0,0.06)"
                                     }}
                                 >
                                     {p.label}
@@ -500,9 +512,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     setCheckStatus('idle');
                                 }}
                                 placeholder="sk-... / AIzaSy..."
-                                className="flex-1 p-4 rounded-2xl font-mono text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                className="flex-1 p-4 rounded-2xl font-mono text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
                                 style={{
-                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                    boxShadow: "none"
                                 }}
                             />
                             <button
@@ -510,8 +522,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 disabled={!apiKeys[aiProvider] || checkStatus === 'checking'}
                                 className={`px-6 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 active:scale-95 ${checkStatus === 'success' ? 'text-green-500' : checkStatus === 'error' ? 'text-red-500' : 'text-gray-600'}`}
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 {checkStatus === 'checking' ? <Activity className="animate-spin" size={18} /> :
@@ -535,9 +547,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 <button
                                     onClick={() => loadSiliconFlowModels(apiKeys.siliconflow, true)}
                                     disabled={isLoadingModels || !apiKeys.siliconflow}
-                                    className="px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold bg-[#E0E5EC] hover:text-purple-600 transition flex items-center gap-1.5 active:scale-95"
+                                    className="px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold bg-[var(--ios-card-bg)] hover:text-purple-600 transition flex items-center gap-1.5 active:scale-95"
                                     style={{
-                                        boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                        boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
                                     }}
                                 >
                                     <RefreshCw size={10} className={isLoadingModels ? 'animate-spin' : ''} />
@@ -561,10 +573,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         onClick={() => setAiModel(m.id)}
                                         className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
                                         style={{
-                                            background: "#E0E5EC",
+                                            background: "var(--ios-card-bg)",
                                             boxShadow: aiModel === m.id
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                                ? "none"
+                                                : "var(--ios-card-shadow)"
                                         }}
                                     >
                                         <div className="flex justify-between items-center mb-1">
@@ -584,10 +596,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         onClick={() => setAiModel(m.id)}
                                         className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
                                         style={{
-                                            background: "#E0E5EC",
+                                            background: "var(--ios-card-bg)",
                                             boxShadow: aiModel === m.id
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                                ? "none"
+                                                : "var(--ios-card-shadow)"
                                         }}
                                     >
                                         <div className="flex justify-between items-center mb-1">
@@ -609,10 +621,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         onClick={() => setAiModel(m.id)}
                                         className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
                                         style={{
-                                            background: "#E0E5EC",
+                                            background: "var(--ios-card-bg)",
                                             boxShadow: aiModel === m.id
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                                ? "none"
+                                                : "var(--ios-card-shadow)"
                                         }}
                                     >
                                         <div className="flex justify-between items-center mb-1">
@@ -633,10 +645,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         onClick={() => setAiModel(m.id)}
                                         className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
                                         style={{
-                                            background: "#E0E5EC",
+                                            background: "var(--ios-card-bg)",
                                             boxShadow: aiModel === m.id
-                                                ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                : "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                                ? "none"
+                                                : "var(--ios-card-shadow)"
                                         }}
                                     >
                                         <div className="flex justify-between items-center mb-1">
@@ -665,10 +677,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                                     onClick={() => setAiModel(m.id)}
                                                     className={`p-4 rounded-2xl cursor-pointer transition-all active:scale-95 ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
                                                     style={{
-                                                        background: "#E0E5EC",
+                                                        background: "var(--ios-card-bg)",
                                                         boxShadow: aiModel === m.id
-                                                            ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                            ? "none"
+                                                            : "0 2px 8px rgba(0,0,0,0.06)"
                                                     }}
                                                 >
                                                     <div className="font-bold text-sm flex items-center justify-between">
@@ -681,12 +693,12 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         </div>
                                         <div className="relative">
                                             <input
-                                                className="w-full p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                                className="w-full p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
                                                 placeholder="Or enter custom OpenRouter model ID"
                                                 value={aiModel}
                                                 onChange={e => setAiModel(e.target.value)}
                                                 style={{
-                                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                    boxShadow: "none"
                                                 }}
                                             />
                                         </div>
@@ -703,17 +715,17 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             placeholder="Search by Model Name, Provider, Capability (e.g. qwen, deepseek, flux)..."
-                                            className="w-full pl-12 pr-4 py-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                            className="w-full pl-12 pr-4 py-4 rounded-2xl text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
                                             style={{
-                                                boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                                boxShadow: "none"
                                             }}
                                         />
                                         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     </div>
 
                                     {/* Filter Controls */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-[#E0E5EC]"
-                                         style={{ boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff" }}>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-[var(--ios-card-bg)]"
+                                         style={{ boxShadow: "none" }}>
                                         
                                         {/* Capability Filter */}
                                         <div>
@@ -721,7 +733,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             <select
                                                 value={selectedCapability}
                                                 onChange={e => setSelectedCapability(e.target.value)}
-                                                className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--ios-card-bg)] outline-none text-gray-600 border border-gray-300/40"
                                             >
                                                 <option value="all">All Capabilities</option>
                                                 <option value="chat">General Chat</option>
@@ -741,7 +753,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             <select
                                                 value={selectedSubProvider}
                                                 onChange={e => setSelectedSubProvider(e.target.value)}
-                                                className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--ios-card-bg)] outline-none text-gray-600 border border-gray-300/40"
                                             >
                                                 <option value="all">All Sub-Providers</option>
                                                 <option value="deepseek">DeepSeek</option>
@@ -759,7 +771,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             <select
                                                 value={selectedContextLength}
                                                 onChange={e => setSelectedContextLength(e.target.value)}
-                                                className="w-full p-2.5 rounded-xl text-xs bg-[#E0E5EC] outline-none text-gray-600 border border-gray-300/40"
+                                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--ios-card-bg)] outline-none text-gray-600 border border-gray-300/40"
                                             >
                                                 <option value="all">Any Context Length</option>
                                                 <option value="32k">32K+ Tokens</option>
@@ -779,7 +791,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 )}
 
                                 {/* Active Model Indicator */}
-                                <div className="px-4 py-3 rounded-2xl bg-[#E0E5EC] flex justify-between items-center text-xs font-bold"
+                                <div className="px-4 py-3 rounded-2xl bg-[var(--ios-card-bg)] flex justify-between items-center text-xs font-bold"
                                      style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
                                     <span className="text-gray-400">Currently Active Model:</span>
                                     <span className="text-purple-600 font-mono">{aiModel || 'None Selected'}</span>
@@ -798,10 +810,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                                         isSelected ? 'border-purple-300/60 shadow-clay-inner' : 'border-white/20'
                                                     }`}
                                                     style={{
-                                                        background: "#E0E5EC",
+                                                        background: "var(--ios-card-bg)",
                                                         boxShadow: isSelected
-                                                            ? "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                                            : "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                                            ? "none"
+                                                            : "0 2px 8px rgba(0,0,0,0.06)"
                                                     }}
                                                 >
                                                     <div>
@@ -852,10 +864,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                                         <button
                                                             onClick={() => setAiModel(m.id)}
                                                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                                                                isSelected ? 'bg-purple-600 text-white shadow-md' : 'bg-[#E0E5EC] text-gray-500 hover:text-purple-600'
+                                                                isSelected ? 'bg-purple-600 text-white shadow-md' : 'bg-[var(--ios-card-bg)] text-gray-500 hover:text-purple-600'
                                                             }`}
                                                             style={!isSelected ? {
-                                                                boxShadow: "3px 3px 6px #b8b9be, -3px -3px 6px #ffffff"
+                                                                boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
                                                             } : {}}
                                                         >
                                                             {isSelected ? 'Active' : 'Select'}
@@ -877,18 +889,18 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                 {/* Obsidian Vault Integration Card */}
                 <div
-                    className="p-8 rounded-[32px] animate-scale-in"
+                    className="ios-card p-6 sm:p-8 animate-scale-in"
                     style={{
-                        background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "var(--ios-card-shadow)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-8">
                         <div
                             className="w-12 h-12 rounded-2xl flex items-center justify-center text-emerald-600"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                             }}
                         >
                             <HardDrive size={24} />
@@ -913,9 +925,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     setObsidianStatusMsg('');
                                 }}
                                 placeholder="/Users/username/Obsidian/MyVault"
-                                className="flex-1 p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[#E0E5EC]"
+                                className="flex-1 p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
                                 style={{
-                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
+                                    boxShadow: "none"
                                 }}
                             />
                             <button
@@ -925,8 +937,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     obsidianStatus === 'success' ? 'text-green-500' : obsidianStatus === 'error' ? 'text-red-500' : 'text-gray-600'
                                 }`}
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                                 }}
                             >
                                 {obsidianStatus === 'checking' ? <Activity className="animate-spin" size={18} /> :
@@ -950,18 +962,18 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                 {/* Backup Card */}
                 <div
-                    className="p-8 rounded-[32px] animate-scale-in"
+                    className="ios-card p-6 sm:p-8 animate-scale-in"
                     style={{
-                        background: "#E0E5EC",
-                        boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "var(--ios-card-shadow)"
                     }}
                 >
                     <div className="flex items-center gap-3 mb-8">
                         <div
                             className="w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "5px 5px 10px #b8b9be, -5px -5px 10px #ffffff"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
                             }}
                         >
                             <Database size={24} />
@@ -977,15 +989,15 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             onClick={handleFullBackup}
                             className="p-6 rounded-[24px] transition-all active:scale-95 group text-left relative overflow-hidden text-gray-600 hover:text-blue-600"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "var(--ios-card-shadow)"
                             }}
                         >
                             <div
                                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:-translate-y-1 text-gray-500 group-hover:text-blue-500"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "none"
                                 }}
                             >
                                 <Download size={22} />
@@ -998,15 +1010,15 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             onClick={() => document.getElementById('global-restore')?.click()}
                             className="p-6 rounded-[24px] transition-all active:scale-95 group text-left relative overflow-hidden text-gray-600 hover:text-blue-600"
                             style={{
-                                background: "#E0E5EC",
-                                boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "var(--ios-card-shadow)"
                             }}
                         >
                             <div
                                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:-translate-y-1 text-gray-500 group-hover:text-blue-500"
                                 style={{
-                                    background: "#E0E5EC",
-                                    boxShadow: "inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff"
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "none"
                                 }}
                             >
                                 <Upload size={22} />

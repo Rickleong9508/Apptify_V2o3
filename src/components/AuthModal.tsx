@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { Loader, Lock, Mail, X } from 'lucide-react';
+import { Loader2, Lock, Mail, X, Sparkles } from 'lucide-react';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -36,7 +35,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     password,
                 });
                 if (error) throw error;
-                onClose(); // Close modal on successful sign in
+                onClose();
             }
         } catch (error: any) {
             setMessage({ text: error.message, type: 'error' });
@@ -46,38 +45,44 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-            <div
-                className="w-full max-w-md p-8 rounded-[35px] bg-[#E0E5EC] relative animate-scale-in"
-                style={{
-                    boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                }}
-            >
-                <button
-                    onClick={onClose}
-                    className="absolute top-6 right-6 p-2 rounded-full text-gray-500 hover:bg-black/5 transition-colors"
-                >
-                    <X size={20} />
-                </button>
-
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-[#444] mb-2">{mode === 'signin' ? 'Welcome Back' : 'Create Account'}</h1>
-                    <p className="text-xs text-gray-500">
-                        {mode === 'signin' ? 'Sign in to sync your wealth data' : 'Sign up to enable cloud sync'}
-                    </p>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+            <div className="w-full sm:max-w-md ios-card rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 space-y-6 animate-slide-up sm:animate-scale-in">
+                <div className="flex items-center justify-between pb-2 border-b border-[var(--ios-separator)]">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center">
+                            <Sparkles size={16} />
+                        </div>
+                        <h2 className="text-base sm:text-lg font-bold text-[var(--ios-label-primary)]">
+                            {mode === 'signin' ? 'Sign in to Apptify' : 'Create Account'}
+                        </h2>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-full bg-[var(--ios-fill-tertiary)] flex items-center justify-center text-[var(--ios-label-secondary)] hover:text-[var(--ios-label-primary)] tap-scale"
+                    >
+                        <X size={16} />
+                    </button>
                 </div>
 
+                <p className="text-xs text-[var(--ios-label-secondary)] leading-relaxed">
+                    {mode === 'signin' 
+                        ? 'Sign in to sync your wealth, tasks, and investment notes securely across devices.' 
+                        : 'Sign up to enable real-time cloud data synchronization and automatic backups.'}
+                </p>
+
                 {message && (
-                    <div className={`mb-6 p-3 rounded-xl text-xs font-medium ${message.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                    <div className={`p-3 rounded-xl text-xs font-semibold ${
+                        message.type === 'error' ? 'bg-rose-500/15 text-rose-500' : 'bg-emerald-500/15 text-emerald-500'
+                    }`}>
                         {message.text}
                     </div>
                 )}
 
-                <form onSubmit={handleAuth} className="space-y-6">
-                    <div className="space-y-4">
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                <Mail size={18} />
+                <form onSubmit={handleAuth} className="space-y-4">
+                    <div className="space-y-3">
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-[var(--ios-label-tertiary)]">
+                                <Mail size={16} />
                             </div>
                             <input
                                 type="email"
@@ -85,16 +90,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#E0E5EC] border-none text-gray-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all"
-                                style={{
-                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                }}
+                                className="ios-input pl-10"
                             />
                         </div>
 
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                                <Lock size={18} />
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-[var(--ios-label-tertiary)]">
+                                <Lock size={16} />
                             </div>
                             <input
                                 type="password"
@@ -102,10 +104,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#E0E5EC] border-none text-gray-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all"
-                                style={{
-                                    boxShadow: "inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff"
-                                }}
+                                className="ios-input pl-10"
                             />
                         </div>
                     </div>
@@ -113,24 +112,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 rounded-[24px] bg-[#E0E5EC] text-blue-600 font-bold text-sm hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 hover:scale-[1.02] flex items-center justify-center gap-2"
-                        style={{
-                            boxShadow: "9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)"
-                        }}
+                        className="w-full ios-button-primary py-3.5 text-sm font-semibold tap-scale flex items-center justify-center gap-2 disabled:opacity-40"
                     >
-                        {loading ? <Loader className="animate-spin" size={20} /> : (mode === 'signin' ? 'Sign In' : 'Sign Up')}
+                        {loading ? <Loader2 className="animate-spin" size={18} /> : (mode === 'signin' ? 'Sign In' : 'Sign Up')}
                     </button>
                 </form>
 
-                <div className="mt-6 text-center">
+                <div className="pt-2 text-center border-t border-[var(--ios-separator)]">
                     <button
+                        type="button"
                         onClick={() => {
                             setMode(mode === 'signin' ? 'signup' : 'signin');
                             setMessage(null);
                         }}
-                        className="text-gray-500 hover:text-blue-600 font-medium text-xs transition-colors"
+                        className="text-[var(--ios-label-secondary)] hover:text-blue-500 font-medium text-xs transition-colors"
                     >
-                        {mode === 'signin' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                        {mode === 'signin' ? "Don't have an account? Create one" : "Already have an account? Sign In"}
                     </button>
                 </div>
             </div>
