@@ -43,6 +43,31 @@ async function createServer() {
         }
     });
 
+    // DeepSeek API Proxy Route (Ensures seamless CORS-free communication)
+    app.all('/api/deepseek/*', express.json({ limit: '10mb' }), async (req, res) => {
+        try {
+            const subPath = req.url.replace(/^\/api\/deepseek/, '');
+            const targetUrl = `https://api.deepseek.com${subPath}`;
+            const authHeader = req.headers['authorization'] || '';
+            const fetchOptions = {
+                method: req.method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader
+                }
+            };
+            if (req.method !== 'GET' && req.method !== 'HEAD' && req.body && Object.keys(req.body).length > 0) {
+                fetchOptions.body = JSON.stringify(req.body);
+            }
+            const upstreamRes = await fetch(targetUrl, fetchOptions);
+            const data = await upstreamRes.json();
+            res.status(upstreamRes.status).json(data);
+        } catch (e) {
+            console.error("DeepSeek proxy error", e);
+            res.status(500).json({ error: e.message });
+        }
+    });
+
     // InvestSkill API Route: List available prompts
     app.get('/api/invest_skills/list', async (req, res) => {
         try {

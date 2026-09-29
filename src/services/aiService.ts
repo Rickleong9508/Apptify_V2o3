@@ -136,10 +136,36 @@ export const DeepSeekProvider: AIProviderInstance = {
     async getModels(apiKey: string): Promise<ModelMetadata[]> {
         return [
             {
+                id: 'deepseek-flash',
+                name: 'DeepSeek-V4 Flash',
+                provider: 'DeepSeek',
+                description: '官方推荐新一代极速型：1M 超大上下文、超低延迟与使用成本，支持深度思考。',
+                context_length: 1048576,
+                max_output_tokens: 393216,
+                pricing: {
+                    prompt: '$0.15 / 1M tokens (未命中) | $0.003 (命中)',
+                    completion: '$0.60 / 1M tokens (闲时)'
+                },
+                capabilities: ['chat', 'coding', 'reasoning', 'tool_calling', 'function_calling']
+            },
+            {
+                id: 'deepseek-v4-pro',
+                name: 'DeepSeek-V4 Pro',
+                provider: 'DeepSeek',
+                description: '官方全能旗舰深度推理：1M 超长上下文，顶级数学逻辑、代码工程与多步骤自主思考。',
+                context_length: 1048576,
+                max_output_tokens: 393216,
+                pricing: {
+                    prompt: '$0.66 / 1M tokens (未命中) | $0.022 (命中)',
+                    completion: '$1.98 / 1M tokens (闲时)'
+                },
+                capabilities: ['chat', 'reasoning', 'coding', 'tool_calling', 'function_calling']
+            },
+            {
                 id: 'deepseek-chat',
                 name: 'DeepSeek V3 (Chat)',
                 provider: 'DeepSeek',
-                description: 'Flagship general-purpose chat model with excellent performance and cost.',
+                description: '经典旗舰通用模型 (DeepSeek-V3 兼容别名)。',
                 context_length: 64000,
                 capabilities: ['chat', 'coding', 'tool_calling', 'function_calling']
             },
@@ -147,7 +173,7 @@ export const DeepSeekProvider: AIProviderInstance = {
                 id: 'deepseek-reasoner',
                 name: 'DeepSeek R1 (Reasoner)',
                 provider: 'DeepSeek',
-                description: 'Specialized reasoning and logic model showcasing chain-of-thought.',
+                description: '经典深度链式思考推理模型 (DeepSeek-R1 兼容别名)。',
                 context_length: 64000,
                 capabilities: ['chat', 'reasoning', 'coding']
             }
@@ -160,29 +186,58 @@ export const DeepSeekProvider: AIProviderInstance = {
 
         let finalPrompt = prompt;
         if (images && images.length > 0) {
-            finalPrompt += "\n\n[System Note: The user attached images, but DeepSeek standard API does not support image analysis directly.]";
+            finalPrompt += "\n\n[System Note: The user attached images, but DeepSeek text models do not directly accept raw image bytes.]";
         }
         messages.push({ role: 'user', content: finalPrompt });
 
-        const res = await fetch('/api/deepseek/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model,
-                messages,
-                temperature: 0.7
-            })
-        });
+        const isReasoner = model === 'deepseek-reasoner' || model === 'deepseek-v4-pro';
+        const reqBody: any = {
+            model,
+            messages,
+            temperature: isReasoner ? undefined : 0.7
+        };
+
+        let res: Response;
+        try {
+            res = await fetch('/api/deepseek/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify(reqBody)
+            });
+
+            if (!res.ok && (res.status === 404 || res.status === 502)) {
+                throw new Error("Proxy 404, fallback to direct API");
+            }
+        } catch (e) {
+            // Fallback directly to DeepSeek official endpoint
+            res = await fetch('https://api.deepseek.com/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify(reqBody)
+            });
+        }
 
         if (!res.ok) {
             const errText = await res.text();
-            throw new Error(errText || `API Error ${res.status}`);
+            throw new Error(errText || `DeepSeek API Error ${res.status}`);
         }
         const data = await res.json();
-        return data.choices?.[0]?.message?.content || "";
+        const choice = data.choices?.[0];
+        const content = choice?.message?.content || "";
+        const reasoning = choice?.message?.reasoning_content;
+        
+        if (reasoning && content) {
+            return `> 💭 **推理思考过程**：\n> ${reasoning.split('\n').join('\n> ')}\n\n${content}`;
+        } else if (reasoning && !content) {
+            return `> 💭 **推理思考过程**：\n> ${reasoning.split('\n').join('\n> ')}`;
+        }
+        return content;
     }
 };
 
@@ -348,14 +403,19 @@ export const AnthropicProvider: AIProviderInstance = {
 export const OpenRouterProvider: AIProviderInstance = {
     async getModels(apiKey: string): Promise<ModelMetadata[]> {
         return [
+            { id: 'deepseek/deepseek-v4-pro', name: 'DeepSeek-V4 Pro', provider: 'DeepSeek', description: 'Flagship deep reasoning model with 1M context via OpenRouter.', context_length: 1048576, capabilities: ['chat', 'reasoning', 'coding'] },
+            { id: 'deepseek/deepseek-flash', name: 'DeepSeek-V4 Flash', provider: 'DeepSeek', description: 'Ultra-fast low-latency model with 1M context via OpenRouter.', context_length: 1048576, capabilities: ['chat', 'coding', 'reasoning'] },
             { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek', description: 'DeepSeek R1 (Full 671B model) featuring chain-of-thought reasoning.', context_length: 128000, capabilities: ['chat', 'reasoning', 'coding'] },
             { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek', description: 'Flagship general-purpose chat model from DeepSeek.', context_length: 64000, capabilities: ['chat', 'coding'] },
             { id: 'deepseek/deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Llama-70B', provider: 'DeepSeek', description: 'DeepSeek R1 distilled on Meta Llama-3 70B.', context_length: 128000, capabilities: ['chat', 'reasoning', 'coding'] },
             { id: 'deepseek/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Qwen-32B', provider: 'DeepSeek', description: 'DeepSeek R1 distilled on Alibaba Qwen-2.5 32B.', context_length: 128000, capabilities: ['chat', 'reasoning', 'coding'] },
-            { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic', description: 'Claude 3.7 Sonnet via OpenRouter.', context_length: 200000, capabilities: ['chat', 'coding', 'vision'] },
-            { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'GPT-4o via OpenRouter.', context_length: 128000, capabilities: ['chat', 'vision'] },
+            { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic', description: 'Claude 3.7 Sonnet with hybrid reasoning via OpenRouter.', context_length: 200000, capabilities: ['chat', 'coding', 'vision', 'reasoning'] },
+            { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'GPT-4o via OpenRouter.', context_length: 128000, capabilities: ['chat', 'vision', 'coding'] },
             { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', description: 'GPT-4o Mini via OpenRouter.', context_length: 128000, capabilities: ['chat', 'vision'] },
-            { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'Alibaba', description: 'Qwen 2.5 72B Instruct via OpenRouter.', context_length: 128000, capabilities: ['chat', 'coding'] }
+            { id: 'qwen/qwq-32b', name: 'Qwen QwQ 32B', provider: 'Alibaba', description: 'Qwen reasoning model with powerful mathematical & coding capabilities.', context_length: 131072, capabilities: ['chat', 'reasoning', 'coding'] },
+            { id: 'qwen/qwen-2.5-coder-32b-instruct', name: 'Qwen 2.5 Coder 32B', provider: 'Alibaba', description: 'Specialized code generation & refactoring model.', context_length: 131072, capabilities: ['chat', 'coding'] },
+            { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'Alibaba', description: 'Qwen 2.5 72B Instruct via OpenRouter.', context_length: 128000, capabilities: ['chat', 'coding'] },
+            { id: 'moonshot/moonshot-v1-128k', name: 'Moonshot Kimi V1 128K', provider: 'Moonshot', description: 'Moonshot Kimi long-context flagship model.', context_length: 128000, capabilities: ['chat', 'coding'] }
         ];
     },
 

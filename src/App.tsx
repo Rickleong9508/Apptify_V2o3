@@ -121,7 +121,7 @@ const App: React.FC = () => {
     if (modelId.startsWith('gemini-')) return 'google';
     if (modelId.startsWith('gpt-') || modelId.startsWith('o1') || modelId.startsWith('o3-')) return 'openai';
     if (modelId.startsWith('claude-')) return 'anthropic';
-    if (modelId === 'deepseek-chat' || modelId === 'deepseek-reasoner') return 'deepseek';
+    if (modelId.startsWith('deepseek-')) return 'deepseek';
     
     try {
       const sfCache = localStorage.getItem('app_siliconflow_models_cache');
@@ -133,7 +133,7 @@ const App: React.FC = () => {
       }
     } catch (e) {}
 
-    if (modelId.startsWith('deepseek/') || modelId.startsWith('anthropic/') || modelId.startsWith('openai/') || modelId.startsWith('qwen/')) {
+    if (modelId.startsWith('deepseek/') || modelId.startsWith('anthropic/') || modelId.startsWith('openai/') || modelId.startsWith('qwen/') || modelId.startsWith('moonshot/')) {
       return 'openrouter';
     }
 
@@ -200,6 +200,8 @@ const App: React.FC = () => {
         ]);
       } else if (currentProvider === 'deepseek') {
         setModelsList([
+          { id: 'deepseek-flash', name: 'DeepSeek-V4 Flash (推荐)' },
+          { id: 'deepseek-v4-pro', name: 'DeepSeek-V4 Pro (深度推理)' },
           { id: 'deepseek-chat', name: 'DeepSeek V3 (Chat)' },
           { id: 'deepseek-reasoner', name: 'DeepSeek R1 (Reasoner)' }
         ]);
@@ -218,6 +220,8 @@ const App: React.FC = () => {
         ]);
       } else if (currentProvider === 'openrouter') {
         setModelsList([
+          { id: 'deepseek/deepseek-v4-pro', name: 'DeepSeek-V4 Pro' },
+          { id: 'deepseek/deepseek-flash', name: 'DeepSeek-V4 Flash' },
           { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1' },
           { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3' },
           { id: 'deepseek/deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Llama-70B' },
@@ -225,7 +229,10 @@ const App: React.FC = () => {
           { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
           { id: 'openai/gpt-4o', name: 'GPT-4o' },
           { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' },
-          { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B' }
+          { id: 'qwen/qwq-32b', name: 'Qwen QwQ 32B (Reasoning)' },
+          { id: 'qwen/qwen-2.5-coder-32b-instruct', name: 'Qwen 2.5 Coder 32B' },
+          { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B' },
+          { id: 'moonshot/moonshot-v1-128k', name: 'Moonshot Kimi V1 128K' }
         ]);
       } else {
         setModelsList([]);
