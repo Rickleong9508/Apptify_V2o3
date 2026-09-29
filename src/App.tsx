@@ -254,12 +254,23 @@ const App: React.FC = () => {
         if (raw) {
           const data = JSON.parse(raw);
           const accounts = data.accounts || [];
-          const cash = accounts.reduce((sum: number, a: any) => sum + (Number(a.balance) || 0), 0);
+          const totalCash = accounts.reduce((sum: number, a: any) => sum + (Number(a.balance) || 0), 0);
           const stocks = data.stocks || [];
-          const stockVal = stocks.reduce((sum: number, s: any) => sum + ((Number(s.shares) || 0) * (Number(s.currentPrice) || 0)), 0);
-          // Total Assets does NOT deduct loans (loans are tracked separately)
-          const totalAssets = cash + stockVal;
-          setLiveNetWorth(totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+          const exchangeRate = Number(data.exchangeRate) || 4.5;
+          const stocksVal = stocks.reduce((sum: number, s: any) => {
+            const qty = Number(s.quantity ?? s.shares ?? 0);
+            const price = Number(s.currentPrice || 0);
+            const rate = s.currency === 'USD' ? exchangeRate : 1;
+            return sum + (qty * price * rate);
+          }, 0);
+          const investCash = data.cash || {};
+          const hkdRate = Number(investCash.hkdRate) || 0.58;
+          const investCashVal = (Number(investCash.myr) || 0) + ((Number(investCash.usd) || 0) * exchangeRate) + ((Number(investCash.hkd) || 0) * hkdRate);
+          const totalInvestment = stocksVal + investCashVal;
+
+          // 用户指定：MyWealth 总数 = 现金 + 目前的投资数额（绝不计算/扣除 Loan）
+          const grandTotal = totalCash + totalInvestment;
+          setLiveNetWorth(grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         }
       } catch {}
 

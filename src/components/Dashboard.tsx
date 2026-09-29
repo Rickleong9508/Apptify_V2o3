@@ -102,7 +102,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="relative z-10">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
             <Activity size={15} />
-            <span className="text-[11px] font-bold uppercase tracking-wider">个人总资产 (Total Assets)</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider">总数 (现金 + 目前投资数额 · 不计Loan)</span>
           </div>
 
           <div className="flex items-baseline gap-2 mb-6">
@@ -115,21 +115,21 @@ const Dashboard: React.FC<DashboardProps> = ({
           {/* Quick Metrics Breakdown (Frosted Translucent Pills) */}
           <div className="grid grid-cols-3 gap-2 sm:gap-6 border-t border-gray-100/80 dark:border-white/10 pt-5">
             <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 dark:from-emerald-500/20 dark:to-emerald-500/5 border border-emerald-500/20 backdrop-blur-md">
-              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">流动现金</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">现金钱包</p>
               <p className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 truncate">
                 +RM {totalCash.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
 
             <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-purple-500/15 to-purple-500/5 dark:from-purple-500/20 dark:to-purple-500/5 border border-purple-500/20 backdrop-blur-md">
-              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">投资持仓</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">目前投资数额</p>
               <p className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400 truncate">
                 +RM {totalStockValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
 
-            <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-rose-500/15 to-rose-500/5 dark:from-rose-500/20 dark:to-rose-500/5 border border-rose-500/20 backdrop-blur-md" title="贷款为独立履约跟踪，不从总资产中抵扣">
-              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">借贷履约 (独立)</p>
+            <div className="p-2 sm:p-3 rounded-2xl bg-gradient-to-br from-rose-500/15 to-rose-500/5 dark:from-rose-500/20 dark:to-rose-500/5 border border-rose-500/20 backdrop-blur-md" title="贷款为独立履约跟踪，100%不从总数中扣减">
+              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold mb-0.5">履约借贷 (独立)</p>
               <p className="text-sm sm:text-lg font-bold text-rose-600 dark:text-rose-400 truncate">
                 RM {totalLiabilities.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>

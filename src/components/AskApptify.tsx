@@ -582,26 +582,38 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
     if (intent === 'QUERY_WEALTH') {
       const mwData = loadMyWealthData();
       const totalCash = mwData.accounts.reduce((sum: number, a: any) => sum + (Number(a.balance) || 0), 0);
-      const totalStock = (mwData.stocks || []).reduce((sum: number, s: any) => sum + ((Number(s.shares) || 0) * (Number(s.currentPrice) || 0)), 0);
-      const totalAssets = totalCash + totalStock;
-      const totalLoan = mwData.loans.reduce((sum: number, l: any) => sum + (Number(l.remainingAmount) || 0), 0);
+      const exchangeRate = Number(mwData.exchangeRate) || 4.5;
+      const stocksVal = (mwData.stocks || []).reduce((sum: number, s: any) => {
+        const qty = Number(s.quantity ?? s.shares ?? 0);
+        const price = Number(s.currentPrice || 0);
+        const rate = s.currency === 'USD' ? exchangeRate : 1;
+        return sum + (qty * price * rate);
+      }, 0);
+      const investCash = mwData.cash || {};
+      const hkdRate = Number(investCash.hkdRate) || 0.58;
+      const investCashVal = (Number(investCash.myr) || 0) + ((Number(investCash.usd) || 0) * exchangeRate) + ((Number(investCash.hkd) || 0) * hkdRate);
+      const totalInvestment = stocksVal + investCashVal;
+
+      // 严格按照用户需求：总数 = 现金 + 目前的投资数额（绝不计算/扣除 Loan）
+      const grandTotal = totalCash + totalInvestment;
+      const totalLoan = (mwData.loans || []).reduce((sum: number, l: any) => sum + (Number(l.remainingAmount) || 0), 0);
       const totalMonthlyExpenses = mwData.monthlyData.expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
       const walletLines = mwData.accounts.map((a: any) => `• ${a.name}: RM${Number(a.balance).toFixed(2)}`).join('\n');
 
       return {
-        message: `📊 **MyWealth 实时资产速报**：\n• **个人总资产**：**RM${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n• 钱包总现金：RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 投资持仓：RM${totalStock.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 履约借贷 (独立跟踪)：RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 本月累计支出：RM${totalMonthlyExpenses.toFixed(2)}\n\n**各钱包余额分布：**\n${walletLines}`,
+        message: `📊 **MyWealth 财富总数速报**：\n• **总数 (现金 + 目前投资数额)**：**RM${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n  - 钱包现金：RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n  - 目前投资数额：RM${totalInvestment.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 履约中借贷：RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })} (独立跟踪，100%不从总数扣减)\n• 本月累计支出：RM${totalMonthlyExpenses.toFixed(2)}\n\n**各钱包余额分布：**\n${walletLines}`,
         result: {
           type: 'wealth',
-          title: '实时总资产快报',
+          title: '现金与目前投资总数',
           details: [
-            `个人总资产: RM${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-            `流动现金: RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-            `投资持仓: RM${totalStock.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `总数 (现金+投资): RM${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `现金钱包: RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `目前投资数额: RM${totalInvestment.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
             `履约借贷: RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })} (独立)`,
             `本月支出: RM${totalMonthlyExpenses.toFixed(2)}`
           ],
-          badge: '实时资产'
+          badge: '总数速报'
         }
       };
     }
