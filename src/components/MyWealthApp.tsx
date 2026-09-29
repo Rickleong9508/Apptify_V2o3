@@ -687,22 +687,49 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             </div>
           </div>
 
-          {/* Component Render */}
-          <div key={activeTab} className="animate-fade-in-up">
-            {activeTab === 'dashboard' && <Dashboard accounts={accounts} monthlyData={monthlyData} fixedExpenses={fixedExpenses} loans={loans} stocks={stocks} exchangeRate={exchangeRate} cash={cash} budgetHistory={budgetHistory} />}
-            {activeTab === 'accounts' && <Accounts accounts={accounts} setAccounts={setAccounts} />}
-            {activeTab === 'budget' && <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} budgetHistory={budgetHistory} onArchiveMonth={handleArchiveMonth} accounts={accounts} />}
-            {activeTab === 'loans' && <Loans loans={loans} setLoans={setLoans} />}
-            {activeTab === 'investments' && <Investments stocks={stocks} setStocks={setStocks} cash={cash} setCash={setCash} exchangeRate={exchangeRate} setExchangeRate={setExchangeRate} />}
+          {/* Smooth Zero-Lag Tab Views (Persisted for instantaneous 60fps switching) */}
+          <div className="w-full">
+            <div className={activeTab === 'dashboard' ? 'block animate-fade-in' : 'hidden'}>
+              <Dashboard accounts={accounts} monthlyData={monthlyData} fixedExpenses={fixedExpenses} loans={loans} stocks={stocks} exchangeRate={exchangeRate} cash={cash} budgetHistory={budgetHistory} />
+            </div>
+            <div className={activeTab === 'accounts' ? 'block animate-fade-in' : 'hidden'}>
+              <Accounts accounts={accounts} setAccounts={setAccounts} />
+            </div>
+            <div className={activeTab === 'budget' ? 'block animate-fade-in' : 'hidden'}>
+              <Budget monthlyData={monthlyData} setMonthlyData={setMonthlyData} fixedExpenses={fixedExpenses} setFixedExpenses={setFixedExpenses} budgetHistory={budgetHistory} onArchiveMonth={handleArchiveMonth} accounts={accounts} />
+            </div>
+            <div className={activeTab === 'loans' ? 'block animate-fade-in' : 'hidden'}>
+              <Loans loans={loans} setLoans={setLoans} />
+            </div>
+            <div className={activeTab === 'investments' ? 'block animate-fade-in' : 'hidden'}>
+              <Investments stocks={stocks} setStocks={setStocks} cash={cash} setCash={setCash} exchangeRate={exchangeRate} setExchangeRate={setExchangeRate} />
+            </div>
           </div>
         </div>
       </main>
 
-      {/* iOS FLOATING ISLAND NAVIGATION DOCK (Thumb Zone & Safe Area Ready) */}
+      {/* iOS 27 SPATIAL LIQUID GLASS FLOATING DOCK (Apple Water Droplet Sliding Effect) */}
       <div className="fixed bottom-3 sm:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none pb-safe">
         <nav
-          className="bg-white/85 dark:bg-[#16181F]/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-1.5 sm:p-2 flex items-center justify-between gap-1 sm:gap-2 border border-white/60 dark:border-white/10 shadow-2xl shadow-black/15 pointer-events-auto max-w-md w-full"
+          className="bg-white/80 dark:bg-[#16181F]/85 backdrop-blur-3xl rounded-3xl p-1.5 flex items-center justify-between border border-white/70 dark:border-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.18)] pointer-events-auto max-w-md w-full relative overflow-hidden"
+          style={{
+            boxShadow: '0 16px 40px -10px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.3) inset'
+          }}
         >
+          {/* Apple Sliding Fluid Glass Droplet Pill (水滴果冻滑动效果) */}
+          <div
+            className="absolute top-1.5 bottom-1.5 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-600 shadow-[0_4px_18px_rgba(37,99,235,0.45),inset_0_1px_2px_rgba(255,255,255,0.5)] border border-white/35 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] pointer-events-none"
+            style={{
+              width: 'calc((100% - 12px) / 5)',
+              transform: `translateX(calc(${Math.max(0, navItems.findIndex(i => i.id === activeTab))} * 100%))`,
+              left: '6px',
+            }}
+          >
+            {/* Top specular highlight reflection (water droplet liquid gloss) */}
+            <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/20 to-transparent opacity-60 pointer-events-none" />
+          </div>
+
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             const Icon = item.icon;
@@ -710,14 +737,14 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl sm:rounded-2xl transition-all duration-200 tap-scale ${
+                className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-2xl transition-all duration-200 select-none tap-scale cursor-pointer ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                    ? 'text-white'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-[10px] mt-0.5 tracking-tight ${isActive ? 'font-bold' : 'font-medium'}`}>
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]' : ''} />
+                <span className={`text-[10px] mt-0.5 tracking-tight ${isActive ? 'font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]' : 'font-medium'}`}>
                   {item.label}
                 </span>
               </button>

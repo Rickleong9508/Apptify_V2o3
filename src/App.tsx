@@ -12,7 +12,11 @@ import {
   Moon,
   MessageSquare,
   Bot,
-  Globe
+  Globe,
+  Calendar,
+  CheckSquare,
+  Zap,
+  TrendingUp
 } from 'lucide-react';
 import MyWealthApp from './components/MyWealthApp';
 import KnowledgeVault from './components/KnowledgeVault';
@@ -240,9 +244,11 @@ const App: React.FC = () => {
   }, []);
 
   const [liveNetWorth, setLiveNetWorth] = useState<string>('0.00');
+  const [taskCount, setTaskCount] = useState<number>(0);
+  const [noteCount, setNoteCount] = useState<number>(0);
 
   useEffect(() => {
-    const updateNetWorth = () => {
+    const updateAllData = () => {
       try {
         const raw = localStorage.getItem('mw_data_main');
         if (raw) {
@@ -257,15 +263,42 @@ const App: React.FC = () => {
           setLiveNetWorth(nw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         }
       } catch {}
+
+      try {
+        const rawNotes = localStorage.getItem('apptify_notes');
+        if (rawNotes) {
+          const notes = JSON.parse(rawNotes);
+          setNoteCount(Array.isArray(notes) ? notes.length : 0);
+        }
+        const rawTasks = localStorage.getItem('apptify_tasks');
+        if (rawTasks) {
+          const tasks = JSON.parse(rawTasks);
+          if (Array.isArray(tasks)) {
+            const pending = tasks.filter((t: any) => !t.completed).length;
+            setTaskCount(pending);
+          }
+        }
+      } catch {}
     };
-    updateNetWorth();
-    window.addEventListener('apptify_data_changed', updateNetWorth);
-    window.addEventListener('storage', updateNetWorth);
+
+    updateAllData();
+    window.addEventListener('apptify_data_changed', updateAllData);
+    window.addEventListener('apptify_vault_changed', updateAllData);
+    window.addEventListener('storage', updateAllData);
     return () => {
-      window.removeEventListener('apptify_data_changed', updateNetWorth);
-      window.removeEventListener('storage', updateNetWorth);
+      window.removeEventListener('apptify_data_changed', updateAllData);
+      window.removeEventListener('apptify_vault_changed', updateAllData);
+      window.removeEventListener('storage', updateAllData);
     };
   }, []);
+
+  const currentDateStr = (() => {
+    const now = new Date();
+    if (lang === 'zh') {
+      return now.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', weekday: 'short' });
+    }
+    return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+  })();
 
   const getAppTitle = () => {
     switch (currentApp) {
@@ -294,55 +327,100 @@ const App: React.FC = () => {
       return <NewsHub onExit={() => setCurrentApp('launcher')} />;
     }
 
-    // Default Launcher View (3-Core Apps Golden Layout)
+    // Default Launcher View (iOS 27 Spatial Operating System Layout)
     return (
-      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-4 sm:px-6 py-4 sm:py-8 max-w-lg mx-auto space-y-4 sm:space-y-6 selection:bg-blue-500/20">
-        {/* Top Control Bar: Language Switcher Capsule & Theme Toggle (Guaranteed Clickable & Z-Indexed) */}
+      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-4 sm:px-6 py-4 sm:py-7 max-w-xl mx-auto space-y-4 sm:space-y-5 selection:bg-blue-500/20 animate-fade-in">
+        {/* iOS 27 Dynamic Island Top Bar */}
         <div className="w-full flex items-center justify-between pt-1 pb-1 relative z-30">
-          <button
-            onClick={() => setStoredLanguage(lang === 'en' ? 'zh' : 'en')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/75 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 hover:bg-white/90 dark:hover:bg-white/20 transition-all cursor-pointer pointer-events-auto"
-            title={lang === 'en' ? "切换为中文" : "Switch to English"}
-          >
-            <Globe size={14} className="text-blue-500" />
-            <span>{lang === 'en' ? 'English (EN)' : '中文 (ZH)'}</span>
-          </button>
+          {/* Live Date Pill */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-xs font-bold text-gray-700 dark:text-gray-200">
+            <Calendar size={13} className="text-blue-500" />
+            <span>{currentDateStr}</span>
+          </div>
 
-          <button
-            onClick={() => {
-              const nextTheme = theme === 'dark' ? 'light' : 'dark';
-              localStorage.setItem('mw_theme_manual', 'true');
-              localStorage.setItem('mw_theme', nextTheme);
-              setTheme(nextTheme);
-            }}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/75 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-gray-700 dark:text-gray-200 active:scale-90 hover:bg-white/90 dark:hover:bg-white/20 transition-all cursor-pointer pointer-events-auto"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-blue-600" />}
-          </button>
+          {/* Quick System Controls: Language & Theme */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setStoredLanguage(lang === 'en' ? 'zh' : 'en')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/75 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 hover:bg-white/90 dark:hover:bg-white/20 transition-all cursor-pointer pointer-events-auto"
+              title={lang === 'en' ? "切换为中文" : "Switch to English"}
+            >
+              <Globe size={13} className="text-blue-500" />
+              <span>{lang === 'en' ? 'EN' : '中'}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const nextTheme = theme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('mw_theme_manual', 'true');
+                localStorage.setItem('mw_theme', nextTheme);
+                setTheme(nextTheme);
+              }}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/75 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-gray-700 dark:text-gray-200 active:scale-90 hover:bg-white/90 dark:hover:bg-white/20 transition-all cursor-pointer pointer-events-auto"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-blue-600" />}
+            </button>
+          </div>
         </div>
 
-        {/* Centered Large Apptify Title with Apple Liquid Gradient */}
-        <header className="w-full flex flex-col items-center justify-center text-center pt-1 pb-2">
-          <div className="flex flex-col items-center animate-fade-in-down w-full px-2">
-            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[1.1] pb-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
-              Apptify
-            </h1>
-            <p className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-gray-500 dark:text-gray-400 uppercase mt-2.5 select-none">
-              {t.launcher.subtitle}
-            </p>
+        {/* Centered Apptify Header with Brand Icon Badge & Modern Title */}
+        <header className="w-full flex flex-col items-center justify-center text-center pt-2 pb-1">
+          <div className="flex items-center justify-center gap-3.5 animate-fade-in-down w-full px-2">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 p-2.5 flex items-center justify-center shadow-xl shadow-blue-500/25 shrink-0 border border-white/30">
+              <img src="/icon.png" alt="Apptify" className="w-full h-full object-contain filter brightness-0 invert drop-shadow" />
+            </div>
+            <div className="flex flex-col text-left">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
+                Apptify
+              </h1>
+              <p className="text-[11px] sm:text-xs font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400 uppercase mt-1 select-none flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {t.launcher.subtitle}
+              </p>
+            </div>
           </div>
         </header>
 
+        {/* 3-Metric Live Glance Strip (Fills dead whitespace with smart system intelligence) */}
+        <div className="w-full grid grid-cols-3 gap-2 sm:gap-3 py-1 animate-scale-in">
+          <div className="p-3 rounded-2xl bg-white/75 dark:bg-white/[0.06] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col text-left">
+            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
+              <Wallet size={12} className="text-emerald-500" /> {lang === 'zh' ? '净资产' : 'Wealth'}
+            </span>
+            <span className="text-xs sm:text-sm font-black font-mono text-gray-900 dark:text-white mt-1 truncate">
+              RM {liveNetWorth}
+            </span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/75 dark:bg-white/[0.06] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col text-left">
+            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
+              <CheckSquare size={12} className="text-amber-500" /> {lang === 'zh' ? '待办任务' : 'Vault Tasks'}
+            </span>
+            <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white mt-1 truncate">
+              {taskCount} {lang === 'zh' ? '项活跃' : 'Active'} · {noteCount} {lang === 'zh' ? '笔记' : 'Notes'}
+            </span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/75 dark:bg-white/[0.06] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col text-left">
+            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
+              <Cpu size={12} className="text-purple-500" /> {lang === 'zh' ? 'AI 引擎' : 'AI Model'}
+            </span>
+            <span className="text-xs sm:text-sm font-black text-purple-600 dark:text-purple-400 mt-1 truncate">
+              {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}
+            </span>
+          </div>
+        </div>
+
         {/* 3 Core Apps Layout: 1 Hero Wide Card (MyWealth) + 2 Standard Cards (Vault & News) */}
         <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4">
-          {/* 1. Hero Wide Card: MyWealth (Enlarged & Flagship Presence) */}
+          {/* 1. Hero Wide Card: MyWealth (Flagship Presence with Spatial Glass) */}
           <button
             onClick={() => setCurrentApp('mywealth')}
-            className="col-span-2 group rounded-3xl liquid-card-emerald backdrop-blur-2xl p-6 sm:p-7 flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden min-h-[180px] sm:min-h-[190px]"
+            className="col-span-2 group rounded-3xl liquid-card-emerald backdrop-blur-2xl p-6 sm:p-7 flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden min-h-[185px] sm:min-h-[195px]"
           >
             {/* Shimmer Ambient Glow */}
-            <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-emerald-400/20 dark:bg-emerald-400/15 blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+            <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-emerald-400/20 dark:bg-emerald-400/15 blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
             <div className="flex items-center justify-between w-full relative z-10">
               <div className="flex items-center gap-3.5">
@@ -369,7 +447,8 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-5 pt-3.5 border-t border-emerald-500/15 flex items-center justify-between text-xs relative z-10">
+            {/* Quick feature pill strip inside MyWealth */}
+            <div className="mt-4 pt-3 border-t border-emerald-500/15 flex items-center justify-between text-xs relative z-10">
               <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
                 {t.launcher.myWealthFeatures}
               </span>
@@ -382,7 +461,7 @@ const App: React.FC = () => {
           {/* 2. Knowledge Vault Card (Notes & Tasks) */}
           <button
             onClick={() => setCurrentApp('knowledgevault')}
-            className="group rounded-3xl liquid-card-amber backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden aspect-[1/1.1] sm:aspect-square"
+            className="group rounded-3xl liquid-card-amber backdrop-blur-2xl p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden aspect-[1/1.05] sm:aspect-square"
           >
             <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-amber-400/20 dark:bg-amber-400/15 blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
@@ -390,8 +469,8 @@ const App: React.FC = () => {
               <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-105 transition-transform duration-300">
                 <NotebookPen size={22} strokeWidth={2.2} />
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-800 dark:text-amber-300 bg-amber-500/15">
-                {t.launcher.vaultTag}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-800 dark:text-amber-300 bg-amber-500/15 border border-amber-500/20">
+                {taskCount > 0 ? `${taskCount} ${lang === 'zh' ? '待办' : 'Tasks'}` : t.launcher.vaultTag}
               </span>
             </div>
 
@@ -417,7 +496,7 @@ const App: React.FC = () => {
           {/* 3. NewsHub Beta Card */}
           <button
             onClick={() => setCurrentApp('newshub')}
-            className="group rounded-3xl liquid-card-purple backdrop-blur-2xl p-4 sm:p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden aspect-[1/1.1] sm:aspect-square"
+            className="group rounded-3xl liquid-card-purple backdrop-blur-2xl p-5 flex flex-col justify-between text-left active:scale-[0.96] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden aspect-[1/1.05] sm:aspect-square"
           >
             <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-purple-400/20 dark:bg-purple-400/15 blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
@@ -425,7 +504,7 @@ const App: React.FC = () => {
               <div className="w-11 h-11 rounded-2xl bg-fuchsia-600 text-white flex items-center justify-center shadow-lg shadow-fuchsia-500/30 group-hover:scale-105 transition-transform duration-300">
                 <Sparkles size={22} strokeWidth={2.2} />
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-fuchsia-800 dark:text-fuchsia-300 bg-fuchsia-500/15">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-fuchsia-800 dark:text-fuchsia-300 bg-fuchsia-500/15 border border-fuchsia-500/20">
                 {t.launcher.newsTag}
               </span>
             </div>
@@ -451,10 +530,10 @@ const App: React.FC = () => {
         </div>
 
         {/* Bottom Settings Button (iOS 27 Liquid Glass Touch Bar) */}
-        <div className="w-full mt-3 pb-2">
+        <div className="w-full mt-2 pb-2">
           <button
             onClick={() => setCurrentApp('settings')}
-            className="w-full h-15 py-3 rounded-2xl bg-white/70 dark:bg-[#181A20]/75 backdrop-blur-2xl border border-white/60 dark:border-white/12 shadow-[0_8px_30px_0_rgba(0,0,0,0.05)] flex items-center justify-between px-5 text-gray-800 dark:text-gray-200 font-semibold active:scale-[0.98] transition-all group hover:border-blue-500/30"
+            className="w-full h-15 py-3 rounded-2xl bg-white/70 dark:bg-[#181A20]/75 backdrop-blur-2xl border border-white/60 dark:border-white/12 shadow-[0_8px_30px_0_rgba(0,0,0,0.05)] flex items-center justify-between px-5 text-gray-800 dark:text-gray-200 font-semibold active:scale-[0.98] transition-all group hover:border-blue-500/30 cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:rotate-45 transition-transform duration-300 shadow-sm">

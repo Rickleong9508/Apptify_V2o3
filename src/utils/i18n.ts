@@ -73,10 +73,10 @@ export const translations: Record<Language, Translations> = {
       langToggle: 'Switch to Chinese',
     },
     copilot: {
-      tabTitle: 'AI Copilot',
+      tabTitle: 'Ask Apptify',
       tabSub: 'Tap to Open',
       drawerTitle: 'Ask Apptify',
-      badge: 'Personal Copilot',
+      badge: 'Personal AI',
       status: 'Full System Connected',
       inputPlaceholder: 'Ask anything, record expense, add tasks or notes...',
       hint: 'Supports natural language commands: e.g. "Spent RM25 on lunch" or "Add task: team sync"',
@@ -86,7 +86,7 @@ export const translations: Record<Language, Translations> = {
       quickTask: '🎯 High Priority Task',
       quickWealth: '📊 Net Worth Summary',
       quickTasks: '📋 Todo Checklist',
-      welcomeMsg: `Hello! I am your **Apptify Personal AI Copilot**.\n\nI have complete awareness of your workspace. You can ask me questions or give me direct commands to **update your data** in real time:\n\n• 💳 **Expense & Income**: e.g. *"Record RM25 lunch"*, *"Deposit RM1000 into Maybank"*\n• 📝 **Quick Notes**: e.g. *"Create note: Ideas for Apptify redesign"*\n• 🎯 **Tasks & Todos**: e.g. *"Add task: Submit report by Friday"*, *"Complete task: Submit report"*\n• 📊 **Wealth Status**: e.g. *"Check my net worth and wallet balances"*`,
+      welcomeMsg: `Hello! I am your **Ask Apptify Personal AI**.\n\nI have complete awareness of your workspace. You can ask me questions or give me direct commands to **update your data** in real time:\n\n• 💳 **Expense & Income**: e.g. *"Record RM25 lunch"*, *"Deposit RM1000 into Maybank"*\n• 📝 **Quick Notes**: e.g. *"Create note: Ideas for Apptify redesign"*\n• 🎯 **Tasks & Todos**: e.g. *"Add task: Submit report by Friday"*, *"Complete task: Submit report"*\n• 📊 **Wealth Status**: e.g. *"Check my net worth and wallet balances"*`,
     },
     invest: {
       moveUp: 'Move Up',
@@ -119,8 +119,8 @@ export const translations: Record<Language, Translations> = {
       langToggle: '切换为英文',
     },
     copilot: {
-      tabTitle: 'AI 助理',
-      tabSub: '展开',
+      tabTitle: 'Ask Apptify',
+      tabSub: '点击展开',
       drawerTitle: 'Ask Apptify',
       badge: '专属私人助理',
       status: '全功能数据联动',

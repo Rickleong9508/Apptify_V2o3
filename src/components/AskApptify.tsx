@@ -963,8 +963,8 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
           }`}
           title={lang === 'zh' ? "按住可拖动调节位置，点击展开私人助理" : "Drag to reposition, tap to open AI copilot"}
         >
-          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 pointer-events-none">
-            <Sparkles size={14} className="fill-white animate-pulse" />
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 p-1 flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 pointer-events-none">
+            <img src="/icon.png" alt="Apptify" className="w-full h-full object-contain filter brightness-0 invert drop-shadow-sm" />
           </div>
           <div className="flex flex-col text-left pr-0.5 pointer-events-none">
             <span className="text-[11px] font-extrabold tracking-tight leading-none text-gray-900 dark:text-white">
@@ -1004,8 +1004,8 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
             {/* Header */}
             <div className="p-4 sm:p-5 flex items-center justify-between border-b border-black/5 dark:border-white/10 bg-white/40 dark:bg-white/5 backdrop-blur-md">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                  <Sparkles size={18} className="fill-white" />
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 p-2 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
+                  <img src="/icon.png" alt="Apptify" className="w-full h-full object-contain filter brightness-0 invert drop-shadow" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
