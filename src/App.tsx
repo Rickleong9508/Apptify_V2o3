@@ -257,10 +257,9 @@ const App: React.FC = () => {
           const cash = accounts.reduce((sum: number, a: any) => sum + (Number(a.balance) || 0), 0);
           const stocks = data.stocks || [];
           const stockVal = stocks.reduce((sum: number, s: any) => sum + ((Number(s.shares) || 0) * (Number(s.currentPrice) || 0)), 0);
-          const loans = data.loans || [];
-          const debts = loans.reduce((sum: number, l: any) => sum + (Number(l.remainingAmount) || 0), 0);
-          const nw = cash + stockVal - debts;
-          setLiveNetWorth(nw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+          // Total Assets does NOT deduct loans (loans are tracked separately)
+          const totalAssets = cash + stockVal;
+          setLiveNetWorth(totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         }
       } catch {}
 

@@ -582,24 +582,26 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
     if (intent === 'QUERY_WEALTH') {
       const mwData = loadMyWealthData();
       const totalCash = mwData.accounts.reduce((sum: number, a: any) => sum + (Number(a.balance) || 0), 0);
+      const totalStock = (mwData.stocks || []).reduce((sum: number, s: any) => sum + ((Number(s.shares) || 0) * (Number(s.currentPrice) || 0)), 0);
+      const totalAssets = totalCash + totalStock;
       const totalLoan = mwData.loans.reduce((sum: number, l: any) => sum + (Number(l.remainingAmount) || 0), 0);
-      const netWorth = totalCash - totalLoan;
       const totalMonthlyExpenses = mwData.monthlyData.expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
       const walletLines = mwData.accounts.map((a: any) => `• ${a.name}: RM${Number(a.balance).toFixed(2)}`).join('\n');
 
       return {
-        message: `📊 **MyWealth 实时财务速报**：\n• **总净资产**：**RM${netWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n• 钱包总现金：RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 负债贷款：RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 本月累计支出：RM${totalMonthlyExpenses.toFixed(2)}\n\n**各钱包余额分布：**\n${walletLines}`,
+        message: `📊 **MyWealth 实时资产速报**：\n• **个人总资产**：**RM${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n• 钱包总现金：RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 投资持仓：RM${totalStock.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 履约借贷 (独立跟踪)：RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 本月累计支出：RM${totalMonthlyExpenses.toFixed(2)}\n\n**各钱包余额分布：**\n${walletLines}`,
         result: {
           type: 'wealth',
-          title: '实时财富资产快报',
+          title: '实时总资产快报',
           details: [
-            `总净资产: RM${netWorth.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-            `钱包总现金: RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-            `借贷负债: RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `个人总资产: RM${totalAssets.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `流动现金: RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `投资持仓: RM${totalStock.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+            `履约借贷: RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })} (独立)`,
             `本月支出: RM${totalMonthlyExpenses.toFixed(2)}`
           ],
-          badge: '实时财务'
+          badge: '实时资产'
         }
       };
     }
