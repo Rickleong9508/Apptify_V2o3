@@ -9,6 +9,7 @@ import { supabase } from '../services/supabaseClient';
 import { aiService } from '../services/aiService';
 import { Account, Expense, Loan, Stock, MonthlyData } from '../types';
 import { skillRegistry } from '../services/skillRegistry';
+import { Language, translations, getStoredLanguage } from '../utils/i18n';
 
 interface AskApptifyProps {
   currentApp: string;
@@ -44,6 +45,134 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<ActionPayload | null>(null);
 
+  // i18n language state
+  const [lang, setLang] = useState<Language>(getStoredLanguage);
+
+  useEffect(() => {
+    const handleLang = () => setLang(getStoredLanguage());
+    window.addEventListener('apptify_language_change', handleLang);
+    return () => window.removeEventListener('apptify_language_change', handleLang);
+  }, []);
+
+  const t = translations[lang];
+
+  // Draggable button coordinates state (supports X & Y adjustment, default right-docked)
+  const [btnPos, setBtnPos] = useState<{ x: number | null; y: number }>({
+    x: null, // null means auto-docked against right edge
+    y: typeof window !== 'undefined' ? Math.round(window.innerHeight * 0.52) : 380,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    initialX: number;
+    initialY: number;
+    hasMoved: boolean;
+  }>({ startX: 0, startY: 0, initialX: 0, initialY: 0, hasMoved: false });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('apptify_copilot_coords');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.y === 'number') {
+          const maxY = window.innerHeight - 80;
+          const clampedY = Math.max(70, Math.min(maxY, parsed.y));
+          let clampedX = null;
+          if (typeof parsed.x === 'number') {
+            const maxX = window.innerWidth - 80;
+            clampedX = Math.max(5, Math.min(maxX, parsed.x));
+          }
+          setBtnPos({ x: clampedX, y: clampedY });
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  // Drag start handler
+  const handleDragStart = (clientX: number, clientY: number) => {
+    const btnEl = document.getElementById('apptify-copilot-trigger');
+    const rect = btnEl?.getBoundingClientRect();
+    const currentX = rect ? rect.left : (btnPos.x ?? (window.innerWidth - 75));
+    const currentY = rect ? rect.top : btnPos.y;
+
+    dragRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initialX: currentX,
+      initialY: currentY,
+      hasMoved: false,
+    };
+    setIsDragging(true);
+  };
+
+  // Drag move handler
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    const deltaX = clientX - dragRef.current.startX;
+    const deltaY = clientY - dragRef.current.startY;
+    if (!dragRef.current.hasMoved && Math.hypot(deltaX, deltaY) > 5) {
+      dragRef.current.hasMoved = true;
+    }
+    if (dragRef.current.hasMoved) {
+      const maxX = window.innerWidth - 75;
+      const maxY = window.innerHeight - 75;
+      const newX = Math.max(4, Math.min(maxX, dragRef.current.initialX + deltaX));
+      const newY = Math.max(65, Math.min(maxY, dragRef.current.initialY + deltaY));
+      setBtnPos({ x: newX, y: newY });
+    }
+  };
+
+  // Drag end handler
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (!dragRef.current.hasMoved) {
+      // Tap / Click without drag: open drawer
+      setIsOpen(true);
+    } else {
+      // Snap to right edge if dropped near right margin
+      let finalX = btnPos.x;
+      if (finalX !== null && finalX > window.innerWidth - 95) {
+        finalX = null;
+      }
+      const finalCoords = { x: finalX, y: btnPos.y };
+      setBtnPos(finalCoords);
+      localStorage.setItem('apptify_copilot_coords', JSON.stringify(finalCoords));
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      handleDragMove(e.clientX, e.clientY);
+    };
+    const onMouseUp = () => {
+      handleDragEnd();
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+    const onTouchEnd = () => {
+      handleDragEnd();
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging, btnPos]);
+
   // Model & Provider settings
   const [activeProvider, setActiveProvider] = useState<string>('google');
   const [activeModel, setActiveModel] = useState<string>('gemini-2.5-flash');
@@ -51,16 +180,18 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initial welcome message
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: 'welcome',
       role: 'assistant',
-      content: `你好！我是你的 **Apptify 专属私人 AI 助手**。\n\n我精通当前 App 的全部功能，你可以随时向我咨询或直接下达命令来**更新 App 的数据**：\n\n• 💳 **财务记账**：如 *“记一笔午餐 28 块”*、*“存入 1000 到 Maybank”*\n• 📝 **灵感随手记**：如 *“记录笔记：明天下午讨论 Apptify UI 优化”*\n• 🎯 **任务待办**：如 *“新建待办：周五前提交财务周报”*、*“完成待办 提交财务周报”*\n• 📊 **资产查询**：如 *“查一下我的净资产和钱包余额”*`,
+      content: translations[getStoredLanguage()].copilot.welcomeMsg,
       actionResult: {
         type: 'wealth',
-        title: '专属私人助理已就绪',
-        details: ['全面联动 MyWealth 财富中心', '全面联动 Knowledge Vault 灵感空间', '支持语音与自然语言命令实时更新'],
-        badge: '专属私人助理'
+        title: getStoredLanguage() === 'zh' ? '专属私人助理已就绪' : 'Personal Copilot Ready',
+        details: getStoredLanguage() === 'zh' 
+          ? ['全面联动 MyWealth 财富中心', '全面联动 Knowledge Vault 灵感空间', '支持语音与自然语言命令实时更新']
+          : ['Full integration with MyWealth Center', 'Connected to Knowledge Vault workspace', 'Natural language commands supported'],
+        badge: getStoredLanguage() === 'zh' ? '专属私人助理' : 'Private Copilot'
       }
     }
   ]);
@@ -791,42 +922,67 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
     }
   };
 
-  // Quick Action Chips
+  // Quick Action Chips with dynamic i18n
   const quickActions = [
-    { label: '⚡ 记午餐 RM25', query: '记一笔午餐 25 块' },
-    { label: '💰 存入 RM500', query: '存入 500 到 Maybank' },
-    { label: '📝 随手记灵感', query: '新建笔记：关于 Apptify 全新 iOS 27 设计' },
-    { label: '🎯 加高优待办', query: '新建待办：本周完成财务核算' },
-    { label: '📊 查总资产', query: '查资产' },
-    { label: '📋 查待办清单', query: '查待办' }
+    { label: t.copilot.quickExpense, query: lang === 'zh' ? '记一笔午餐 25 块' : 'Record lunch RM25' },
+    { label: t.copilot.quickIncome, query: lang === 'zh' ? '存入 500 到 Maybank' : 'Deposit 500 into Maybank' },
+    { label: t.copilot.quickNote, query: lang === 'zh' ? '新建笔记：关于 Apptify 全新 iOS 27 设计' : 'Create note: Apptify iOS 27 Redesign' },
+    { label: t.copilot.quickTask, query: lang === 'zh' ? '新建待办：本周完成财务核算' : 'Add task: Weekly finance report' },
+    { label: t.copilot.quickWealth, query: lang === 'zh' ? '查资产' : 'Check net worth' },
+    { label: t.copilot.quickTasks, query: lang === 'zh' ? '查待办' : 'Check todos' }
   ];
 
   return (
     <>
-      {/* 1. Side-docked Collapsible Assistant Tab (收起在右侧贴边，点击后展开) */}
+      {/* 1. Draggable & Right-Docked Floating Assistant Tab (用户可自由上下/左右拖拽，默认靠右吸附) */}
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-center gap-1.5 pl-2.5 pr-1.5 py-3 rounded-l-2xl rounded-r-none bg-white/85 dark:bg-[#16181F]/90 backdrop-blur-2xl border-l border-t border-b border-white/60 dark:border-white/15 text-gray-800 dark:text-gray-100 shadow-[-4px_10px_30px_rgba(59,130,246,0.25)] hover:pl-3.5 transition-all duration-300 group tap-scale cursor-pointer"
-          style={{
-            boxShadow: '-6px 0 24px -2px rgba(59, 130, 246, 0.25), 0 0 0 1px rgba(255,255,255,0.2) inset'
+        <div
+          id="apptify-copilot-trigger"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            handleDragStart(e.clientX, e.clientY);
           }}
-          aria-label="展开 Ask Apptify 私人助理"
-          title="点击展开专属私人助理"
+          onTouchStart={(e) => {
+            if (e.touches.length > 0) {
+              handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: `${btnPos.y}px`,
+            left: btnPos.x !== null ? `${btnPos.x}px` : undefined,
+            right: btnPos.x === null ? '0px' : undefined,
+            touchAction: 'none',
+            userSelect: 'none',
+            zIndex: 45,
+          }}
+          className={`flex items-center gap-1.5 py-2.5 bg-white/85 dark:bg-[#16181F]/90 backdrop-blur-2xl border text-gray-800 dark:text-gray-100 shadow-[-4px_10px_30px_rgba(59,130,246,0.28)] transition-shadow duration-200 group cursor-grab active:cursor-grabbing select-none ${
+            btnPos.x === null
+              ? 'pl-2.5 pr-1.5 rounded-l-2xl rounded-r-none border-l border-t border-b border-r-0 border-white/60 dark:border-white/15'
+              : 'px-3 rounded-full border-white/60 dark:border-white/15 shadow-xl'
+          }`}
+          title={lang === 'zh' ? "按住可拖动调节位置，点击展开私人助理" : "Drag to reposition, tap to open AI copilot"}
         >
-          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform">
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 pointer-events-none">
             <Sparkles size={14} className="fill-white animate-pulse" />
           </div>
-          <div className="flex flex-col text-left pr-0.5">
+          <div className="flex flex-col text-left pr-0.5 pointer-events-none">
             <span className="text-[11px] font-extrabold tracking-tight leading-none text-gray-900 dark:text-white">
-              AI 助理
+              {t.copilot.tabTitle}
             </span>
             <span className="text-[8px] text-blue-600 dark:text-blue-400 font-bold mt-0.5 leading-none">
-              展开
+              {btnPos.x === null ? t.copilot.tabSub : (lang === 'zh' ? '点击展开' : 'Open')}
             </span>
           </div>
-          <ChevronLeft size={13} className="text-gray-400 group-hover:-translate-x-0.5 transition-transform" />
-        </button>
+          {btnPos.x === null ? (
+            <ChevronLeft size={13} className="text-gray-400 group-hover:-translate-x-0.5 transition-transform pointer-events-none" />
+          ) : (
+            <div className="flex flex-col gap-0.5 opacity-40 ml-0.5 pointer-events-none">
+              <span className="w-1 h-1 rounded-full bg-gray-500" />
+              <span className="w-1 h-1 rounded-full bg-gray-500" />
+            </div>
+          )}
+        </div>
       )}
 
       {/* 2. Slide-out Copilot Drawer */}
@@ -854,16 +1010,16 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-extrabold text-sm text-gray-900 dark:text-white leading-none">
-                      Ask Apptify
+                      {t.copilot.drawerTitle}
                     </h3>
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                      专属私人助理
+                      {t.copilot.badge}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-                      全功能数据联动 · {activeModel.split('/').pop()}
+                      {t.copilot.status} · {activeModel.split('/').pop()}
                     </span>
                   </div>
                 </div>
@@ -937,7 +1093,7 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
                     )}
                   </div>
                   <span className="text-[9px] text-gray-400 mt-1 px-1 font-medium">
-                    {msg.role === 'user' ? '你' : 'Ask Apptify'}
+                    {msg.role === 'user' ? (lang === 'zh' ? '你' : 'You') : 'Ask Apptify'}
                   </span>
                 </div>
               ))}
@@ -946,7 +1102,7 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
                 <div className="flex items-start gap-2 animate-pulse">
                   <div className="ios-glass p-3 rounded-2xl rounded-tl-none border border-white/40 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
                     <Sparkles size={14} className="animate-spin text-blue-500" />
-                    <span>专属 AI 正在解析指令并执行更新...</span>
+                    <span>{lang === 'zh' ? '专属 AI 正在解析指令并执行更新...' : 'Private AI is executing your instruction...'}</span>
                   </div>
                 </div>
               )}
@@ -968,7 +1124,7 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
                     type="text"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    placeholder="输入记账、待办、笔记或查询指令..."
+                    placeholder={t.copilot.inputPlaceholder}
                     disabled={isProcessing}
                     className="w-full pl-4 pr-10 py-3 rounded-2xl bg-white/70 dark:bg-black/30 border border-black/5 dark:border-white/10 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner"
                   />
@@ -994,7 +1150,7 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
               </form>
               <div className="mt-2 text-center">
                 <span className="text-[10px] text-gray-400">
-                  支持自然语言直接更新数据：如 “记一笔午餐 25 块” 或 “新建待办：下午开会”
+                  {t.copilot.hint}
                 </span>
               </div>
             </div>

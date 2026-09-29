@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Stock, CashHolding } from '../types';
-import { Plus, TrendingUp, TrendingDown, Trash2, Globe, Pencil, X, Calculator, ArrowRight, Settings, Search, AlertCircle, Check, RefreshCcw, Loader2, Coins, GripVertical } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Trash2, Globe, Pencil, X, Calculator, ArrowRight, Settings, Search, AlertCircle, Check, RefreshCcw, Loader2, Coins, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 interface InvestmentsProps {
@@ -79,6 +79,10 @@ interface StockItemProps {
     onDragEnd?: () => void;
     onDragOver?: (e: React.DragEvent) => void;
     isDragging?: boolean;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    canMoveUp?: boolean;
+    canMoveDown?: boolean;
 }
 
 const StockItem: React.FC<StockItemProps> = ({
@@ -92,7 +96,11 @@ const StockItem: React.FC<StockItemProps> = ({
     onDragEnter,
     onDragEnd,
     onDragOver,
-    isDragging
+    isDragging,
+    onMoveUp,
+    onMoveDown,
+    canMoveUp,
+    canMoveDown
 }) => {
     const [priceInput, setPriceInput] = useState(stock.currentPrice.toString());
     const [isEditing, setIsEditing] = useState(false);
@@ -140,10 +148,42 @@ const StockItem: React.FC<StockItemProps> = ({
                 isDragging ? 'opacity-30 scale-[0.99] border-dashed border-2 border-blue-500/50 bg-blue-500/10' : ''
             }`}
         >
-            {/* Identity & Drag Grip */}
-            <div className="flex items-center gap-3.5 w-full md:w-1/3">
-                <div className="text-[var(--ios-label-tertiary)] hover:text-[var(--ios-label-primary)] cursor-grab active:cursor-grabbing p-1 flex items-center justify-center transition-colors">
-                    <GripVertical size={16} />
+            {/* Identity & Drag/Move Controls */}
+            <div className="flex items-center gap-2.5 sm:gap-3.5 w-full md:w-1/3">
+                {/* Touch-Friendly Reorder Buttons (Works on both Phone & Desktop) */}
+                <div className="flex flex-col gap-0.5 items-center shrink-0">
+                    <button
+                        type="button"
+                        disabled={!canMoveUp}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onMoveUp?.();
+                        }}
+                        className="p-1 rounded-md text-[var(--ios-label-tertiary)] hover:text-blue-500 disabled:opacity-20 active:scale-75 transition-all tap-scale"
+                        title="Move Up / 上移"
+                        aria-label="Move Up"
+                    >
+                        <ChevronUp size={14} />
+                    </button>
+                    <div 
+                        className="text-[var(--ios-label-tertiary)] hover:text-[var(--ios-label-primary)] cursor-grab active:cursor-grabbing hidden sm:flex items-center justify-center"
+                        title="Drag to Reorder (Desktop)"
+                    >
+                        <GripVertical size={13} />
+                    </div>
+                    <button
+                        type="button"
+                        disabled={!canMoveDown}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onMoveDown?.();
+                        }}
+                        className="p-1 rounded-md text-[var(--ios-label-tertiary)] hover:text-blue-500 disabled:opacity-20 active:scale-75 transition-all tap-scale"
+                        title="Move Down / 下移"
+                        aria-label="Move Down"
+                    >
+                        <ChevronDown size={14} />
+                    </button>
                 </div>
                 <div
                     className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold shrink-0 ${
@@ -258,6 +298,17 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
 
     const handleDragEnd = () => setDraggedIndex(null);
     const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+
+    // Mobile & Quick Click Reorder Handler
+    const handleMoveStock = (index: number, direction: 'up' | 'down') => {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        const validList = [...stocks.filter(s => s && s.id)];
+        if (targetIndex < 0 || targetIndex >= validList.length) return;
+        const item = validList[index];
+        validList.splice(index, 1);
+        validList.splice(targetIndex, 0, item);
+        setStocks(validList);
+    };
 
     // Manage Modal
     const [editingStock, setEditingStock] = useState<Stock | null>(null);
@@ -719,6 +770,10 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                                 onDragEnd={handleDragEnd}
                                 onDragOver={handleDragOver}
                                 isDragging={draggedIndex === index}
+                                onMoveUp={() => handleMoveStock(index, 'up')}
+                                onMoveDown={() => handleMoveStock(index, 'down')}
+                                canMoveUp={index > 0}
+                                canMoveDown={index < validStocks.length - 1}
                             />
                         ))}
                     </div>

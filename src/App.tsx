@@ -11,7 +11,8 @@ import {
   Sun, 
   Moon,
   MessageSquare,
-  Bot
+  Bot,
+  Globe
 } from 'lucide-react';
 import MyWealthApp from './components/MyWealthApp';
 import KnowledgeVault from './components/KnowledgeVault';
@@ -19,6 +20,7 @@ import GlobalSettings from './components/GlobalSettings';
 import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal';
 import AskApptify from './components/AskApptify';
+import { Language, translations, getStoredLanguage, setStoredLanguage } from './utils/i18n';
 
 type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'newshub';
 
@@ -47,23 +49,60 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Global theme state
+  // Global theme state with auto-detection of device preferences
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light';
+    const saved = localStorage.getItem('mw_theme') as 'light' | 'dark' | null;
+    if (saved) return saved;
+    // Follow phone / OS system preference by default
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
   });
+
+  // Listen to phone/system light & dark mode changes automatically
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      // If user hasn't manually overridden with the button, auto-adapt to phone system
+      const hasManualOverride = localStorage.getItem('mw_theme_manual');
+      if (!hasManualOverride) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
+    };
+    mediaQuery.addEventListener('change', handleSystemChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemChange);
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
+    const body = window.document.body;
     if (theme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
+      body?.classList.add('dark');
+      body?.classList.remove('light');
     } else {
       root.classList.remove('dark');
       root.classList.add('light');
+      body?.classList.remove('dark');
+      body?.classList.add('light');
     }
     localStorage.setItem('mw_theme', theme);
     window.dispatchEvent(new Event('apptify_theme_change'));
   }, [theme]);
+
+  // Language State (Defaults to English, supports Chinese)
+  const [lang, setLang] = useState<Language>(getStoredLanguage);
+
+  useEffect(() => {
+    const handleLangChange = () => setLang(getStoredLanguage());
+    window.addEventListener('apptify_language_change', handleLangChange);
+    return () => window.removeEventListener('apptify_language_change', handleLangChange);
+  }, []);
+
+  const t = translations[lang];
 
   // Global settings sync states
   const [activeProvider, setActiveProvider] = useState<string>(() => localStorage.getItem('app_global_ai_provider') || 'google');
@@ -230,10 +269,10 @@ const App: React.FC = () => {
 
   const getAppTitle = () => {
     switch (currentApp) {
-      case 'mywealth': return 'MyWealth 资产';
-      case 'knowledgevault': return 'Knowledge Vault 工作台';
-      case 'settings': return '系统设置';
-      case 'newshub': return 'NewsHub 资讯';
+      case 'mywealth': return lang === 'zh' ? 'MyWealth 资产中心' : 'MyWealth Finance';
+      case 'knowledgevault': return lang === 'zh' ? 'Knowledge Vault 灵感工作台' : 'Knowledge Vault';
+      case 'settings': return lang === 'zh' ? '系统设置中心' : 'Settings & Preferences';
+      case 'newshub': return lang === 'zh' ? 'NewsHub 资讯' : 'NewsHub Beta';
       default: return '';
     }
   };
@@ -257,70 +296,85 @@ const App: React.FC = () => {
 
     // Default Launcher View (3-Core Apps Golden Layout)
     return (
-      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-4 sm:px-6 py-6 sm:py-10 max-w-lg mx-auto space-y-5 sm:space-y-7 selection:bg-blue-500/20">
-        {/* Centered Large Apptify Header & Absolute Top-Right Theme Toggle */}
-        <header className="w-full relative flex flex-col items-center justify-center pt-3 sm:pt-6 pb-2 sm:pb-4 text-center">
-          {/* Floating Theme Switcher at Top-Right */}
+      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-4 sm:px-6 py-4 sm:py-8 max-w-lg mx-auto space-y-4 sm:space-y-6 selection:bg-blue-500/20">
+        {/* Top Control Bar: Language Switcher Capsule & Theme Toggle (Guaranteed Clickable & Z-Indexed) */}
+        <div className="w-full flex items-center justify-between pt-1 pb-1 relative z-30">
           <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_4px_16px_0_rgba(0,0,0,0.06)] text-gray-700 dark:text-gray-200 active:scale-90 transition-all hover:bg-white/90 dark:hover:bg-white/20 absolute right-0 top-3 sm:top-5"
+            onClick={() => setStoredLanguage(lang === 'en' ? 'zh' : 'en')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/75 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-xs font-bold text-gray-700 dark:text-gray-200 active:scale-95 hover:bg-white/90 dark:hover:bg-white/20 transition-all cursor-pointer pointer-events-auto"
+            title={lang === 'en' ? "切换为中文" : "Switch to English"}
+          >
+            <Globe size={14} className="text-blue-500" />
+            <span>{lang === 'en' ? 'English (EN)' : '中文 (ZH)'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              const nextTheme = theme === 'dark' ? 'light' : 'dark';
+              localStorage.setItem('mw_theme_manual', 'true');
+              localStorage.setItem('mw_theme', nextTheme);
+              setTheme(nextTheme);
+            }}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/75 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-gray-700 dark:text-gray-200 active:scale-90 hover:bg-white/90 dark:hover:bg-white/20 transition-all cursor-pointer pointer-events-auto"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-blue-600" />}
           </button>
+        </div>
 
-          {/* Centered Large Apptify Title with Apple Liquid Gradient */}
+        {/* Centered Large Apptify Title with Apple Liquid Gradient */}
+        <header className="w-full flex flex-col items-center justify-center text-center pt-1 pb-2">
           <div className="flex flex-col items-center animate-fade-in-down w-full px-2">
-            <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-[1.2] pb-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
+            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[1.1] pb-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
               Apptify
             </h1>
-            <p className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-gray-500 dark:text-gray-400 uppercase mt-3 select-none">
-              Personal OS · 个人智能系统
+            <p className="text-xs sm:text-sm font-semibold tracking-[0.25em] text-gray-500 dark:text-gray-400 uppercase mt-2.5 select-none">
+              {t.launcher.subtitle}
             </p>
           </div>
         </header>
 
         {/* 3 Core Apps Layout: 1 Hero Wide Card (MyWealth) + 2 Standard Cards (Vault & News) */}
         <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4">
-          {/* 1. Hero Wide Card: MyWealth */}
+          {/* 1. Hero Wide Card: MyWealth (Enlarged & Flagship Presence) */}
           <button
             onClick={() => setCurrentApp('mywealth')}
-            className="col-span-2 group rounded-3xl liquid-card-emerald backdrop-blur-2xl p-5 sm:p-6 flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
+            className="col-span-2 group rounded-3xl liquid-card-emerald backdrop-blur-2xl p-6 sm:p-7 flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden min-h-[180px] sm:min-h-[190px]"
           >
             {/* Shimmer Ambient Glow */}
-            <div className="absolute -top-16 -right-16 w-36 h-36 rounded-full bg-emerald-400/20 dark:bg-emerald-400/15 blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+            <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-emerald-400/20 dark:bg-emerald-400/15 blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
             <div className="flex items-center justify-between w-full relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-105 transition-transform duration-300">
-                  <Wallet size={24} strokeWidth={2.2} />
+              <div className="flex items-center gap-3.5">
+                <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-105 transition-transform duration-300 shrink-0">
+                  <Wallet size={28} strokeWidth={2.2} />
                 </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white leading-tight">
-                    MyWealth
+                  <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-tight">
+                    {t.launcher.myWealthTitle}
                   </h2>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
-                    个人财务与资产全局工作台
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium mt-0.5">
+                    {t.launcher.myWealthDesc}
                   </p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                  净资产
+              <div className="text-right shrink-0">
+                <span className="text-[10px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/20">
+                  {t.launcher.netWorthLabel}
                 </span>
-                <p className="text-sm sm:text-base font-black font-mono text-gray-900 dark:text-white mt-1">
+                <p className="text-base sm:text-lg lg:text-xl font-black font-mono text-gray-900 dark:text-white mt-1.5 tracking-tight">
                   RM {liveNetWorth}
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-emerald-500/15 flex items-center justify-between text-xs relative z-10">
-              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                多币种钱包 · 50/30/20 预算 · 负债追踪
+            <div className="mt-5 pt-3.5 border-t border-emerald-500/15 flex items-center justify-between text-xs relative z-10">
+              <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
+                {t.launcher.myWealthFeatures}
               </span>
               <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                进入资产中心 <ArrowRight size={13} strokeWidth={2.5} />
+                {t.launcher.openWealth} <ArrowRight size={13} strokeWidth={2.5} />
               </span>
             </div>
           </button>
@@ -337,22 +391,22 @@ const App: React.FC = () => {
                 <NotebookPen size={22} strokeWidth={2.2} />
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-800 dark:text-amber-300 bg-amber-500/15">
-                工作与笔记
+                {t.launcher.vaultTag}
               </span>
             </div>
 
             <div className="mt-2 relative z-10">
               <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
-                Knowledge Vault
+                {t.launcher.vaultTitle}
               </h2>
               <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium mt-1 leading-snug line-clamp-2">
-                日常随手记 · 待办任务 · 沉浸专注
+                {t.launcher.vaultDesc}
               </p>
             </div>
 
             <div className="flex items-center justify-between pt-1 relative z-10">
               <span className="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                进入
+                {t.launcher.openVault}
               </span>
               <div className="w-6 h-6 rounded-full bg-white/60 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-200 group-hover:bg-amber-500 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200">
                 <ArrowRight size={13} strokeWidth={2.5} />
@@ -372,22 +426,22 @@ const App: React.FC = () => {
                 <Sparkles size={22} strokeWidth={2.2} />
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-fuchsia-800 dark:text-fuchsia-300 bg-fuchsia-500/15">
-                全球资讯
+                {t.launcher.newsTag}
               </span>
             </div>
 
             <div className="mt-2 relative z-10">
               <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
-                NewsHub Beta
+                {t.launcher.newsTitle}
               </h2>
               <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium mt-1 leading-snug line-clamp-2">
-                多源科技 · 商业要闻 · AI 智能精炼
+                {t.launcher.newsDesc}
               </p>
             </div>
 
             <div className="flex items-center justify-between pt-1 relative z-10">
               <span className="text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                进入
+                {t.launcher.openNews}
               </span>
               <div className="w-6 h-6 rounded-full bg-white/60 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-gray-200 group-hover:bg-fuchsia-600 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-200">
                 <ArrowRight size={13} strokeWidth={2.5} />
@@ -397,7 +451,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Bottom Settings Button (iOS 27 Liquid Glass Touch Bar) */}
-        <div className="w-full mt-4 pb-2">
+        <div className="w-full mt-3 pb-2">
           <button
             onClick={() => setCurrentApp('settings')}
             className="w-full h-15 py-3 rounded-2xl bg-white/70 dark:bg-[#181A20]/75 backdrop-blur-2xl border border-white/60 dark:border-white/12 shadow-[0_8px_30px_0_rgba(0,0,0,0.05)] flex items-center justify-between px-5 text-gray-800 dark:text-gray-200 font-semibold active:scale-[0.98] transition-all group hover:border-blue-500/30"
@@ -407,8 +461,8 @@ const App: React.FC = () => {
                 <Settings size={18} />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-sm font-bold leading-tight">系统设置中心</span>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">AI 密钥配置 · 数据存储 · 偏好设置</span>
+                <span className="text-sm font-bold leading-tight">{t.launcher.settingsTitle}</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{t.launcher.settingsDesc}</span>
               </div>
             </div>
             <div className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all">
@@ -432,7 +486,7 @@ const App: React.FC = () => {
               className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 bg-black/5 dark:bg-white/10 active:scale-95 transition-all"
             >
               <ChevronLeft size={18} strokeWidth={2.5} />
-              <span>主页</span>
+              <span>{t.nav.home}</span>
             </button>
 
             {/* Active App Title */}
@@ -442,10 +496,24 @@ const App: React.FC = () => {
 
             {/* Right Controls Container */}
             <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Language Switcher Capsule */}
+              <button
+                onClick={() => setStoredLanguage(lang === 'en' ? 'zh' : 'en')}
+                className="px-2.5 py-1 rounded-full text-xs font-bold text-gray-700 dark:text-gray-200 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 transition-all"
+                title={lang === 'en' ? "切换为中文" : "Switch to English"}
+              >
+                {lang === 'en' ? 'EN' : '中'}
+              </button>
+
               {/* Theme Toggle */}
               <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                onClick={() => {
+                  const nextTheme = theme === 'dark' ? 'light' : 'dark';
+                  localStorage.setItem('mw_theme_manual', 'true');
+                  localStorage.setItem('mw_theme', nextTheme);
+                  setTheme(nextTheme);
+                }}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer pointer-events-auto"
                 aria-label="Toggle theme"
               >
                 {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-indigo-600" />}

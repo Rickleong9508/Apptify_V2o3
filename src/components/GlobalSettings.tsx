@@ -21,11 +21,14 @@ import {
     RefreshCw,
     Search,
     Sliders,
-    Info
+    Info,
+    Sun,
+    Moon
 } from 'lucide-react';
 import { aiService, AIProvider, ModelMetadata } from '../services/aiService';
 import { useAuth } from './AuthProvider';
 import AuthModal from './AuthModal';
+import { Language, translations, getStoredLanguage, setStoredLanguage } from '../utils/i18n';
 
 interface GlobalSettingsProps {
     onExit: () => void;
@@ -84,6 +87,65 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     const [obsidianPath, setObsidianPath] = useState(() => localStorage.getItem('app_obsidian_vault_path') || '');
     const [obsidianStatus, setObsidianStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
     const [obsidianStatusMsg, setObsidianStatusMsg] = useState('');
+
+    // --- Language & Theme State ---
+    const [currentLang, setCurrentLang] = useState<Language>(getStoredLanguage);
+    const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>(() => {
+        const manual = localStorage.getItem('mw_theme_manual');
+        if (!manual) return 'auto';
+        return (localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light';
+    });
+
+    useEffect(() => {
+        const handleLang = () => setCurrentLang(getStoredLanguage());
+        window.addEventListener('apptify_language_change', handleLang);
+        return () => window.removeEventListener('apptify_language_change', handleLang);
+    }, []);
+
+    const handleLanguageChange = (newLang: Language) => {
+        setCurrentLang(newLang);
+        setStoredLanguage(newLang);
+    };
+
+    const handleThemeChange = (mode: 'light' | 'dark' | 'auto') => {
+        setThemeMode(mode);
+        if (mode === 'auto') {
+            localStorage.removeItem('mw_theme_manual');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const target = prefersDark ? 'dark' : 'light';
+            localStorage.setItem('mw_theme', target);
+            const root = window.document.documentElement;
+            const body = window.document.body;
+            if (target === 'dark') {
+                root.classList.add('dark');
+                root.classList.remove('light');
+                body?.classList.add('dark');
+                body?.classList.remove('light');
+            } else {
+                root.classList.remove('dark');
+                root.classList.add('light');
+                body?.classList.remove('dark');
+                body?.classList.add('light');
+            }
+        } else {
+            localStorage.setItem('mw_theme_manual', 'true');
+            localStorage.setItem('mw_theme', mode);
+            const root = window.document.documentElement;
+            const body = window.document.body;
+            if (mode === 'dark') {
+                root.classList.add('dark');
+                root.classList.remove('light');
+                body?.classList.add('dark');
+                body?.classList.remove('light');
+            } else {
+                root.classList.remove('dark');
+                root.classList.add('light');
+                body?.classList.remove('dark');
+                body?.classList.add('light');
+            }
+        }
+        window.dispatchEvent(new Event('apptify_theme_change'));
+    };
 
     // --- Backup State ---
     const [fileInput, setFileInput] = useState<HTMLInputElement | null>(null);
@@ -436,6 +498,109 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 </button>
                             </>
                         )}
+                    </div>
+                </div>
+
+                {/* Preferences & Appearance Card */}
+                <div
+                    className="ios-card p-6 sm:p-8 animate-scale-in"
+                    style={{
+                        background: "var(--ios-card-bg)",
+                        boxShadow: "var(--ios-card-shadow)"
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <div
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-blue-500"
+                            style={{
+                                background: "var(--ios-card-bg)",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
+                            }}
+                        >
+                            <Globe size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                                {currentLang === 'zh' ? '偏好与外观' : 'Preferences & Display'}
+                            </h2>
+                            <p className="text-sm text-gray-500 font-medium">
+                                {currentLang === 'zh' ? '多语言切换与系统主题自适应' : 'Language & system adaptive theme'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Language Selection */}
+                        <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/5 dark:border-white/10 space-y-2">
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                                {currentLang === 'zh' ? '应用显示语言' : 'App Display Language'}
+                            </span>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => handleLanguageChange('en')}
+                                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                        currentLang === 'en'
+                                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
+                                    }`}
+                                >
+                                    <span>English (EN)</span>
+                                    {currentLang === 'en' && <Check size={14} />}
+                                </button>
+                                <button
+                                    onClick={() => handleLanguageChange('zh')}
+                                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                        currentLang === 'zh'
+                                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
+                                    }`}
+                                >
+                                    <span>中文 (ZH)</span>
+                                    {currentLang === 'zh' && <Check size={14} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Theme Selection */}
+                        <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/5 dark:border-white/10 space-y-2">
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                                {currentLang === 'zh' ? '外观主题' : 'Appearance Theme'}
+                            </span>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                <button
+                                    onClick={() => handleThemeChange('auto')}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+                                        themeMode === 'auto'
+                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
+                                    }`}
+                                >
+                                    <span>{currentLang === 'zh' ? '系统跟随' : 'Auto'}</span>
+                                </button>
+                                <button
+                                    onClick={() => handleThemeChange('light')}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+                                        themeMode === 'light'
+                                            ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
+                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
+                                    }`}
+                                >
+                                    <Sun size={13} />
+                                    <span>{currentLang === 'zh' ? '浅色' : 'Light'}</span>
+                                </button>
+                                <button
+                                    onClick={() => handleThemeChange('dark')}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+                                        themeMode === 'dark'
+                                            ? 'bg-indigo-900 text-white shadow-md shadow-indigo-900/30'
+                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
+                                    }`}
+                                >
+                                    <Moon size={13} />
+                                    <span>{currentLang === 'zh' ? '深色' : 'Dark'}</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
