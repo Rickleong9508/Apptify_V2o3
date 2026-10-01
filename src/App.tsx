@@ -382,52 +382,16 @@ const App: React.FC = () => {
         </div>
 
         {/* Centered Apptify Header with Brand Icon Badge & Modern Title */}
-        <header className="w-full flex flex-col items-center justify-center text-center pt-2 pb-1">
+        <header className="w-full flex flex-col items-center justify-center text-center pt-2 pb-3">
           <div className="flex items-center justify-center gap-3.5 animate-fade-in-down w-full px-2">
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 p-2.5 flex items-center justify-center shadow-xl shadow-blue-500/25 shrink-0 border border-white/30">
               <img src="/icon.png" alt="Apptify" className="w-full h-full object-contain filter brightness-0 invert drop-shadow" />
             </div>
-            <div className="flex flex-col text-left">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
-                Apptify
-              </h1>
-              <p className="text-[11px] sm:text-xs font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400 uppercase mt-1 select-none flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {t.launcher.subtitle}
-              </p>
-            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-blue-300 dark:to-indigo-300 bg-clip-text text-transparent drop-shadow-sm select-none">
+              Apptify
+            </h1>
           </div>
         </header>
-
-        {/* 3-Metric Live Glance Strip (Fills dead whitespace with smart system intelligence) */}
-        <div className="w-full grid grid-cols-3 gap-2 sm:gap-3 py-1 animate-scale-in">
-          <div className="p-3 rounded-2xl bg-white/75 dark:bg-white/[0.06] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col text-left">
-            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
-              <Wallet size={12} className="text-emerald-500" /> {lang === 'zh' ? '净资产' : 'Wealth'}
-            </span>
-            <span className="text-xs sm:text-sm font-black font-mono text-gray-900 dark:text-white mt-1 truncate">
-              RM {liveNetWorth}
-            </span>
-          </div>
-
-          <div className="p-3 rounded-2xl bg-white/75 dark:bg-white/[0.06] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col text-left">
-            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
-              <CheckSquare size={12} className="text-amber-500" /> {lang === 'zh' ? '待办任务' : 'Vault Tasks'}
-            </span>
-            <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white mt-1 truncate">
-              {taskCount} {lang === 'zh' ? '项活跃' : 'Active'} · {noteCount} {lang === 'zh' ? '笔记' : 'Notes'}
-            </span>
-          </div>
-
-          <div className="p-3 rounded-2xl bg-white/75 dark:bg-white/[0.06] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col text-left">
-            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
-              <Cpu size={12} className="text-purple-500" /> {lang === 'zh' ? 'AI 引擎' : 'AI Model'}
-            </span>
-            <span className="text-xs sm:text-sm font-black text-purple-600 dark:text-purple-400 mt-1 truncate">
-              {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}
-            </span>
-          </div>
-        </div>
 
         {/* 3 Core Apps Layout: 1 Hero Wide Card (MyWealth) + 2 Standard Cards (Vault & News) */}
         <div className="w-full grid grid-cols-2 gap-3.5 sm:gap-4">

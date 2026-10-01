@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import {
   LayoutDashboard,
   Wallet,
@@ -38,6 +38,33 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'accounts' | 'budget' | 'loans' | 'investments'>('dashboard');
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSyncSuccess, setShowSyncSuccess] = useState(false);
+
+  // Dynamic Liquid Droplet Position State (Silky 60/120fps Smooth)
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number; height: number }>({ left: 0, width: 0, height: 0 });
+  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const navRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const updatePill = () => {
+      const currentTabEl = tabRefs.current[activeTab];
+      if (currentTabEl) {
+        setPillStyle({
+          left: currentTabEl.offsetLeft,
+          width: currentTabEl.offsetWidth,
+          height: currentTabEl.offsetHeight,
+        });
+      }
+    };
+
+    updatePill();
+    const rafId = requestAnimationFrame(updatePill);
+    window.addEventListener('resize', updatePill);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', updatePill);
+    };
+  }, [activeTab]);
 
   // --- Theme State ---
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
@@ -708,27 +735,39 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         </div>
       </main>
 
-      {/* iOS 27 SPATIAL LIQUID GLASS FLOATING DOCK (Apple Water Droplet Sliding Effect) */}
+      {/* iOS LIQUID GLASS FLOATING DOCK (Exact Screenshot Match + Butter-Smooth Sliding) */}
       <div className="fixed bottom-3 sm:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none pb-safe">
         <nav
-          className="bg-white/80 dark:bg-[#16181F]/85 backdrop-blur-3xl rounded-3xl p-1.5 flex items-center justify-between border border-white/70 dark:border-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.18)] pointer-events-auto max-w-md w-full relative overflow-hidden"
-          style={{
-            boxShadow: '0 16px 40px -10px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.3) inset'
-          }}
+          ref={navRef}
+          className="bg-white/60 dark:bg-[#12151e]/80 backdrop-blur-3xl rounded-full p-1.5 flex items-center gap-1 sm:gap-1.5 border border-white/50 dark:border-white/12 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] pointer-events-auto relative overflow-hidden select-none"
         >
-          {/* Apple Sliding Fluid Glass Droplet Pill (水滴果冻滑动效果) */}
-          <div
-            className="absolute top-1.5 bottom-1.5 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-600 shadow-[0_4px_18px_rgba(37,99,235,0.45),inset_0_1px_2px_rgba(255,255,255,0.5)] border border-white/35 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] pointer-events-none"
-            style={{
-              width: 'calc((100% - 12px) / 5)',
-              transform: `translateX(calc(${Math.max(0, navItems.findIndex(i => i.id === activeTab))} * 100%))`,
-              left: '6px',
-            }}
-          >
-            {/* Top specular highlight reflection (water droplet liquid gloss) */}
-            <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/20 to-transparent opacity-60 pointer-events-none" />
-          </div>
+          {/* Transparent Liquid Glass Water Droplet Pill (完全还原您上传图片的设计) */}
+          {pillStyle.width > 0 && (
+            <div
+              className="absolute rounded-full pointer-events-none overflow-hidden"
+              style={{
+                left: `${pillStyle.left}px`,
+                width: `${pillStyle.width}px`,
+                height: `${pillStyle.height}px`,
+                top: '6px',
+                transform: 'translateZ(0)',
+                willChange: 'left, width',
+                transition: 'left 260ms cubic-bezier(0.25, 1.25, 0.5, 1), width 240ms cubic-bezier(0.25, 1.25, 0.5, 1)',
+              }}
+            >
+              {/* Droplet Glass Body - Exact Screenshot Replica */}
+              <div className="absolute inset-0 rounded-full bg-white/80 dark:bg-white/15 backdrop-blur-2xl border border-white/70 dark:border-white/25 shadow-[0_4px_18px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.4),inset_0_-1px_1px_rgba(0,0,0,0.2)]" />
+
+              {/* Top Water Specular Reflection (顶部圆弧反光细线) */}
+              <div className="absolute top-0 inset-x-3 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+
+              {/* Top Glass Lens Glare Bubble (水滴透镜高光光晕) */}
+              <div className="absolute -top-1 left-1/4 w-1/2 h-2.5 rounded-full bg-white/25 dark:bg-white/20 blur-[1px] pointer-events-none" />
+
+              {/* Upper-half glass sheen */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/15 via-white/5 to-transparent opacity-80 pointer-events-none" />
+            </div>
+          )}
 
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -736,17 +775,29 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             return (
               <button
                 key={item.id}
+                ref={(el) => { tabRefs.current[item.id] = el; }}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative z-10 flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-2xl transition-all duration-200 select-none tap-scale cursor-pointer ${
+                className={`relative z-10 flex items-center justify-center shrink-0 h-10 rounded-full select-none cursor-pointer active:scale-95 ${
                   isActive
-                    ? 'text-white'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'px-3 text-white'
+                    : 'w-10 text-gray-400 hover:text-white'
                 }`}
+                title={item.label}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]' : ''} />
-                <span className={`text-[10px] mt-0.5 tracking-tight ${isActive ? 'font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]' : 'font-medium'}`}>
-                  {item.label}
-                </span>
+                <Icon
+                  size={18}
+                  strokeWidth={isActive ? 2.4 : 1.8}
+                  className={`shrink-0 transition-transform duration-150 ${
+                    isActive
+                      ? 'text-sky-300 drop-shadow-[0_1px_3px_rgba(56,189,248,0.35)]'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                />
+                {isActive && (
+                  <span className="text-xs sm:text-[13px] font-bold text-white tracking-wide ml-1.5 whitespace-nowrap select-none">
+                    {item.label}
+                  </span>
+                )}
               </button>
             );
           })}

@@ -44,9 +44,10 @@ async function createServer() {
     });
 
     // DeepSeek API Proxy Route (Ensures seamless CORS-free communication)
-    app.all('/api/deepseek/*', express.json({ limit: '10mb' }), async (req, res) => {
+    app.all('/api/deepseek*splat', express.json({ limit: '10mb' }), async (req, res) => {
         try {
-            const subPath = req.url.replace(/^\/api\/deepseek/, '');
+            const rawUrl = req.originalUrl || req.url;
+            const subPath = rawUrl.replace(/^\/api\/deepseek/, '');
             const targetUrl = `https://api.deepseek.com${subPath}`;
             const authHeader = req.headers['authorization'] || '';
             const fetchOptions = {
