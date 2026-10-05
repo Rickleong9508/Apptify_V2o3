@@ -398,7 +398,7 @@ const App: React.FC = () => {
           {/* 1. Hero Wide Card: MyWealth (Flagship Presence with Spatial Glass) */}
           <button
             onClick={() => setCurrentApp('mywealth')}
-            className="col-span-2 group rounded-3xl liquid-card-emerald backdrop-blur-2xl p-6 sm:p-7 flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden min-h-[185px] sm:min-h-[195px]"
+            className="col-span-2 group rounded-3xl liquid-card-emerald backdrop-blur-2xl p-6 sm:p-7 flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden min-h-[145px] sm:min-h-[155px]"
           >
             {/* Shimmer Ambient Glow */}
             <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-emerald-400/20 dark:bg-emerald-400/15 blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
@@ -417,22 +417,10 @@ const App: React.FC = () => {
                   </p>
                 </div>
               </div>
-
-              <div className="text-right shrink-0">
-                <span className="text-[10px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/20">
-                  {t.launcher.netWorthLabel}
-                </span>
-                <p className="text-base sm:text-lg lg:text-xl font-black font-mono text-gray-900 dark:text-white mt-1.5 tracking-tight">
-                  RM {liveNetWorth}
-                </p>
-              </div>
             </div>
 
-            {/* Quick feature pill strip inside MyWealth */}
-            <div className="mt-4 pt-3 border-t border-emerald-500/15 flex items-center justify-between text-xs relative z-10">
-              <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                {t.launcher.myWealthFeatures}
-              </span>
+            {/* Quick action strip inside MyWealth */}
+            <div className="mt-4 pt-3 border-t border-emerald-500/15 flex items-center justify-end text-xs relative z-10">
               <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                 {t.launcher.openWealth} <ArrowRight size={13} strokeWidth={2.5} />
               </span>

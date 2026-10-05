@@ -29,6 +29,95 @@ const INITIAL_MONTHLY_DATA: MonthlyData = {
 };
 const STORAGE_KEY = 'mw_data_main';
 
+const NAV_ITEMS = [
+  { id: 'dashboard' as const, label: 'Overview' },
+  { id: 'accounts' as const, label: 'Wallets' },
+  { id: 'budget' as const, label: 'Budget' },
+  { id: 'loans' as const, label: 'Loans' },
+  { id: 'investments' as const, label: 'Invest' },
+];
+
+interface TabIconProps {
+  tabId: 'dashboard' | 'accounts' | 'budget' | 'loans' | 'investments';
+  isActive: boolean;
+}
+
+const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
+  // Outline style for inactive icons (stroke line icon)
+  const outlineClass = "text-slate-400 dark:text-zinc-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200 transition-colors shrink-0";
+  // Black fill style for active in lightmode, white fill in darkmode
+  const activeClass = "text-slate-900 fill-slate-900 dark:text-white dark:fill-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-transform duration-150 scale-105 shrink-0";
+
+  if (tabId === 'dashboard') {
+    if (isActive) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
+          <rect width="7" height="9" x="3" y="3" rx="1.5" />
+          <rect width="7" height="5" x="14" y="3" rx="1.5" />
+          <rect width="7" height="9" x="14" y="12" rx="1.5" />
+          <rect width="7" height="5" x="3" y="16" rx="1.5" />
+        </svg>
+      );
+    }
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={outlineClass}>
+        <rect width="7" height="9" x="3" y="3" rx="1.5" />
+        <rect width="7" height="5" x="14" y="3" rx="1.5" />
+        <rect width="7" height="9" x="14" y="12" rx="1.5" />
+        <rect width="7" height="5" x="3" y="16" rx="1.5" />
+      </svg>
+    );
+  }
+
+  if (tabId === 'accounts') {
+    if (isActive) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
+          <path fillRule="evenodd" clipRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2h-4a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h4v2a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6zm14 4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h4v-4h-4zm2 2.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
+        </svg>
+      );
+    }
+    return <Wallet size={18} strokeWidth={1.8} className={outlineClass} />;
+  }
+
+  if (tabId === 'budget') {
+    if (isActive) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
+          <path d="M12.5 2.1A10 10 0 0 1 21.9 11.5H12.5V2.1z" />
+          <path d="M10.5 3.1A10 10 0 1 0 20.9 13.5H10.5V3.1z" />
+        </svg>
+      );
+    }
+    return <PieChart size={18} strokeWidth={1.8} className={outlineClass} />;
+  }
+
+  if (tabId === 'loans') {
+    if (isActive) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
+          <path fillRule="evenodd" clipRule="evenodd" d="M2 7a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v1H2V7zm0 3h20v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7zm4 4a1 1 0 0 0 0 2h3a1 1 0 1 0 0-2H6z" />
+        </svg>
+      );
+    }
+    return <CreditCard size={18} strokeWidth={1.8} className={outlineClass} />;
+  }
+
+  if (tabId === 'investments') {
+    if (isActive) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass}>
+          <path d="M2 17l6.5-6.5 5 5L19 9" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+          <polygon points="15,5 22,5 22,12" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+        </svg>
+      );
+    }
+    return <TrendingUp size={18} strokeWidth={1.8} className={outlineClass} />;
+  }
+
+  return null;
+};
+
 interface MyWealthAppProps {
   onExit: () => void;
 }
@@ -39,10 +128,14 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSyncSuccess, setShowSyncSuccess] = useState(false);
 
-  // Dynamic Liquid Droplet Position State (Silky 60/120fps Smooth)
+  // Dynamic Liquid Droplet Position State & Silky Drag Gesture
   const [pillStyle, setPillStyle] = useState<{ left: number; width: number; height: number }>({ left: 0, width: 0, height: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffsetLeft, setDragOffsetLeft] = useState<number | null>(null);
+
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const navRef = useRef<HTMLElement>(null);
+  const dragStartRef = useRef<{ startX: number; hasMoved: boolean }>({ startX: 0, hasMoved: false });
 
   useLayoutEffect(() => {
     const updatePill = () => {
@@ -58,13 +151,122 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
     updatePill();
     const rafId = requestAnimationFrame(updatePill);
+    const t1 = setTimeout(updatePill, 40);
+    const t2 = setTimeout(updatePill, 120);
     window.addEventListener('resize', updatePill);
+
+    const currentTabEl = tabRefs.current[activeTab];
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && currentTabEl) {
+      ro = new ResizeObserver(() => {
+        updatePill();
+      });
+      ro.observe(currentTabEl);
+      if (navRef.current) ro.observe(navRef.current);
+    }
 
     return () => {
       cancelAnimationFrame(rafId);
+      clearTimeout(t1);
+      clearTimeout(t2);
       window.removeEventListener('resize', updatePill);
+      if (ro) ro.disconnect();
     };
   }, [activeTab]);
+
+  // Silky Smooth Droplet Hold & Drag Handlers
+  const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
+    if (e.button !== 0) return;
+    dragStartRef.current = {
+      startX: e.clientX,
+      hasMoved: false,
+    };
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    if (!navRef.current) return;
+    if (e.buttons === 0) {
+      if (isDragging) {
+        setIsDragging(false);
+        setDragOffsetLeft(null);
+      }
+      return;
+    }
+
+    const deltaX = e.clientX - dragStartRef.current.startX;
+    if (!dragStartRef.current.hasMoved && Math.abs(deltaX) > 3) {
+      dragStartRef.current.hasMoved = true;
+      setIsDragging(true);
+    }
+
+    if (!dragStartRef.current.hasMoved) return;
+
+    const navRect = navRef.current.getBoundingClientRect();
+    const pointerX = e.clientX - navRect.left;
+    const currentTabEl = tabRefs.current[activeTab];
+    const currentWidth = currentTabEl?.offsetWidth || (pillStyle.width > 0 ? pillStyle.width : 104);
+
+    // Direct tracking with boundaries clamped to container
+    const minLeft = 6;
+    const maxLeft = Math.max(minLeft, navRect.width - currentWidth - 6);
+    const newLeft = Math.max(minLeft, Math.min(maxLeft, pointerX - currentWidth / 2));
+    setDragOffsetLeft(newLeft);
+
+    // Dynamic magnetic snap detection to closest tab
+    let closestId = activeTab;
+    let minDistance = Infinity;
+
+    NAV_ITEMS.forEach((item) => {
+      const el = tabRefs.current[item.id];
+      if (el) {
+        const elRect = el.getBoundingClientRect();
+        const tabCenter = elRect.left + elRect.width / 2;
+        const dist = Math.abs(e.clientX - tabCenter);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestId = item.id;
+        }
+      }
+    });
+
+    if (closestId !== activeTab) {
+      setActiveTab(closestId);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(10); } catch {}
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLElement>) => {
+    try {
+      if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+    setIsDragging(false);
+    setDragOffsetLeft(null);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLElement>) => {
+    try {
+      if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+    setIsDragging(false);
+    setDragOffsetLeft(null);
+  };
+
+  const handleTabClick = (tabId: typeof activeTab) => {
+    if (dragStartRef.current.hasMoved) {
+      dragStartRef.current.hasMoved = false;
+      return;
+    }
+    setActiveTab(tabId);
+  };
 
   // --- Theme State ---
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
@@ -507,14 +709,6 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     alert("Month Ended! Summary saved to history.");
   };
 
-  const navItems = [
-    { id: 'dashboard' as const, label: 'Overview', icon: LayoutDashboard },
-    { id: 'accounts' as const, label: 'Wallets', icon: Wallet },
-    { id: 'budget' as const, label: 'Budget', icon: PieChart },
-    { id: 'loans' as const, label: 'Loans', icon: CreditCard },
-    { id: 'investments' as const, label: 'Invest', icon: TrendingUp },
-  ];
-
   // --- AI Command Processor ---
   const processAiCommand = async (text: string): Promise<string> => {
     const apiKey = localStorage.getItem('app_global_api_key');
@@ -735,66 +929,74 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         </div>
       </main>
 
-      {/* iOS LIQUID GLASS FLOATING DOCK (Exact Screenshot Match + Butter-Smooth Sliding) */}
+      {/* iOS LIQUID GLASS FLOATING DOCK (Draggable Water Droplet & High-Contrast Lightmode) */}
       <div className="fixed bottom-3 sm:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none pb-safe">
         <nav
           ref={navRef}
-          className="bg-white/60 dark:bg-[#12151e]/80 backdrop-blur-3xl rounded-full p-1.5 flex items-center gap-1 sm:gap-1.5 border border-white/50 dark:border-white/12 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] pointer-events-auto relative overflow-hidden select-none"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          style={{ touchAction: 'none' }}
+          className={`bg-white/70 dark:bg-[#12151e]/80 backdrop-blur-3xl rounded-full p-1.5 flex items-center gap-1 sm:gap-1.5 border border-slate-200/80 dark:border-white/12 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.15)] pointer-events-auto relative overflow-hidden select-none transition-shadow ${
+            isDragging ? 'cursor-grabbing ring-2 ring-slate-400/20 dark:ring-white/20' : 'cursor-grab'
+          }`}
         >
-          {/* Transparent Liquid Glass Water Droplet Pill (完全还原您上传图片的设计) */}
+          {/* Transparent Liquid Glass Water Droplet Pill */}
           {pillStyle.width > 0 && (
             <div
-              className="absolute rounded-full pointer-events-none overflow-hidden"
+              className={`absolute rounded-full pointer-events-none overflow-hidden ${
+                isDragging ? 'z-20' : ''
+              }`}
               style={{
-                left: `${pillStyle.left}px`,
+                left: `${(isDragging && dragOffsetLeft !== null) ? dragOffsetLeft : pillStyle.left}px`,
                 width: `${pillStyle.width}px`,
                 height: `${pillStyle.height}px`,
                 top: '6px',
-                transform: 'translateZ(0)',
-                willChange: 'left, width',
-                transition: 'left 260ms cubic-bezier(0.25, 1.25, 0.5, 1), width 240ms cubic-bezier(0.25, 1.25, 0.5, 1)',
+                transform: isDragging ? 'scale(1.05) translateZ(0)' : 'scale(1) translateZ(0)',
+                willChange: 'left, width, transform',
+                transition: isDragging
+                  ? 'width 180ms ease, transform 150ms cubic-bezier(0.2, 0.8, 0.4, 1.2)'
+                  : 'left 280ms cubic-bezier(0.25, 1.25, 0.5, 1), width 260ms cubic-bezier(0.25, 1.25, 0.5, 1), transform 200ms ease',
               }}
             >
-              {/* Droplet Glass Body - Exact Screenshot Replica */}
-              <div className="absolute inset-0 rounded-full bg-white/80 dark:bg-white/15 backdrop-blur-2xl border border-white/70 dark:border-white/25 shadow-[0_4px_18px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.4),inset_0_-1px_1px_rgba(0,0,0,0.2)]" />
+              {/* Droplet Glass Body */}
+              <div
+                className={`absolute inset-0 rounded-full backdrop-blur-2xl transition-all duration-200 ${
+                  isDragging
+                    ? 'bg-white/95 dark:bg-white/25 border border-white dark:border-white/35 shadow-[0_8px_25px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.55),inset_0_1px_2px_rgba(255,255,255,0.4)]'
+                    : 'bg-white/85 dark:bg-white/15 border border-white/80 dark:border-white/25 shadow-[0_4px_16px_rgba(0,0,0,0.12),inset_0_1px_2px_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_18px_rgba(0,0,0,0.35),inset_0_1px_2px_rgba(255,255,255,0.3)]'
+                }`}
+              />
 
-              {/* Top Water Specular Reflection (顶部圆弧反光细线) */}
-              <div className="absolute top-0 inset-x-3 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
+              {/* Top Water Specular Reflection */}
+              <div className="absolute top-0 inset-x-3 h-[1px] bg-gradient-to-r from-transparent via-white/90 to-transparent pointer-events-none" />
 
-              {/* Top Glass Lens Glare Bubble (水滴透镜高光光晕) */}
-              <div className="absolute -top-1 left-1/4 w-1/2 h-2.5 rounded-full bg-white/25 dark:bg-white/20 blur-[1px] pointer-events-none" />
+              {/* Top Glass Lens Glare Bubble */}
+              <div className="absolute -top-1 left-1/4 w-1/2 h-2.5 rounded-full bg-white/40 dark:bg-white/25 blur-[1px] pointer-events-none" />
 
               {/* Upper-half glass sheen */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/15 via-white/5 to-transparent opacity-80 pointer-events-none" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/25 via-white/5 to-transparent opacity-90 pointer-events-none" />
             </div>
           )}
 
-          {navItems.map((item) => {
+          {NAV_ITEMS.map((item) => {
             const isActive = activeTab === item.id;
-            const Icon = item.icon;
             return (
               <button
                 key={item.id}
                 ref={(el) => { tabRefs.current[item.id] = el; }}
-                onClick={() => setActiveTab(item.id)}
-                className={`relative z-10 flex items-center justify-center shrink-0 h-10 rounded-full select-none cursor-pointer active:scale-95 ${
+                onClick={() => handleTabClick(item.id)}
+                className={`relative z-10 flex items-center justify-center shrink-0 h-10 rounded-full select-none cursor-pointer group active:scale-95 transition-transform duration-100 ${
                   isActive
-                    ? 'px-3 text-white'
-                    : 'w-10 text-gray-400 hover:text-white'
+                    ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-5.5 text-slate-900 dark:text-white'
+                    : 'w-10 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white'
                 }`}
                 title={item.label}
               >
-                <Icon
-                  size={18}
-                  strokeWidth={isActive ? 2.4 : 1.8}
-                  className={`shrink-0 transition-transform duration-150 ${
-                    isActive
-                      ? 'text-sky-300 drop-shadow-[0_1px_3px_rgba(56,189,248,0.35)]'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                />
+                <TabIcon tabId={item.id} isActive={isActive} />
                 {isActive && (
-                  <span className="text-xs sm:text-[13px] font-bold text-white tracking-wide ml-1.5 whitespace-nowrap select-none">
+                  <span className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white tracking-wide ml-1.5 whitespace-nowrap select-none animate-fade-in">
                     {item.label}
                   </span>
                 )}
