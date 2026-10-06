@@ -152,7 +152,8 @@ export const requestGoogleLogin = async (customClientId?: string): Promise<{ tok
                 }
             });
 
-            client.requestAccessToken({ prompt: 'consent' });
+            // Do not force 'consent' prompt to avoid Google internal server 500 error during configuration propagation
+            client.requestAccessToken();
         } catch (err: any) {
             reject(err);
         }
