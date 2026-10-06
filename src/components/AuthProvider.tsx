@@ -120,6 +120,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
     }, [isConnected, lastSyncedTime]);
 
+    // Centralized Debounced Auto-Sync: Listen to any app changes (Notes, Tasks, MyWealth)
+    useEffect(() => {
+        if (!isConnected) return;
+
+        let debounceTimer: any = null;
+        let isIncomingSync = false;
+
+        const handleDriveSynced = () => {
+            isIncomingSync = true;
+            setTimeout(() => { isIncomingSync = false; }, 800);
+        };
+
+        const handleDataChanged = () => {
+            if (isIncomingSync) return;
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                if (!isDriveConnected()) return;
+                try {
+                    await saveAllDataToDrive();
+                } catch (e) {
+                    console.warn("Global background auto-sync skipped/failed:", e);
+                }
+            }, 2000);
+        };
+
+        window.addEventListener('apptify_data_changed', handleDataChanged);
+        window.addEventListener('apptify_drive_synced', handleDriveSynced);
+
+        return () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            window.removeEventListener('apptify_data_changed', handleDataChanged);
+            window.removeEventListener('apptify_drive_synced', handleDriveSynced);
+        };
+    }, [isConnected]);
+
     // Connect Action
     const connectGoogleDrive = useCallback(async (customClientId?: string) => {
         setIsSyncing(true);
