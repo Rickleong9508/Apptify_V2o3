@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthProvider';
-import { Loader2, X, Cloud, ShieldCheck, Laptop, Smartphone, KeyRound, ChevronDown, ChevronUp, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Loader2, X, Cloud, ShieldCheck, Laptop, Smartphone, KeyRound, ChevronDown, ChevronUp, ExternalLink, CheckCircle2, Globe, ArrowRight } from 'lucide-react';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -14,8 +14,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const [showConfig, setShowConfig] = useState(!googleClientId);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    
+    // Default English, toggleable to Chinese
+    const [modalLang, setModalLang] = useState<'en' | 'zh'>('en');
 
     if (!isOpen) return null;
+
+    const handleDismissGuest = () => {
+        try {
+            sessionStorage.setItem('apptify_welcome_dismissed', 'true');
+        } catch (e) {}
+        onClose();
+    };
 
     const handleConnect = async () => {
         setLoading(true);
@@ -23,30 +33,48 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         setSuccessMsg(null);
 
         try {
-            // Save Client ID if entered
             if (customClientId.trim()) {
                 updateClientId(customClientId.trim());
             }
 
             const profile = await connectGoogleDrive(customClientId.trim() || undefined);
-            setSuccessMsg(`连接成功！已同步至 ${profile.email} 的 Google 云端硬盘`);
+            setSuccessMsg(
+                modalLang === 'en'
+                    ? `Connected! Synced to ${profile.email}'s Google Drive`
+                    : `连接成功！已同步至 ${profile.email} 的 Google 云端硬盘`
+            );
+            try {
+                sessionStorage.setItem('apptify_welcome_dismissed', 'true');
+            } catch (e) {}
             setTimeout(() => {
                 onClose();
             }, 1200);
         } catch (err: any) {
             console.error(err);
             if (err.message === 'MISSING_CLIENT_ID') {
-                setErrorMsg('请先填写您的 Google Client ID，或在后台配置 VITE_GOOGLE_CLIENT_ID。');
+                setErrorMsg(
+                    modalLang === 'en'
+                        ? 'Google Client ID is missing. Please enter it in Advanced Settings below.'
+                        : '请先填写您的 Google Client ID，或在下方高级设置中配置。'
+                );
                 setShowConfig(true);
             } else if (err.message?.includes('popup_closed') || err.message?.includes('closed')) {
-                setErrorMsg('授权窗口已关闭，未完成连接。');
+                setErrorMsg(
+                    modalLang === 'en'
+                        ? 'Sign-in window closed before completing authorization.'
+                        : '授权窗口已关闭，未完成连接。'
+                );
             } else {
-                setErrorMsg(err.message || '连接 Google Drive 失败，请重试。');
+                setErrorMsg(
+                    err.message || (modalLang === 'en' ? 'Failed to connect to Google Drive. Please try again.' : '连接 Google Drive 失败，请重试。')
+                );
             }
         } finally {
             setLoading(false);
         }
     };
+
+    const isEn = modalLang === 'en';
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-md animate-fade-in">
@@ -59,19 +87,32 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         </div>
                         <div>
                             <h2 className="text-base sm:text-lg font-bold text-[var(--ios-label-primary)]">
-                                连接 Google Drive 云同步
+                                {isEn ? 'Welcome to Apptify' : '欢迎使用 Apptify'}
                             </h2>
                             <p className="text-xs text-[var(--ios-label-secondary)] font-medium">
-                                数据归你所有 · 跨设备自由漫游
+                                {isEn ? 'Google Drive Cloud Sync · 100% Private' : '连接 Google Drive · 数据归你所有'}
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="w-8 h-8 rounded-full bg-[var(--ios-fill-tertiary)] flex items-center justify-center text-[var(--ios-label-secondary)] hover:text-[var(--ios-label-primary)] tap-scale transition-all"
-                    >
-                        <X size={16} />
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                        {/* Language Toggle: Default EN, clickable to ZH */}
+                        <button
+                            onClick={() => setModalLang(isEn ? 'zh' : 'en')}
+                            className="px-2.5 py-1 rounded-full text-xs font-bold border border-gray-200 dark:border-white/10 bg-[var(--ios-fill-tertiary)] text-[var(--ios-label-primary)] hover:border-blue-500 transition-all flex items-center gap-1 active:scale-95"
+                            title={isEn ? 'Switch to Chinese' : 'Switch to English'}
+                        >
+                            <Globe size={12} className="text-blue-500" />
+                            <span>{isEn ? 'EN / 中' : '中 / EN'}</span>
+                        </button>
+
+                        <button
+                            onClick={handleDismissGuest}
+                            className="w-8 h-8 rounded-full bg-[var(--ios-fill-tertiary)] flex items-center justify-center text-[var(--ios-label-secondary)] hover:text-[var(--ios-label-primary)] tap-scale transition-all"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Privacy & Highlights */}
@@ -79,10 +120,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <div className="p-3.5 rounded-2xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/10 space-y-1.5">
                         <div className="flex items-center gap-1.5 font-bold text-blue-600 dark:text-blue-400">
                             <ShieldCheck size={15} />
-                            <span>100% 绝对隐私</span>
+                            <span>{isEn ? '100% Private' : '100% 绝对私有'}</span>
                         </div>
                         <p className="text-[var(--ios-label-secondary)] text-[11px] leading-relaxed">
-                            账本与笔记直接存入您的私有网盘，无任何中心数据库中转或收集。
+                            {isEn
+                                ? 'Data is stored exclusively in your personal Google Drive. No centralized database collects your records.'
+                                : '账本与笔记直接存入您的私有 Google 云端硬盘，无任何第三方数据库中转或收集。'}
                         </p>
                     </div>
 
@@ -92,10 +135,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                 <Laptop size={14} />
                                 <Smartphone size={14} />
                             </div>
-                            <span>全端实时同步</span>
+                            <span>{isEn ? 'Cross-Device' : '全端实时同步'}</span>
                         </div>
                         <p className="text-[var(--ios-label-secondary)] text-[11px] leading-relaxed">
-                            在手机、Mac、平板或 Windows 登录同一个 Google 账号即可自动拉取更新。
+                            {isEn
+                                ? 'Sign in with the same Google account across phone, laptop, or tablet to access your data anywhere.'
+                                : '在手机、电脑或平板登录同一个 Google 账号，即可全自动保持数据实时漫游。'}
                         </p>
                     </div>
                 </div>
@@ -114,8 +159,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     </div>
                 )}
 
-                {/* Main Action: One-Click Google Login Button */}
+                {/* Main Actions */}
                 <div className="space-y-3">
+                    {/* One-Click Google Login Button */}
                     <button
                         onClick={handleConnect}
                         disabled={loading || isSyncing}
@@ -132,9 +178,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                                 </svg>
-                                <span>{isConnected ? '重新授权 / 切换 Google 账号' : '使用 Google 账号一键授权'}</span>
+                                <span>
+                                    {isConnected
+                                        ? (isEn ? 'Switch / Reconnect Google Account' : '重新授权 / 切换 Google 账号')
+                                        : (isEn ? 'Sign in with Google' : '使用 Google 账号一键登录')}
+                                </span>
                             </>
                         )}
+                    </button>
+
+                    {/* Guest / Offline Mode Option */}
+                    <button
+                        type="button"
+                        onClick={handleDismissGuest}
+                        className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-[var(--ios-label-secondary)] hover:text-[var(--ios-label-primary)] hover:bg-[var(--ios-fill-tertiary)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                        <span>{isEn ? 'Continue as Guest (Local Offline Mode)' : '先以访客模式体验 (仅本地离线)'}</span>
+                        <ArrowRight size={13} />
                     </button>
                 </div>
 
@@ -143,11 +203,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <button
                         type="button"
                         onClick={() => setShowConfig(!showConfig)}
-                        className="w-full flex items-center justify-between text-xs text-[var(--ios-label-secondary)] hover:text-blue-500 font-medium transition-colors py-1"
+                        className="w-full flex items-center justify-between text-xs text-[var(--ios-label-secondary)] hover:text-blue-500 font-medium transition-colors py-1 cursor-pointer"
                     >
                         <div className="flex items-center gap-1.5">
                             <KeyRound size={13} />
-                            <span>高级设置：配置 Google Cloud Client ID</span>
+                            <span>
+                                {isEn ? 'Advanced: Configure Google Client ID' : '高级设置：配置 Google Cloud Client ID'}
+                            </span>
                         </div>
                         {showConfig ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
@@ -160,7 +222,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="例如: 123456789-abc.apps.googleusercontent.com"
+                                    placeholder={isEn ? "e.g. 123456789-abc.apps.googleusercontent.com" : "例如: 123456789-abc.apps.googleusercontent.com"}
                                     value={customClientId}
                                     onChange={(e) => setCustomClientId(e.target.value)}
                                     className="ios-input text-xs w-full py-2"
@@ -168,14 +230,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                             </div>
 
                             <div className="flex items-center justify-between text-[11px] text-[var(--ios-label-secondary)]">
-                                <span>无需 Secret，纯前端安全授权</span>
+                                <span>{isEn ? 'Direct Client Auth · No Secret Needed' : '无需 Secret，纯前端安全授权'}</span>
                                 <a
                                     href="https://console.cloud.google.com/apis/credentials"
                                     target="_blank"
                                     rel="noreferrer"
                                     className="text-blue-500 hover:underline flex items-center gap-1"
                                 >
-                                    <span>获取 Client ID</span>
+                                    <span>{isEn ? 'Google Cloud Console' : '获取 Client ID'}</span>
                                     <ExternalLink size={11} />
                                 </a>
                             </div>
@@ -185,7 +247,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
                 {/* Footer status notice */}
                 <div className="text-center text-[11px] text-[var(--ios-label-tertiary)] leading-tight">
-                    首次连接时会自动在您的网盘中创建名为 <code className="text-blue-500 font-mono">Apptify_Cloud_Data.json</code> 的备份文件。
+                    {isEn ? (
+                        <>Data will be safely synced to <code className="text-blue-500 font-mono">Apptify_Cloud_Data.json</code> in your Google Drive.</>
+                    ) : (
+                        <>数据将安全同步至您 Google Drive 中的 <code className="text-blue-500 font-mono">Apptify_Cloud_Data.json</code> 文件。</>
+                    )}
                 </div>
             </div>
         </div>

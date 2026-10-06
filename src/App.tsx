@@ -40,6 +40,20 @@ const getAppFromHash = (): AppMode => {
 const App: React.FC = () => {
   const { isConnected, user } = useAuth();
   const [currentApp, setCurrentAppState] = useState<AppMode>(getAppFromHash);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Auto-prompt welcome/login modal for new or unauthenticated users (defaults to English, toggleable to Chinese)
+  useEffect(() => {
+    try {
+      const isDismissed = sessionStorage.getItem('apptify_welcome_dismissed');
+      if (!isConnected && !isDismissed) {
+        const timer = setTimeout(() => {
+          setShowAuthModal(true);
+        }, 700);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {}
+  }, [isConnected]);
 
   const setCurrentApp = (mode: AppMode) => {
     setCurrentAppState(mode);
@@ -362,13 +376,13 @@ const App: React.FC = () => {
 
             {/* Google Drive Status Pill */}
             <button
-              onClick={() => setCurrentApp('settings')}
+              onClick={() => setShowAuthModal(true)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full backdrop-blur-2xl border shadow-sm text-xs font-semibold active:scale-95 transition-all cursor-pointer ${
                 isConnected
                   ? 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400'
                   : 'bg-white/70 dark:bg-white/10 border-white/60 dark:border-white/15 text-gray-500 dark:text-gray-400 hover:text-blue-500'
               }`}
-              title={isConnected ? `Google Drive 已连接 (${user?.email || ''})` : "点击设置连接 Google Drive 云端同步"}
+              title={isConnected ? `Google Drive: ${user?.email || ''}` : "连接 Google Drive 云端同步"}
             >
               <Cloud size={12} className={isConnected ? "fill-blue-500/20" : ""} />
               <span className="text-[11px] font-medium hidden xs:inline">{isConnected ? (user?.name?.split(' ')[0] || '已连接') : '云同步'}</span>
@@ -573,6 +587,19 @@ const App: React.FC = () => {
                 {lang === 'en' ? 'EN' : '中'}
               </button>
 
+              {/* Google Drive Cloud Sync */}
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center active:scale-90 transition-all cursor-pointer ${
+                  isConnected
+                    ? 'text-blue-500 bg-blue-500/10'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10'
+                }`}
+                title={isConnected ? `Google Drive: ${user?.email || ''}` : "Connect Google Drive"}
+              >
+                <Cloud size={16} className={isConnected ? "fill-blue-500/20" : ""} />
+              </button>
+
               {/* Theme Toggle */}
               <button
                 onClick={() => {
@@ -683,6 +710,9 @@ const App: React.FC = () => {
 
       {/* Global AI Floating Copilot Drawer */}
       <AskApptify currentApp={currentApp} setCurrentApp={setCurrentApp} />
+
+      {/* Google Drive Auth & Welcome Modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 };

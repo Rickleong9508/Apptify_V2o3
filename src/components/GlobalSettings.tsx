@@ -84,11 +84,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
         }
     });
 
-    // --- Obsidian Integration State ---
-    const [obsidianPath, setObsidianPath] = useState(() => localStorage.getItem('app_obsidian_vault_path') || '');
-    const [obsidianStatus, setObsidianStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
-    const [obsidianStatusMsg, setObsidianStatusMsg] = useState('');
-
     // --- Language & Theme State ---
     const [currentLang, setCurrentLang] = useState<Language>(getStoredLanguage);
     const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>(() => {
@@ -174,10 +169,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
         window.dispatchEvent(new Event('apptify_settings_change'));
     }, [favorites]);
 
-    useEffect(() => {
-        localStorage.setItem('app_obsidian_vault_path', obsidianPath);
-    }, [obsidianPath]);
-
     // Load models for SiliconFlow
     const loadSiliconFlowModels = async (keyToUse = apiKeys.siliconflow, forceRefresh = false) => {
         setIsLoadingModels(true);
@@ -237,35 +228,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
             setAiModel(defaults[aiProvider]);
         }
     }, [aiProvider]);
-
-    const checkObsidianConnection = async () => {
-        if (!obsidianPath.trim()) return;
-        setObsidianStatus('checking');
-        setObsidianStatusMsg('Verifying directory access...');
-        try {
-            const res = await fetch('/api/obsidian/status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vaultPath: obsidianPath })
-            });
-
-            const contentType = res.headers.get('content-type');
-            if (contentType && contentType.includes('text/html')) {
-                throw new Error('Obsidian folders can only be accessed when running Apptify locally. Please open http://localhost:3001 on your MacBook.');
-            }
-            
-            const data = await res.json();
-            if (res.ok && data.success) {
-                setObsidianStatus('success');
-                setObsidianStatusMsg('Successfully connected to local Obsidian vault.');
-            } else {
-                throw new Error(data.error || 'Path verification failed');
-            }
-        } catch (e: any) {
-            setObsidianStatus('error');
-            setObsidianStatusMsg(e.message || 'Verification failed. Make sure path is correct & writeable.');
-        }
-    };
 
     const checkConnection = async () => {
         const activeKey = apiKeys[aiProvider];
@@ -1111,78 +1073,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                     </div>
                 </div>
 
-                {/* Obsidian Vault Integration Card */}
-                <div
-                    className="ios-card p-6 sm:p-8 animate-scale-in"
-                    style={{
-                        background: "var(--ios-card-bg)",
-                        boxShadow: "var(--ios-card-shadow)"
-                    }}
-                >
-                    <div className="flex items-center gap-3 mb-8">
-                        <div
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-emerald-600"
-                            style={{
-                                background: "var(--ios-card-bg)",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                            }}
-                        >
-                            <HardDrive size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-700">Obsidian Knowledge Vault</h2>
-                            <p className="text-sm text-gray-500 font-medium">Connect your local Obsidian Vault folder</p>
-                        </div>
-                    </div>
-
-                    <div className="mb-6">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">
-                            Obsidian Vault Path (Absolute Path)
-                        </label>
-                        <div className="flex gap-4">
-                            <input
-                                type="text"
-                                value={obsidianPath}
-                                onChange={(e) => {
-                                    setObsidianPath(e.target.value);
-                                    setObsidianStatus('idle');
-                                    setObsidianStatusMsg('');
-                                }}
-                                placeholder="/Users/username/Obsidian/MyVault"
-                                className="flex-1 p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
-                                style={{
-                                    boxShadow: "none"
-                                }}
-                            />
-                            <button
-                                onClick={checkObsidianConnection}
-                                disabled={!obsidianPath || obsidianStatus === 'checking'}
-                                className={`px-6 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 active:scale-95 ${
-                                    obsidianStatus === 'success' ? 'text-green-500' : obsidianStatus === 'error' ? 'text-red-500' : 'text-gray-600'
-                                }`}
-                                style={{
-                                    background: "var(--ios-card-bg)",
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                                }}
-                            >
-                                {obsidianStatus === 'checking' ? <Activity className="animate-spin" size={18} /> :
-                                    obsidianStatus === 'success' ? <Check size={18} /> :
-                                        obsidianStatus === 'error' ? <AlertCircle size={18} /> :
-                                            "Verify"}
-                            </button>
-                        </div>
-                        {obsidianStatusMsg && (
-                            <p className={`text-xs font-bold mt-3 pl-2 ${
-                                obsidianStatus === 'success' ? 'text-green-600' : obsidianStatus === 'error' ? 'text-red-600' : 'text-gray-400'
-                            }`}>
-                                {obsidianStatusMsg}
-                            </p>
-                        )}
-                        <p className="text-[10px] text-gray-400 font-bold mt-2 ml-2 tracking-wide leading-relaxed">
-                            💡 Enter the absolute folder path to your local Obsidian vault directory. The Apptify server will read/write markdown notes directly in this folder. Leaves blank to fallback to internal Supabase storage.
-                        </p>
-                    </div>
-                </div>
 
                 {/* Backup Card */}
                 <div

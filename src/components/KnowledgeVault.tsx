@@ -125,32 +125,46 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
   const [focusMode, setFocusMode] = useState<'work' | 'break'>('work');
   const [completedSessions, setCompletedSessions] = useState(0);
 
+  const isExternalUpdateRef = React.useRef(false);
+
   // Sync Notes to LocalStorage & Dispatch Event
   useEffect(() => {
+    if (isExternalUpdateRef.current) return;
     localStorage.setItem('apptify_notes', JSON.stringify(notes));
     window.dispatchEvent(new Event('apptify_data_changed'));
   }, [notes]);
 
   // Sync Tasks to LocalStorage & Dispatch Event
   useEffect(() => {
+    if (isExternalUpdateRef.current) {
+      isExternalUpdateRef.current = false;
+      return;
+    }
     localStorage.setItem('apptify_tasks', JSON.stringify(tasks));
     window.dispatchEvent(new Event('apptify_data_changed'));
   }, [tasks]);
 
-  // Listen to external data changes (e.g. from Ask Apptify Copilot)
+  // Listen to external data changes (e.g. from Ask Apptify Copilot, Google Drive sync, or logout)
   useEffect(() => {
     const handleDataChange = () => {
       try {
         const savedNotes = localStorage.getItem('apptify_notes');
-        if (savedNotes) setNotes(JSON.parse(savedNotes));
         const savedTasks = localStorage.getItem('apptify_tasks');
-        if (savedTasks) setTasks(JSON.parse(savedTasks));
+        isExternalUpdateRef.current = true;
+        setNotes(savedNotes ? JSON.parse(savedNotes) : []);
+        setTasks(savedTasks ? JSON.parse(savedTasks) : []);
       } catch (e) {
         console.error(e);
       }
     };
     window.addEventListener('apptify_data_changed', handleDataChange);
-    return () => window.removeEventListener('apptify_data_changed', handleDataChange);
+    window.addEventListener('apptify_notes_changed', handleDataChange);
+    window.addEventListener('apptify_tasks_changed', handleDataChange);
+    return () => {
+      window.removeEventListener('apptify_data_changed', handleDataChange);
+      window.removeEventListener('apptify_notes_changed', handleDataChange);
+      window.removeEventListener('apptify_tasks_changed', handleDataChange);
+    };
   }, []);
 
   // Pomodoro Countdown Timer

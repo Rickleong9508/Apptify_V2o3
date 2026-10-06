@@ -4,6 +4,7 @@ import {
     isDriveConnected,
     requestGoogleLogin,
     disconnectGoogleDrive,
+    clearAllUserData,
     saveAllDataToDrive,
     loadAllDataFromDrive,
     checkCloudMetadata,
@@ -159,17 +160,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const connectGoogleDrive = useCallback(async (customClientId?: string) => {
         setIsSyncing(true);
         try {
+            // Wipe any stale data so the newly connected account starts strictly with its own data
+            clearAllUserData();
             const { profile } = await requestGoogleLogin(customClientId);
             setUser(profile);
             setIsConnected(true);
 
             // Immediately attempt initial pull from Drive
             try {
-                await loadAllDataFromDrive();
+                const cloudData = await loadAllDataFromDrive();
+                if (!cloudData) {
+                    console.log("No existing cloud backup for this account. Clean start.");
+                }
             } catch (loadErr) {
-                console.warn("No existing cloud backup found or first load, pushing initial local data...", loadErr);
-                // If cloud had nothing, push initial local data
-                await saveAllDataToDrive();
+                console.warn("No existing cloud backup found for this account:", loadErr);
             }
 
             return profile;

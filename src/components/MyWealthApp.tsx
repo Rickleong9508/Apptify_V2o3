@@ -500,6 +500,16 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         } catch (e) {
           console.error("Failed to reload data on apptify_data_changed", e);
         }
+      } else {
+        // Local storage was cleared on logout / account switch
+        setAccounts([]);
+        setMonthlyData(INITIAL_MONTHLY_DATA);
+        setBudgetHistory([]);
+        setFixedExpenses([]);
+        setLoans([]);
+        setStocks([]);
+        setCash({ myr: 0, usd: 0, hkd: 0 });
+        setExchangeRate(4.5);
       }
     };
 

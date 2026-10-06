@@ -160,6 +160,26 @@ export const requestGoogleLogin = async (customClientId?: string): Promise<{ tok
     });
 };
 
+// Clear all user-specific data from browser storage on logout or account switch
+export const clearAllUserData = () => {
+    // 1. MyWealth data
+    localStorage.removeItem('mw_data_main');
+    // 2. KnowledgeVault data
+    localStorage.removeItem('apptify_notes');
+    localStorage.removeItem('apptify_tasks');
+    localStorage.removeItem('gn_notes');
+    localStorage.removeItem('gn_todos');
+    localStorage.removeItem('gn_meta');
+    localStorage.removeItem('app_notes_embeddings');
+    // 3. Sync metadata
+    localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
+
+    // 4. Notify all components to reset their in-memory states immediately
+    window.dispatchEvent(new CustomEvent('apptify_data_changed'));
+    window.dispatchEvent(new CustomEvent('apptify_notes_changed'));
+    window.dispatchEvent(new CustomEvent('apptify_tasks_changed'));
+};
+
 // 5. Logout / Disconnect
 export const disconnectGoogleDrive = () => {
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
@@ -175,6 +195,9 @@ export const disconnectGoogleDrive = () => {
     localStorage.removeItem(STORAGE_KEYS.EXPIRY);
     localStorage.removeItem(STORAGE_KEYS.PROFILE);
     localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
+
+    // Clear all user data so next account or logged-out guest starts completely clean
+    clearAllUserData();
 
     window.dispatchEvent(new CustomEvent('apptify_drive_auth_changed', { detail: { connected: false } }));
 };
