@@ -5,7 +5,7 @@ import {
   Compass, ChevronRight, ChevronLeft, PieChart, ShieldCheck, Zap
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
-import { supabase } from '../services/supabaseClient';
+import { saveAllDataToDrive } from '../services/driveService';
 import { aiService } from '../services/aiService';
 import { Account, Expense, Loan, Stock, MonthlyData } from '../types';
 import { skillRegistry } from '../services/skillRegistry';
@@ -214,28 +214,12 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
     }
   }, [messages, isOpen]);
 
-  // Cloud Sync Helper for MyWealth
-  const syncMyWealthToCloud = async (dataToSave: any) => {
-    if (!session || !user) return;
+  // Cloud Sync Helper for MyWealth / KnowledgeVault via Google Drive
+  const syncMyWealthToCloud = async (_dataToSave?: any) => {
     try {
-      const { data: existing } = await supabase.from('user_data').select('id, data').eq('user_id', user.id).single();
-      let finalData = existing?.data || {};
-      finalData.mywealth = dataToSave;
-
-      if (existing?.id) {
-        await supabase.from('user_data').update({
-          data: finalData,
-          updated_at: new Date().toISOString()
-        }).eq('user_id', user.id);
-      } else {
-        await supabase.from('user_data').insert({
-          user_id: user.id,
-          data: finalData,
-          updated_at: new Date().toISOString()
-        });
-      }
+      await saveAllDataToDrive();
     } catch (e) {
-      console.warn("AskApptify: Background cloud sync failed", e);
+      console.warn("AskApptify: Background Google Drive sync skipped/failed", e);
     }
   };
 

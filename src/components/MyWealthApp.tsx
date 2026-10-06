@@ -17,8 +17,9 @@ import Loans from './Loans';
 import Investments from './Investments';
 import { Account, Expense, Loan, Stock, MonthlyData, Transaction, BudgetHistoryItem, ExpenseCategory, CashHolding } from '../types';
 import { aiService } from '../services/aiService';
-import { useAuth } from './AuthProvider'; // New
-import { supabase } from '../services/supabaseClient'; // New
+import { useAuth } from './AuthProvider';
+import { saveAllDataToDrive, loadAllDataFromDrive } from '../services/driveService';
+import AuthModal from './AuthModal';
 
 // Initial Data Defaults
 const INITIAL_ACCOUNTS_DEFAULT: Account[] = [];
@@ -123,7 +124,8 @@ interface MyWealthAppProps {
 }
 
 const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
-  const { session, user } = useAuth();
+  const { session, user, isConnected, syncNow } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'accounts' | 'budget' | 'loans' | 'investments'>('dashboard');
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSyncSuccess, setShowSyncSuccess] = useState(false);
@@ -425,20 +427,14 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
       }
     }
 
-    // 2. Sync Cloud if Logged In
-    if (session && user) {
+    // 2. Sync Cloud if Connected to Google Drive
+    if (isConnected) {
       setIsSyncing(true);
       try {
-        const { data, error } = await supabase
-          .from('user_data')
-          .select('data, updated_at')
-          .eq('user_id', user.id)
-          .single();
-
-        if (data && data.data) {
-          const cloudApp = data.data.mywealth || data.data;
-          const cloudTime = new Date(cloudApp.lastUpdated || data.updated_at).getTime();
-          // Use Ref for latest check because state might be stale in closures
+        const cloudData = await loadAllDataFromDrive();
+        if (cloudData && (cloudData.mywealth || cloudData.accounts)) {
+          const cloudApp = cloudData.mywealth || cloudData;
+          const cloudTime = new Date(cloudApp.lastUpdated || cloudData.lastUpdated || 0).getTime();
           const localTime = lastLocalUpdateRef.current;
 
           // Only overwrite if Cloud is STRICTLY newer than what we have locally
@@ -459,7 +455,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             setStocks(cloudApp.stocks || []);
             setCash(cloudApp.cash || { myr: 0, usd: 0, hkd: 0 });
             setExchangeRate(cloudApp.exchangeRate || 4.5);
-            lastLocalUpdateRef.current = cloudTime; // Update ref to match new cloud state
+            lastLocalUpdateRef.current = cloudTime;
             setShowSyncSuccess(true);
             setTimeout(() => setShowSyncSuccess(false), 2000);
           } else {
@@ -467,7 +463,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           }
         }
       } catch (err) {
-        console.error("Sync error:", err);
+        console.error("Google Drive sync error:", err);
       } finally {
         setIsSyncing(false);
       }
@@ -478,13 +474,13 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
   useEffect(() => {
     fetchData();
-  }, [session, user]);
+  }, [isConnected]);
 
   // --- Auto-Sync on Window Focus & Custom Event ---
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && user) {
-        console.log("App foregrounded: Triggering sync...");
+      if (document.visibilityState === 'visible' && isConnected) {
+        console.log("App foregrounded: Triggering Google Drive sync check...");
         fetchData();
       }
     };
@@ -506,66 +502,25 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         }
       }
     };
+
+    const handleDriveSynced = () => {
+      handleDataChanged();
+      setShowSyncSuccess(true);
+      setTimeout(() => setShowSyncSuccess(false), 2000);
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("apptify_data_changed", handleDataChanged);
+    window.addEventListener("apptify_drive_synced", handleDriveSynced);
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("apptify_data_changed", handleDataChanged);
+      window.removeEventListener("apptify_drive_synced", handleDriveSynced);
     };
-  }, [user]);
+  }, [isConnected]);
 
-  // --- Realtime Sync Subscription ---
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase.channel(`mywealth_sync_${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'user_data' },
-        (payload) => {
-          console.log("Realtime event received:", payload);
-          const newData = payload.new as any;
-          if (newData && newData.data) {
-            const cloudApp = newData.data.mywealth || newData.data;
-            const cloudTime = new Date(cloudApp.lastUpdated || newData.updated_at).getTime();
-            const localTime = lastLocalUpdateRef.current;
-
-            if (cloudTime > localTime) {
-              console.log(`Realtime: Cloud (${cloudTime}) > Local (${localTime}). Updating...`);
-              const processedAccounts = checkAndApplyInterest(cloudApp.accounts || []);
-              
-              isIncomingSyncRef.current = true;
-              setTimeout(() => {
-                isIncomingSyncRef.current = false;
-              }, 100);
-
-              setAccounts(processedAccounts);
-              setMonthlyData(cloudApp.monthlyData || INITIAL_MONTHLY_DATA);
-              setBudgetHistory(cloudApp.budgetHistory || []);
-              setFixedExpenses(cloudApp.fixedExpenses || []);
-              setLoans(cloudApp.loans || []);
-              setStocks(cloudApp.stocks || []);
-              setCash(cloudApp.cash || { myr: 0, usd: 0, hkd: 0 });
-              setExchangeRate(cloudApp.exchangeRate || 4.5);
-              lastLocalUpdateRef.current = cloudTime;
-              setIsSyncing(true);
-              setTimeout(() => setIsSyncing(false), 1000);
-            } else {
-              console.log(`Realtime: Cloud (${cloudTime}) <= Local (${localTime}). Ignoring echo/stale.`);
-            }
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`Realtime subscription status: ${status}`);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  // --- Save Data (Local & Cloud) ---
+  // --- Save Data (Local & Google Drive Cloud) ---
   useEffect(() => {
     if (!isDataLoaded || !isSyncInitializedRef.current) return;
 
@@ -591,50 +546,31 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     const now = new Date();
     const dataToSave = { accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, lastUpdated: now.toISOString() };
 
-    // Update Ref immediately so pending cloud saves/realtime echoes don't overwrite us
+    // Update Ref immediately so pending cloud saves don't overwrite us
     lastLocalUpdateRef.current = now.getTime();
 
     // Save Local
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
 
-    // Save Cloud (Debounced 2s)
-    if (session && user) {
+    // Save Cloud to Google Drive (Debounced 2s)
+    if (isConnected) {
       const pushToCloud = async () => {
         setIsSyncing(true);
         try {
-          // Fetch LATEST full data to avoid overwriting other apps
-          const { data: existing } = await supabase.from('user_data').select('id, data').eq('user_id', user.id).single();
-
-          let finalData = existing?.data || {};
-          // Merge MyWealth Data
-          finalData.mywealth = dataToSave;
-
-          if (existing?.id) {
-            await supabase.from('user_data').update({
-              data: finalData,
-              updated_at: new Date().toISOString()
-            }).eq('user_id', user.id);
-          } else {
-            // First time creation
-            await supabase.from('user_data').insert({
-              user_id: user.id,
-              data: finalData,
-              updated_at: new Date().toISOString()
-            });
-          }
+          await saveAllDataToDrive();
           setShowSyncSuccess(true);
           setTimeout(() => setShowSyncSuccess(false), 2000);
         } catch (err) {
-          console.error("Cloud save failed", err);
+          console.error("Google Drive cloud save failed", err);
         } finally {
           setIsSyncing(false);
         }
       };
-      const timer = setTimeout(pushToCloud, 2000); // Debounce Cloud Save
+      const timer = setTimeout(pushToCloud, 2000);
       return () => clearTimeout(timer);
     }
 
-  }, [accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, isDataLoaded, session, user]);
+  }, [accounts, monthlyData, budgetHistory, fixedExpenses, loans, stocks, cash, exchangeRate, isDataLoaded, isConnected]);
 
   // --- Expose State to Window for Ask Apptify ---
   useEffect(() => {
@@ -882,19 +818,39 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             <div className="flex items-center gap-3">
               {/* Sync Status Indicator */}
               <button
-                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm hover:border-blue-500/30 transition-all active:scale-95"
-                onClick={fetchData}
-                title="点击强制云端同步"
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm hover:border-blue-500/30 transition-all active:scale-95 cursor-pointer"
+                onClick={async () => {
+                  if (isConnected) {
+                    setIsSyncing(true);
+                    try {
+                      await syncNow();
+                      setShowSyncSuccess(true);
+                      setTimeout(() => setShowSyncSuccess(false), 2000);
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setIsSyncing(false);
+                    }
+                  } else {
+                    setShowAuthModal(true);
+                  }
+                }}
+                title={isConnected ? (user?.email ? `已连接 Google Drive (${user.email})，点击立即同步` : "已连接 Google Drive，点击立即同步") : "点击连接 Google Drive 云端同步"}
               >
                 {isSyncing ? (
                   <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 animate-pulse">
                     <Cloud size={14} />
                     <span>同步中...</span>
                   </div>
+                ) : isConnected ? (
+                  <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 transition-colors">
+                    <Cloud size={14} className="fill-blue-500/20" />
+                    <span>已连接 Google Drive</span>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                     <Cloud size={14} />
-                    <span>云端同步</span>
+                    <span>连接 Google Drive</span>
                   </div>
                 )}
               </button>
@@ -1006,6 +962,8 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         </nav>
       </div>
 
+      {/* Google Drive Cloud Connect Modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 };

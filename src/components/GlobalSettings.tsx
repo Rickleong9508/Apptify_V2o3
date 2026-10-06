@@ -23,7 +23,8 @@ import {
     Sliders,
     Info,
     Sun,
-    Moon
+    Moon,
+    Cloud
 } from 'lucide-react';
 import { aiService, AIProvider, ModelMetadata } from '../services/aiService';
 import { useAuth } from './AuthProvider';
@@ -417,7 +418,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
         reader.readAsText(file);
     };
 
-    const { session, user, signOut } = useAuth();
+    const { isConnected, user, isSyncing, lastSyncedTime, syncNow, disconnectGoogleDrive } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [confirmLogout, setConfirmLogout] = useState(false);
 
@@ -428,7 +429,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 <div className="flex items-center justify-between pt-2">
                     <button
                         onClick={onExit}
-                        className="flex items-center gap-1.5 text-blue-500 font-semibold text-sm tap-scale"
+                        className="flex items-center gap-1.5 text-blue-500 font-semibold text-sm tap-scale cursor-pointer"
                     >
                         <ChevronLeft size={20} />
                         <span>Back to Launcher</span>
@@ -436,7 +437,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                     <span className="text-xs font-semibold text-[var(--ios-label-secondary)]">Apptify System Settings</span>
                 </div>
 
-                {/* Account Actions Section */}
+                {/* Google Drive Cloud Sync Card */}
                 <div
                     className="ios-card p-6 sm:p-8 animate-scale-in"
                     style={{
@@ -444,59 +445,110 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         boxShadow: "var(--ios-card-shadow)"
                     }}
                 >
-                    <div className="flex items-center gap-3 mb-6">
-                        <div
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-red-500"
-                            style={{
-                                background: "var(--ios-card-bg)",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                            }}
-                        >
-                            <Key size={24} />
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div
+                                className="w-12 h-12 rounded-2xl flex items-center justify-center text-blue-500"
+                                style={{
+                                    background: "var(--ios-card-bg)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
+                                }}
+                            >
+                                <Cloud size={24} />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-100">云端多端同步</h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">基于 Google Drive 的去中心化私有云存储</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-700">Account</h2>
-                            <p className="text-sm text-gray-500 font-medium">Manage your session</p>
+
+                        <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                                isConnected
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                    : 'bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20'
+                            }`}>
+                                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                                {isConnected ? '已连接 Google Drive' : '本地离线模式'}
+                            </span>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--ios-card-bg)]"
-                        style={{ boxShadow: "none" }}>
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] space-y-4">
+                        {isConnected && user ? (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-3.5">
+                                    {user.picture ? (
+                                        <img src={user.picture} alt={user.name} className="w-11 h-11 rounded-full border border-black/10 dark:border-white/10 shadow-sm" />
+                                    ) : (
+                                        <div className="w-11 h-11 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold text-base">
+                                            {user.name?.charAt(0) || user.email?.charAt(0) || 'G'}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <div className="font-bold text-sm text-[var(--ios-label-primary)]">{user.name}</div>
+                                        <div className="text-xs text-[var(--ios-label-secondary)] font-mono">{user.email}</div>
+                                        {lastSyncedTime && (
+                                            <div className="text-[11px] text-[var(--ios-label-tertiary)] mt-0.5">
+                                                最后同步：{new Date(lastSyncedTime).toLocaleString()}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
-                        {session ? (
-                            <>
-                                <div className="flex flex-col">
-                                    <span className="font-bold text-gray-600">Logged in as</span>
-                                    <span className="text-sm text-blue-500 font-mono">{user?.email}</span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await syncNow();
+                                            } catch (e: any) {
+                                                alert("同步失败：" + e.message);
+                                            }
+                                        }}
+                                        disabled={isSyncing}
+                                        className="px-4 py-2.5 rounded-xl font-bold text-xs bg-blue-500 hover:bg-blue-600 text-white shadow-md active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                                    >
+                                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                                        <span>{isSyncing ? '同步中...' : '立即同步'}</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            if (confirmLogout) {
+                                                disconnectGoogleDrive();
+                                                setConfirmLogout(false);
+                                            } else {
+                                                setConfirmLogout(true);
+                                                setTimeout(() => setConfirmLogout(false), 3000);
+                                            }
+                                        }}
+                                        className={`px-4 py-2.5 rounded-xl font-bold text-xs text-white transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer ${
+                                            confirmLogout ? 'bg-red-600 animate-pulse' : 'bg-red-500 hover:bg-red-600'
+                                        }`}
+                                    >
+                                        {confirmLogout ? "确认断开？" : "断开连接"}
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        if (confirmLogout) {
-                                            signOut();
-                                            setConfirmLogout(false);
-                                        } else {
-                                            setConfirmLogout(true);
-                                            setTimeout(() => setConfirmLogout(false), 3000);
-                                        }
-                                    }}
-                                    className={`px-6 py-3 rounded-xl font-bold text-sm text-white transition-all shadow-lg active:scale-95 flex items-center gap-2 ${confirmLogout ? 'bg-red-600 animate-pulse' : 'bg-red-500 hover:bg-red-600'}`}
-                                >
-                                    {confirmLogout ? "Confirm?" : "Log Out"}
-                                </button>
-                            </>
+                            </div>
                         ) : (
-                            <>
-                                <div className="flex flex-col">
-                                    <span className="font-bold text-gray-600">Not Logged In</span>
-                                    <span className="text-sm text-gray-400">Sign in to sync your data</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-sm text-[var(--ios-label-primary)]">
+                                        尚未连接 Google Drive 云端
+                                    </h4>
+                                    <p className="text-xs text-[var(--ios-label-secondary)] max-w-lg leading-relaxed">
+                                        连接后，数据将以隐私文件形式保存在您的个人 Google 云端硬盘中，可在电脑、手机或平板间全自动实时漫游。
+                                    </p>
                                 </div>
+
                                 <button
                                     onClick={() => setShowAuthModal(true)}
-                                    className="px-6 py-3 rounded-xl font-bold text-sm text-white bg-blue-500 hover:bg-blue-600 transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                                    className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-blue-500 hover:bg-blue-600 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                                 >
-                                    Sign In
+                                    <Cloud size={15} />
+                                    <span>连接 Google Drive</span>
                                 </button>
-                            </>
+                            </div>
                         )}
                     </div>
                 </div>

@@ -16,7 +16,8 @@ import {
   Calendar,
   CheckSquare,
   Zap,
-  TrendingUp
+  TrendingUp,
+  Cloud
 } from 'lucide-react';
 import MyWealthApp from './components/MyWealthApp';
 import KnowledgeVault from './components/KnowledgeVault';
@@ -24,6 +25,7 @@ import GlobalSettings from './components/GlobalSettings';
 import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal';
 import AskApptify from './components/AskApptify';
+import { useAuth } from './components/AuthProvider';
 import { Language, translations, getStoredLanguage, setStoredLanguage } from './utils/i18n';
 
 type AppMode = 'launcher' | 'mywealth' | 'knowledgevault' | 'settings' | 'newshub';
@@ -36,6 +38,7 @@ const getAppFromHash = (): AppMode => {
 };
 
 const App: React.FC = () => {
+  const { isConnected, user } = useAuth();
   const [currentApp, setCurrentAppState] = useState<AppMode>(getAppFromHash);
 
   const setCurrentApp = (mode: AppMode) => {
@@ -349,10 +352,27 @@ const App: React.FC = () => {
       <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-4 sm:px-6 py-4 sm:py-7 max-w-xl mx-auto space-y-4 sm:space-y-5 selection:bg-blue-500/20 animate-fade-in">
         {/* iOS 27 Dynamic Island Top Bar */}
         <div className="w-full flex items-center justify-between pt-1 pb-1 relative z-30">
-          {/* Live Date Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-xs font-bold text-gray-700 dark:text-gray-200">
-            <Calendar size={13} className="text-blue-500" />
-            <span>{currentDateStr}</span>
+          {/* Left: Date & Cloud Sync Pills */}
+          <div className="flex items-center gap-1.5">
+            {/* Live Date Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-sm text-xs font-bold text-gray-700 dark:text-gray-200">
+              <Calendar size={13} className="text-blue-500" />
+              <span>{currentDateStr}</span>
+            </div>
+
+            {/* Google Drive Status Pill */}
+            <button
+              onClick={() => setCurrentApp('settings')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full backdrop-blur-2xl border shadow-sm text-xs font-semibold active:scale-95 transition-all cursor-pointer ${
+                isConnected
+                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400'
+                  : 'bg-white/70 dark:bg-white/10 border-white/60 dark:border-white/15 text-gray-500 dark:text-gray-400 hover:text-blue-500'
+              }`}
+              title={isConnected ? `Google Drive 已连接 (${user?.email || ''})` : "点击设置连接 Google Drive 云端同步"}
+            >
+              <Cloud size={12} className={isConnected ? "fill-blue-500/20" : ""} />
+              <span className="text-[11px] font-medium hidden xs:inline">{isConnected ? (user?.name?.split(' ')[0] || '已连接') : '云同步'}</span>
+            </button>
           </div>
 
           {/* Quick System Controls: Language & Theme */}
