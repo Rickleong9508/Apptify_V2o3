@@ -18,6 +18,7 @@ import {
   CreditCard,
   Wifi
 } from 'lucide-react';
+import { Language, getStoredLanguage } from '../utils/i18n';
 
 interface AccountsProps {
   accounts: Account[];
@@ -26,29 +27,34 @@ interface AccountsProps {
 
 const CARD_THEMES = [
   {
-    bg: 'bg-gradient-to-br from-[#0066FF] to-[#00C6FF]',
-    accent: 'bg-blue-400/20 text-blue-100',
-    chip: '#E0F2FE'
+    bg: 'bg-zinc-950 dark:bg-[#0D0F14] border border-zinc-800 text-white',
+    accent: 'bg-[#D4FF00]/10 text-[#D4FF00] border border-[#D4FF00]/30',
+    chip: '#D4FF00',
+    highlight: 'text-[#D4FF00]'
   },
   {
-    bg: 'bg-gradient-to-br from-[#6366F1] to-[#8B5CF6]',
-    accent: 'bg-indigo-400/20 text-indigo-100',
-    chip: '#EDE9FE'
+    bg: 'bg-zinc-900 dark:bg-[#141721] border border-zinc-700/80 text-white',
+    accent: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30',
+    chip: '#22D3EE',
+    highlight: 'text-cyan-400'
   },
   {
-    bg: 'bg-gradient-to-br from-[#0D9488] to-[#14B8A6]',
-    accent: 'bg-teal-400/20 text-teal-100',
-    chip: '#CCFBF1'
+    bg: 'bg-zinc-900 dark:bg-[#111A18] border border-zinc-700/80 text-white',
+    accent: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+    chip: '#34D399',
+    highlight: 'text-emerald-400'
   },
   {
-    bg: 'bg-gradient-to-br from-[#EA580C] to-[#F97316]',
-    accent: 'bg-orange-400/20 text-orange-100',
-    chip: '#FFEDD5'
+    bg: 'bg-zinc-900 dark:bg-[#1C1613] border border-zinc-700/80 text-white',
+    accent: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
+    chip: '#FBBF24',
+    highlight: 'text-amber-400'
   },
   {
-    bg: 'bg-gradient-to-br from-[#1F2937] to-[#111827]',
-    accent: 'bg-gray-700/40 text-gray-200',
-    chip: '#9CA3AF'
+    bg: 'bg-zinc-900 dark:bg-[#191522] border border-zinc-700/80 text-white',
+    accent: 'bg-purple-500/10 text-purple-400 border border-purple-500/30',
+    chip: '#C084FC',
+    highlight: 'text-purple-400'
   },
 ];
 
@@ -155,7 +161,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
       date: new Date().toISOString(),
       type,
       amount: parsedAmount,
-      description: description.trim() || (type === 'IN' ? '存入' : '提取')
+      description: description.trim() || (type === 'IN' ? (lang === 'zh' ? '存入' : 'Deposit') : (lang === 'zh' ? '提取' : 'Withdrawal'))
     };
 
     const newBalance = type === 'IN' 
@@ -294,46 +300,71 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
     }
   };
 
+  const [lang, setLang] = useState<Language>(getStoredLanguage);
+
+  useEffect(() => {
+    const handleLangChange = () => setLang(getStoredLanguage());
+    window.addEventListener('apptify_language_change', handleLangChange);
+    return () => window.removeEventListener('apptify_language_change', handleLangChange);
+  }, []);
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">
-      {/* Title & Add Wallet Button */}
-      <div className="flex justify-between items-center">
+      {/* Avant-Garde Masthead & Add Wallet Button */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-            我的钱包与账户
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+              VAULT // LIQUIDITY
+            </span>
+            <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+              02 // WALLETS
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.03em] uppercase text-zinc-950 dark:text-white">
+            {lang === 'zh' ? '我的钱包与账户' : 'Wallets & Cash Accounts'}
           </h2>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            共 {accounts.length} 个流动资产与专款钱包
+          <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
+            {lang === 'zh' ? `共 ${accounts.length} 个流动资产与专款钱包 · 独立记账` : `${accounts.length} active wallets & designated reserve vaults`}
           </p>
         </div>
 
         <button
           onClick={() => setIsAddingAccount(!isAddingAccount)}
-          className="w-11 h-11 rounded-2xl flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/25 active:scale-95 transition-all"
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition-all active:scale-95 cursor-pointer tactile-press shadow-sm ${
+            isAddingAccount
+              ? 'bg-zinc-800 text-white dark:bg-zinc-700'
+              : 'bg-zinc-950 text-white dark:bg-[#D4FF00] dark:text-black hover:opacity-90'
+          }`}
           aria-label="Add wallet"
         >
-          {isAddingAccount ? <X size={20} /> : <Plus size={20} />}
+          {isAddingAccount ? <X size={15} /> : <Plus size={15} />}
+          <span>{isAddingAccount ? (lang === 'zh' ? 'CLOSE // 关闭' : 'CLOSE') : (lang === 'zh' ? 'NEW WALLET // 新建钱包' : 'NEW WALLET')}</span>
         </button>
       </div>
 
-      {/* Add Wallet Form (Collapsible Glass Card) */}
+      {/* Add Wallet Form (Avant-Garde Tactical Card) */}
       {isAddingAccount && (
-        <div className="p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#1A1C22]/85 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-xl shadow-black/5 animate-scale-in">
+        <div className="p-5 sm:p-6 rounded-3xl avant-card border border-zinc-300 dark:border-zinc-800 shadow-xl animate-scale-in">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <Wallet size={20} />
+            <div className="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-[#D4FF00] flex items-center justify-center font-bold">
+              <Wallet size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-gray-900 dark:text-white">创建新钱包</h3>
-              <p className="text-[11px] text-gray-500">添加银行卡、现金包或带收益的存款账户</p>
+              <h3 className="font-black text-sm text-zinc-950 dark:text-white uppercase tracking-tight">
+                {lang === 'zh' ? '创建新流动钱包' : 'Create New Cash Wallet'}
+              </h3>
+              <p className="text-[11px] font-mono text-zinc-500">
+                {lang === 'zh' ? '添加银行卡、现金包或带收益的活期存款账户' : 'Add a bank account, cash envelope, or interest-bearing vault'}
+              </p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
-              placeholder="账户名称 (例如：Maybank、储蓄钱包)"
-              className="flex-1 px-4 py-2.5 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
+              placeholder={lang === 'zh' ? "账户名称 (例如：Maybank、日常现金钱包)" : "Wallet name (e.g., Maybank, Daily Cash)"}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#D4FF00] transition-colors font-sans"
               value={newAccountName}
               onChange={(e) => setNewAccountName(e.target.value)}
               autoFocus
@@ -342,34 +373,34 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             <div className="flex gap-2">
               <input
                 type="number"
-                placeholder="年利率 %"
-                className="w-24 px-3 py-2.5 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
+                placeholder={lang === 'zh' ? "年利率 %" : "APY %"}
+                className="w-24 px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#D4FF00] transition-colors font-mono"
                 value={newInterestRate}
                 onChange={(e) => setNewInterestRate(e.target.value)}
               />
               <select
-                className="px-3 py-2.5 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 outline-none cursor-pointer"
+                className="px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 outline-none cursor-pointer"
                 value={newInterestFreq}
                 onChange={(e) => setNewInterestFreq(e.target.value as any)}
               >
-                <option value="NONE">无利息</option>
-                <option value="DAILY">每日复利</option>
-                <option value="MONTHLY">按月计息</option>
-                <option value="YEARLY">按年结算</option>
+                <option value="NONE">{lang === 'zh' ? '无利息' : 'No Interest'}</option>
+                <option value="DAILY">{lang === 'zh' ? '每日复利' : 'Daily Comp.'}</option>
+                <option value="MONTHLY">{lang === 'zh' ? '按月计息' : 'Monthly'}</option>
+                <option value="YEARLY">{lang === 'zh' ? '按年结算' : 'Yearly'}</option>
               </select>
 
               <button 
                 onClick={addAccount} 
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-sm rounded-2xl transition-all shadow-md shadow-blue-500/20 whitespace-nowrap"
+                className="px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-[#D4FF00] dark:text-black dark:hover:bg-[#c2ea00] active:scale-95 text-white font-mono font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md whitespace-nowrap cursor-pointer tactile-press"
               >
-                确认创建
+                {lang === 'zh' ? 'CONFIRM // 创建' : 'CONFIRM'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Account Cards Grid (Apple Wallet Touch-Friendly Card Deck) */}
+      {/* Account Cards Grid (Tactile Modular Card Deck) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {accounts.map((acc, index) => {
           const theme = CARD_THEMES[index % CARD_THEMES.length];
@@ -380,56 +411,59 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             <div
               key={acc.id}
               onClick={() => setSelectedAccount(acc)}
-              className={`rounded-3xl p-5 sm:p-6 text-white ${theme.bg} shadow-lg shadow-black/10 hover:shadow-2xl hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[190px] sm:min-h-[210px] group`}
+              className={`rounded-3xl p-5 sm:p-6 ${theme.bg} shadow-lg hover:shadow-2xl hover:scale-[1.015] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[200px] sm:min-h-[220px] group tactile-press`}
             >
-              {/* Subtle Card Textures */}
-              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              {/* Tactical Top Specular Hairline */}
+              <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
               
               {/* Top Card Row */}
               <div className="flex justify-between items-start z-10">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-6 rounded-md bg-amber-400/70 border border-amber-300/60 shadow-sm flex items-center justify-center">
-                    <Wifi size={13} className="text-amber-900 rotate-90" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-6 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-inner">
+                    <Wifi size={13} className="text-[#D4FF00] rotate-90" />
                   </div>
-                  <span className="font-extrabold text-base tracking-wide drop-shadow-sm">{acc.name}</span>
+                  <div>
+                    <span className="font-black text-base tracking-wide block">{acc.name}</span>
+                    <span className="font-mono text-[9px] text-zinc-400 block tracking-widest uppercase">ID // {acc.id.slice(-4)}</span>
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={(e) => handleQuickDelete(e, acc.id)}
-                  className="p-1.5 text-white/60 hover:text-rose-300 rounded-full transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                  title="删除钱包"
+                  className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                  title={lang === 'zh' ? "删除钱包" : "Delete Wallet"}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={15} />
                 </button>
               </div>
 
               {/* Middle Balance Section */}
               <div className="z-10 my-auto py-2">
-                <p className="text-[10px] uppercase font-bold text-white/70 tracking-widest mb-0.5">可用余额 (Available)</p>
-                <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight drop-shadow-sm">
+                <p className="text-[10px] font-mono uppercase font-bold text-zinc-400 tracking-widest mb-0.5">{lang === 'zh' ? '可用余额 (AVAILABLE)' : 'AVAILABLE BALANCE'}</p>
+                <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight font-mono-numbers">
                   RM {available.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
 
                 {reserved > 0 && (
-                  <p className="text-xs text-amber-200 font-semibold mt-1 flex items-center gap-1">
-                    <Lock size={11} /> 已锁定 RM {reserved.toLocaleString()}
+                  <p className="text-xs text-amber-400 font-mono font-bold mt-1.5 flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg w-fit">
+                    <Lock size={11} /> {lang === 'zh' ? `已锁定 RM ${reserved.toLocaleString()}` : `LOCKED RM ${reserved.toLocaleString()}`}
                   </p>
                 )}
               </div>
 
               {/* Bottom Card Footer */}
-              <div className="z-10 flex items-center justify-between pt-2 border-t border-white/15">
+              <div className="z-10 flex items-center justify-between pt-3 border-t border-zinc-800">
                 {acc.interestRate && acc.interestFrequency !== 'NONE' ? (
-                  <span className="text-[10px] font-bold text-emerald-200 flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-full">
-                    <TrendingUp size={10} /> {acc.interestRate}% ({acc.interestFrequency})
+                  <span className="text-[10px] font-mono font-black text-[#D4FF00] flex items-center gap-1 bg-[#D4FF00]/10 border border-[#D4FF00]/30 px-2 py-0.5 rounded-md">
+                    <TrendingUp size={10} /> +{acc.interestRate}% ({acc.interestFrequency})
                   </span>
                 ) : (
-                  <span className="text-[10px] text-white/60 font-mono tracking-wider">WALLET #{acc.id.slice(-4)}</span>
+                  <span className="text-[10px] text-zinc-500 font-mono tracking-wider">STANDARD WALLET</span>
                 )}
 
-                <span className="text-[11px] font-bold text-white/90 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                  明细 <ArrowUpRight size={13} />
+                <span className="text-[11px] font-mono font-bold text-zinc-300 flex items-center gap-1 group-hover:text-white group-hover:translate-x-0.5 transition-all">
+                  DETAILS <ArrowUpRight size={13} className="text-[#D4FF00]" />
                 </span>
               </div>
             </div>
@@ -478,14 +512,14 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                   <span className="text-2xl font-black text-gray-900 dark:text-white font-mono">
                     RM {(selectedAccount.balance - getTotalReserved(selectedAccount)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">可用余额</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">{lang === 'zh' ? '可用余额' : 'AVAILABLE'}</span>
                 </div>
 
                 <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                  <span>总计: <b>RM {selectedAccount.balance.toLocaleString()}</b></span>
+                  <span>{lang === 'zh' ? '总计: ' : 'TOTAL: '}<b>RM {selectedAccount.balance.toLocaleString()}</b></span>
                   {getTotalReserved(selectedAccount) > 0 && (
                     <span className="text-amber-600 dark:text-amber-400 flex items-center gap-0.5 font-bold">
-                      <Lock size={10} /> 锁定: RM {getTotalReserved(selectedAccount).toLocaleString()}
+                      <Lock size={10} /> {lang === 'zh' ? `锁定: RM ${getTotalReserved(selectedAccount).toLocaleString()}` : `LOCKED: RM ${getTotalReserved(selectedAccount).toLocaleString()}`}
                     </span>
                   )}
                 </div>
@@ -510,7 +544,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                       : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  收支记账
+                  {lang === 'zh' ? '收支记账' : 'Cashflow Log'}
                 </button>
                 <button
                   onClick={() => setModalTab('reserves')}
@@ -520,7 +554,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                       : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  <Lock size={12} /> 专款准备金
+                  <Lock size={12} /> {lang === 'zh' ? '专款准备金' : 'Reserve Vault'}
                 </button>
               </div>
             </div>
@@ -546,7 +580,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                         setShowCalc(!showCalc);
                       }}
                       className="p-2 text-gray-500 hover:text-blue-500 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl transition-all"
-                      title="打开简易计算器"
+                      title={lang === 'zh' ? "打开简易计算器" : "Open Quick Calculator"}
                     >
                       <Calculator size={18} />
                     </button>
@@ -594,14 +628,14 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                           }}
                           className="flex-1 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-xl"
                         >
-                          填入金额
+                          {lang === 'zh' ? '填入金额' : 'Insert Amount'}
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowCalc(false)}
                           className="px-3 py-1.5 bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-300 font-bold text-xs rounded-xl"
                         >
-                          关闭
+                          {lang === 'zh' ? '关闭' : 'Close'}
                         </button>
                       </div>
                     </div>
@@ -611,7 +645,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="备注说明 (例如：工资发薪、晚餐消费)"
+                    placeholder={lang === 'zh' ? "备注说明 (例如：工资发薪、晚餐消费)" : "Notes (e.g., Salary, Dinner, Transfer)"}
                     className="w-full px-4 py-2.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
                   />
 
@@ -622,14 +656,14 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                       className="py-2.5 rounded-2xl flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-sm border border-emerald-500/20 active:scale-95 transition-all"
                     >
                       <ArrowDownLeft size={16} />
-                      <span>记入存入 (Deposit)</span>
+                      <span>{lang === 'zh' ? '记入存入 (Deposit)' : 'Record Deposit (+)'}</span>
                     </button>
                     <button
                       onClick={() => handleTransaction('OUT')}
                       className="py-2.5 rounded-2xl flex items-center justify-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-sm border border-rose-500/20 active:scale-95 transition-all"
                     >
                       <ArrowUpRight size={16} />
-                      <span>记入支出 (Withdraw)</span>
+                      <span>{lang === 'zh' ? '记入支出 (Withdraw)' : 'Record Withdrawal (-)'}</span>
                     </button>
                   </div>
                 </div>
@@ -638,27 +672,27 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                 <div className="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
                   <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                     <Lock size={13} className="text-amber-500" />
-                    设置专款锁定金额
+                    {lang === 'zh' ? '设置专款锁定金额' : 'Lock Reserved Funds'}
                   </h4>
                   <input
                     type="number"
                     value={resAmount}
                     onChange={(e) => setResAmount(e.target.value)}
-                    placeholder="锁定金额 (RM)"
+                    placeholder={lang === 'zh' ? "锁定金额 (RM)" : "Lock Amount (RM)"}
                     className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black/30 border border-gray-200 dark:border-white/10 text-sm font-bold text-gray-900 dark:text-white outline-none"
                   />
                   <input
                     type="text"
                     value={resReason}
                     onChange={(e) => setResReason(e.target.value)}
-                    placeholder="专款用途 (例如：下月房租、旅游基金)"
+                    placeholder={lang === 'zh' ? "专款用途 (例如：下月房租、旅游基金)" : "Purpose (e.g., Rent, Emergency Fund)"}
                     className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white outline-none"
                   />
                   <button
                     onClick={addReservation}
                     className="w-full py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
                   >
-                    立即锁定专款
+                    {lang === 'zh' ? '立即锁定专款' : 'Lock Funds Now'}
                   </button>
                 </div>
               )}
@@ -666,13 +700,13 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
               {/* History / List View */}
               <div className="pt-3 border-t border-gray-100 dark:border-white/10">
                 <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-2">
-                  {modalTab === 'transactions' ? '历史流水记录' : '当前已锁定专款'}
+                  {modalTab === 'transactions' ? (lang === 'zh' ? '历史流水记录' : 'Transaction History') : (lang === 'zh' ? '当前已锁定专款' : 'Active Reserved Funds')}
                 </span>
 
                 {modalTab === 'transactions' ? (
                   <div className="space-y-2">
                     {selectedAccount.history.length === 0 ? (
-                      <div className="py-8 text-center text-gray-400 text-xs">暂无流水记录</div>
+                      <div className="py-8 text-center text-gray-400 text-xs">{lang === 'zh' ? '暂无流水记录' : 'No transactions recorded yet'}</div>
                     ) : (
                       selectedAccount.history.map(tx => (
                         <div key={tx.id} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
@@ -695,7 +729,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                 ) : (
                   <div className="space-y-2">
                     {(!selectedAccount.reservations || selectedAccount.reservations.length === 0) ? (
-                      <div className="py-8 text-center text-gray-400 text-xs">暂无专款准备金</div>
+                      <div className="py-8 text-center text-gray-400 text-xs">{lang === 'zh' ? '暂无专款准备金' : 'No reserved funds active'}</div>
                     ) : (
                       selectedAccount.reservations.map(res => (
                         <div key={res.id} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
@@ -735,13 +769,13 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                     onClick={() => setShowDeleteConfirm(false)}
                     className="flex-1 py-2 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-white/10"
                   >
-                    取消
+                    {lang === 'zh' ? '取消' : 'Cancel'}
                   </button>
                   <button
                     onClick={handleDeleteFromModal}
                     className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-sm"
                   >
-                    确认删除此钱包
+                    {lang === 'zh' ? '确认删除此钱包' : 'Confirm Delete Wallet'}
                   </button>
                 </div>
               ) : (
@@ -750,7 +784,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                   className="w-full py-2 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-500/10 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Trash2 size={13} />
-                  <span>删除该账户</span>
+                  <span>{lang === 'zh' ? '删除该账户' : 'Delete This Wallet'}</span>
                 </button>
               )}
             </div>

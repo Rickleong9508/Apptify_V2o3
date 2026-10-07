@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Stock, CashHolding } from '../types';
 import { Plus, TrendingUp, TrendingDown, Trash2, Globe, Pencil, X, Calculator, ArrowRight, Settings, Search, AlertCircle, Check, RefreshCcw, Loader2, Coins, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { getStoredLanguage, SupportedLanguage } from '../utils/i18n';
 
 interface InvestmentsProps {
     stocks: Stock[];
@@ -160,7 +161,7 @@ const StockItem: React.FC<StockItemProps> = ({
                             onMoveUp?.();
                         }}
                         className="p-1 rounded-md text-[var(--ios-label-tertiary)] hover:text-blue-500 disabled:opacity-20 active:scale-75 transition-all tap-scale"
-                        title="Move Up / 上移"
+                        title="Move Up"
                         aria-label="Move Up"
                     >
                         <ChevronUp size={14} />
@@ -179,7 +180,7 @@ const StockItem: React.FC<StockItemProps> = ({
                             onMoveDown?.();
                         }}
                         className="p-1 rounded-md text-[var(--ios-label-tertiary)] hover:text-blue-500 disabled:opacity-20 active:scale-75 transition-all tap-scale"
-                        title="Move Down / 下移"
+                        title="Move Down"
                         aria-label="Move Down"
                     >
                         <ChevronDown size={14} />
@@ -274,6 +275,13 @@ const StockItem: React.FC<StockItemProps> = ({
 };
 
 const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setCash, exchangeRate, setExchangeRate }) => {
+    const [lang, setLang] = useState<SupportedLanguage>(getStoredLanguage());
+    useEffect(() => {
+        const handleLang = () => setLang(getStoredLanguage());
+        window.addEventListener('apptify_language_change', handleLang);
+        return () => window.removeEventListener('apptify_language_change', handleLang);
+    }, []);
+
     const [showAdd, setShowAdd] = useState(false);
     const [newStock, setNewStock] = useState<any>({ currency: 'MYR' });
 
@@ -493,75 +501,87 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
     const validStocks = stocks.filter(s => s && s.id);
 
     return (
-        <div className="space-y-6 pb-20 animate-fade-in">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-6 pb-20 animate-fade-in font-sans">
+            {/* Avant-Garde Masthead */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
                 <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ios-label-primary)]">
-                        Portfolio & Investments
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+                            CAPITAL // MARKETS
+                        </span>
+                        <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                            05 // INVESTMENTS
+                        </span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.03em] uppercase text-zinc-950 dark:text-white">
+                        {lang === 'zh' ? '投资组合与证券持仓' : 'Portfolio & Investments'}
                     </h2>
-                    <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] mt-0.5">
-                        Multi-currency holdings, live market valuation, and cash reserves
+                    <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        {lang === 'zh' ? '多币种标的持仓 · 实时市价浮盈 · 券商闲置流动本金' : 'Multi-currency holdings · Live quotes & P/L · Broker liquid capital'}
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center gap-2 self-start sm:self-auto font-mono">
                     <button
                         onClick={handleRefreshMarketData}
                         disabled={isRefreshing}
-                        className="ios-button-secondary flex items-center gap-2 tap-scale py-2.5 px-4 text-xs font-semibold"
+                        className="flex items-center gap-2 py-2 px-3.5 text-xs font-bold rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-all active:scale-95 cursor-pointer tactile-press border border-zinc-200 dark:border-zinc-700"
                     >
-                        {isRefreshing ? <Loader2 size={15} className="animate-spin text-blue-500" /> : <RefreshCcw size={15} className="text-blue-500" />}
-                        <span>{isRefreshing ? "Updating..." : "Refresh Quotes"}</span>
+                        {isRefreshing ? <Loader2 size={13} className="animate-spin text-[#D4FF00]" /> : <RefreshCcw size={13} className="text-[#D4FF00]" />}
+                        <span>{isRefreshing ? "SYNCING..." : (lang === 'zh' ? "QUOTES // 刷新行情" : "QUOTES // SYNC")}</span>
                     </button>
                     <button
                         onClick={() => setShowAdd(!showAdd)}
-                        className="ios-button-primary flex items-center gap-1.5 tap-scale py-2.5 px-4 text-xs font-semibold"
+                        className="flex items-center gap-1.5 py-2 px-3.5 text-xs font-black uppercase tracking-wider rounded-xl bg-zinc-950 text-white dark:bg-[#D4FF00] dark:text-black hover:opacity-90 transition-all active:scale-95 cursor-pointer tactile-press shadow-sm"
                     >
-                        {showAdd ? <X size={15} /> : <Plus size={15} />}
-                        <span>{showAdd ? 'Cancel' : 'Add Position'}</span>
+                        {showAdd ? <X size={14} /> : <Plus size={14} />}
+                        <span>{showAdd ? (lang === 'zh' ? 'CLOSE // 关闭' : 'CLOSE') : (lang === 'zh' ? 'NEW POSITION // 加仓' : 'NEW POSITION')}</span>
                     </button>
                 </div>
             </div>
 
             {/* Top Cards: Total Equity, Exchange Rate, Liquid Reserves */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 font-mono">
                 {/* Main Equity Card */}
-                <div className="lg:col-span-2 ios-card p-6 sm:p-7 flex flex-col justify-between">
+                <div className="lg:col-span-2 avant-card p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
+                    <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
                     <div>
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--ios-label-secondary)] flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                Total Investment Equity
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                                {lang === 'zh' ? 'TOTAL INVESTMENT EQUITY // 投资净资产' : 'TOTAL INVESTMENT EQUITY'}
                             </span>
-                            <span className="text-xs text-[var(--ios-label-tertiary)] font-medium">Includes Stocks + Liquid</span>
+                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                                STOCKS + BROKER CASH
+                            </span>
                         </div>
-                        <div className="text-3xl sm:text-5xl font-extrabold text-[var(--ios-label-primary)] tracking-tight mt-2">
+                        <div className="text-3xl sm:text-5xl font-black text-zinc-950 dark:text-white tracking-tight mt-2 font-mono-numbers">
                             RM {portfolioStats.totalValueMYR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-6 mt-6 border-t border-[var(--ios-separator)]">
+                    <div className="grid grid-cols-2 gap-4 pt-5 mt-5 border-t border-zinc-200/60 dark:border-zinc-800/60">
                         <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ios-label-tertiary)]">
-                                Total Return (Unrealized)
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">
+                                {lang === 'zh' ? 'UNREALIZED P/L // 浮动盈亏' : 'UNREALIZED P/L'}
                             </span>
-                            <div className={`flex items-center gap-1.5 mt-1 ${portfolioStats.profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            <div className={`flex items-center gap-2 mt-1 ${portfolioStats.profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                 {portfolioStats.profit >= 0 ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                                <span className="text-base sm:text-lg font-bold">
+                                <span className="text-base sm:text-xl font-black font-mono-numbers">
                                     {portfolioStats.profit >= 0 ? '+' : ''}RM {Math.abs(portfolioStats.profit).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </span>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${portfolioStats.profit >= 0 ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'}`}>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-black ${portfolioStats.profit >= 0 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
                                     {portfolioStats.profitPercent.toFixed(2)}%
                                 </span>
                             </div>
                         </div>
 
                         <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ios-label-tertiary)]">
-                                Total Cost Basis
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">
+                                {lang === 'zh' ? 'TOTAL COST BASIS // 累计投入本金' : 'TOTAL COST BASIS'}
                             </span>
-                            <p className="font-bold text-base sm:text-lg text-[var(--ios-label-primary)] mt-1">
+                            <p className="font-black text-base sm:text-xl text-zinc-950 dark:text-white mt-1 font-mono-numbers">
                                 RM {portfolioStats.totalCostMYR.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </p>
                         </div>
@@ -569,43 +589,43 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                 </div>
 
                 {/* Forex & Liquid Cash Card */}
-                <div className="ios-card p-5 sm:p-6 space-y-4 flex flex-col justify-between">
+                <div className="avant-card p-5 sm:p-6 space-y-4 flex flex-col justify-between">
                     <div>
-                        <div className="flex items-center justify-between pb-3 border-b border-[var(--ios-separator)]">
+                        <div className="flex items-center justify-between pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
                             <div className="flex items-center gap-2">
-                                <Globe size={18} className="text-blue-500" />
-                                <span className="text-xs font-bold text-[var(--ios-label-primary)] uppercase">USD / MYR</span>
+                                <Globe size={16} className="text-[#D4FF00]" />
+                                <span className="text-xs font-black text-zinc-950 dark:text-white uppercase font-mono">USD / MYR RATE</span>
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="text-xs text-[var(--ios-label-tertiary)] font-bold">RM</span>
+                                <span className="text-xs text-zinc-400 font-bold font-mono">RM</span>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={exchangeRate}
                                     onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
-                                    className="w-16 text-right font-bold text-sm text-[var(--ios-label-primary)] bg-[var(--ios-fill-tertiary)] rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 ring-blue-500"
+                                    className="w-16 text-right font-black font-mono text-sm text-zinc-950 dark:text-white bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-0.5 focus:outline-none focus:border-[#D4FF00]"
                                 />
                             </div>
                         </div>
 
-                        <div className="mt-3">
-                            <span className="text-[11px] font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                                <Coins size={14} className="text-amber-500" />
-                                Liquid Cash Reserves
+                        <div className="mt-4">
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 mb-2.5">
+                                <Coins size={14} className="text-[#D4FF00]" />
+                                {lang === 'zh' ? 'BROKER CASH // 券商闲置资金' : 'BROKER CASH'}
                             </span>
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="font-medium text-[var(--ios-label-secondary)]">MYR (Cash)</span>
+                                    <span className="font-bold text-zinc-600 dark:text-zinc-300">{lang === 'zh' ? 'MYR (马币现金)' : 'MYR (Cash)'}</span>
                                     <input
                                         type="number"
                                         value={cash.myr || ''}
                                         onChange={e => setCash({ ...cash, myr: parseFloat(e.target.value) || 0 })}
-                                        className="w-28 text-right font-bold text-[var(--ios-label-primary)] bg-[var(--ios-fill-tertiary)] rounded-lg px-2 py-1 text-xs focus:outline-none"
+                                        className="w-28 text-right font-black font-mono text-zinc-950 dark:text-white bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[#D4FF00] font-mono-numbers"
                                         placeholder="0.00"
                                     />
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="font-medium text-[var(--ios-label-secondary)]">USD (Cash)</span>
+                                    <span className="font-bold text-zinc-600 dark:text-zinc-300">{lang === 'zh' ? 'USD (美元现金)' : 'USD (Cash)'}</span>
                                     <input
                                         type="number"
                                         value={cash.usd || ''}

@@ -91,11 +91,11 @@ export const skillRegistry: Skill[] = [
     },
     {
         id: 'knowledgevault',
-        name: 'Knowledge Vault Skill',
-        description: 'Manages personal quick notes, work records, task todos, and focus timer.',
+        name: 'NoteDown Skill',
+        description: 'Manages personal quick notes, work records, task todos, and focus timer in NoteDown.',
         intents: {
             CREATE_NOTE: {
-                description: 'Create a new note or work log in Knowledge Vault.',
+                description: 'Create a new note or work log in NoteDown.',
                 parameters: {
                     title: { type: 'string', description: 'Title of the note', required: true },
                     content: { type: 'string', description: 'Note content body', required: true },
@@ -104,14 +104,14 @@ export const skillRegistry: Skill[] = [
                 examples: ['Create note: Apptify V3 with content: Design liquid glass UI', '记一下：明天下午开会讨论产品规划', 'Save note: Meeting notes with team']
             },
             SEARCH_NOTES: {
-                description: 'Search personal notes in Knowledge Vault.',
+                description: 'Search personal notes in NoteDown.',
                 parameters: {
                     query: { type: 'string', description: 'Search term or query', required: true }
                 },
                 examples: ['Find my notes about UI design', 'Search notes: meeting', '搜索笔记']
             },
             CREATE_TASK: {
-                description: 'Create a new todo task in Knowledge Vault.',
+                description: 'Create a new todo task in NoteDown.',
                 parameters: {
                     title: { type: 'string', description: 'Task title or action description', required: true },
                     priority: { type: 'string', description: 'Priority level: high, medium, or low (default medium)', required: false },
@@ -146,7 +146,7 @@ export const skillRegistry: Skill[] = [
                 parameters: {
                     target: { type: 'string', description: 'Target module (launcher, mywealth, knowledgevault, newshub, settings)', required: true }
                 },
-                examples: ['Go to My Wealth', 'Open Knowledge Vault', 'Switch to NewsHub', '打开记事本', '返回主页']
+                examples: ['Go to My Wealth', 'Open NoteDown', 'Switch to NewsHub', '打开记事本', '返回主页']
             }
         }
     }

@@ -419,8 +419,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 <Cloud size={24} />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-100">云端多端同步</h2>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">基于 Google Drive 的去中心化私有云存储</p>
+                                <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-100">{currentLang === 'zh' ? '云端多端同步' : 'Cloud Sync'}</h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{currentLang === 'zh' ? '基于 Google Drive 的去中心化私有云存储' : 'Decentralized private cloud storage powered by Google Drive'}</p>
                             </div>
                         </div>
 
@@ -431,7 +431,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     : 'bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20'
                             }`}>
                                 <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                                {isConnected ? '已连接 Google Drive' : '本地离线模式'}
+                                {isConnected ? (currentLang === 'zh' ? '已连接 Google Drive' : 'Connected to Google Drive') : (currentLang === 'zh' ? '本地离线模式' : 'Local Offline Mode')}
                             </span>
                         </div>
                     </div>
@@ -452,7 +452,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         <div className="text-xs text-[var(--ios-label-secondary)] font-mono">{user.email}</div>
                                         {lastSyncedTime && (
                                             <div className="text-[11px] text-[var(--ios-label-tertiary)] mt-0.5">
-                                                最后同步：{new Date(lastSyncedTime).toLocaleString()}
+                                                {currentLang === 'zh' ? '最后同步：' : 'Last synced: '}{new Date(lastSyncedTime).toLocaleString()}
                                             </div>
                                         )}
                                     </div>
@@ -464,14 +464,14 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             try {
                                                 await syncNow();
                                             } catch (e: any) {
-                                                alert("同步失败：" + e.message);
+                                                alert((currentLang === 'zh' ? "同步失败：" : "Sync failed: ") + e.message);
                                             }
                                         }}
                                         disabled={isSyncing}
                                         className="px-4 py-2.5 rounded-xl font-bold text-xs bg-blue-500 hover:bg-blue-600 text-white shadow-md active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                                     >
                                         <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                                        <span>{isSyncing ? '同步中...' : '立即同步'}</span>
+                                        <span>{isSyncing ? (currentLang === 'zh' ? '同步中...' : 'Syncing...') : (currentLang === 'zh' ? '立即同步' : 'Sync Now')}</span>
                                     </button>
 
                                     <button
@@ -488,7 +488,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             confirmLogout ? 'bg-red-600 animate-pulse' : 'bg-red-500 hover:bg-red-600'
                                         }`}
                                     >
-                                        {confirmLogout ? "确认断开？" : "断开连接"}
+                                        {confirmLogout ? (currentLang === 'zh' ? "确认断开？" : "Confirm Disconnect?") : (currentLang === 'zh' ? "断开连接" : "Disconnect")}
                                     </button>
                                 </div>
                             </div>
@@ -496,10 +496,12 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="space-y-1">
                                     <h4 className="font-bold text-sm text-[var(--ios-label-primary)]">
-                                        尚未连接 Google Drive 云端
+                                        {currentLang === 'zh' ? '尚未连接 Google Drive 云端' : 'Google Drive Not Connected'}
                                     </h4>
                                     <p className="text-xs text-[var(--ios-label-secondary)] max-w-lg leading-relaxed">
-                                        连接后，数据将以隐私文件形式保存在您的个人 Google 云端硬盘中，可在电脑、手机或平板间全自动实时漫游。
+                                        {currentLang === 'zh' 
+                                            ? '连接后，数据将以隐私文件形式保存在您的个人 Google 云端硬盘中，可在电脑、手机或平板间全自动实时漫游。'
+                                            : 'Once connected, your data will be securely synced to your personal Google Drive for cross-device access.'}
                                     </p>
                                 </div>
 
@@ -508,7 +510,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-blue-500 hover:bg-blue-600 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                                 >
                                     <Cloud size={15} />
-                                    <span>连接 Google Drive</span>
+                                    <span>{currentLang === 'zh' ? '连接 Google Drive' : 'Connect Google Drive'}</span>
                                 </button>
                             </div>
                         )}

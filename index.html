@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
@@ -16,6 +16,11 @@
   <link rel="icon" type="image/png" href="/icon.png?v=2" />
   <link rel="apple-touch-icon" href="/icon.png?v=2" />
   <link rel="manifest" href="/manifest.json" />
+
+  <!-- Premium Typography: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Google Identity Services (GIS) for Google Drive BYOS Cloud Sync -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -39,7 +44,8 @@
             'input-bg': 'rgb(var(--color-input-bg) / <alpha-value>)',
           },
           fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Inter', 'system-ui', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
           },
           animation: {
             'fade-in-up': 'fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',

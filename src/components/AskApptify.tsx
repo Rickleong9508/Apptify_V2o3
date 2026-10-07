@@ -189,8 +189,8 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
         type: 'wealth',
         title: getStoredLanguage() === 'zh' ? '专属私人助理已就绪' : 'Personal Copilot Ready',
         details: getStoredLanguage() === 'zh' 
-          ? ['全面联动 MyWealth 财富中心', '全面联动 Knowledge Vault 灵感空间', '支持语音与自然语言命令实时更新']
-          : ['Full integration with MyWealth Center', 'Connected to Knowledge Vault workspace', 'Natural language commands supported'],
+          ? ['全面联动 MyWealth 财富中心', '全面联动 NoteDown 便签与待办', '支持语音与自然语言命令实时更新']
+          : ['Full integration with MyWealth Center', 'Connected to NoteDown workspace', 'Natural language commands supported'],
         badge: getStoredLanguage() === 'zh' ? '专属私人助理' : 'Private Copilot'
       }
     }
@@ -490,7 +490,7 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
       saveNotes(notes);
 
       return {
-        message: `已为你记录到 **Knowledge Vault 随手记**：\n• 标题：**${title}**\n• 分类：#${newNote.tag}\n• 内容摘要：${content.slice(0, 60)}${content.length > 60 ? '...' : ''}`,
+        message: `已为你记录到 **NoteDown 随手记**：\n• 标题：**${title}**\n• 分类：#${newNote.tag}\n• 内容摘要：${content.slice(0, 60)}${content.length > 60 ? '...' : ''}`,
         result: {
           type: 'note',
           title: '笔记创建成功',
@@ -504,7 +504,7 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
       };
     }
 
-    // 5. CREATE TASK (Knowledge Vault)
+    // 5. CREATE TASK (NoteDown)
     if (intent === 'CREATE_TASK' || intent === 'CREATE_TODO') {
       const title = data.title || '新待办任务';
       const priority = (data.priority || 'medium').toLowerCase();
@@ -524,7 +524,7 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
       saveTasks(tasks);
 
       return {
-        message: `已为你添加到 **Knowledge Vault 待办清单**：\n• 任务：**${title}**\n• 优先级：${newTask.priority.toUpperCase()}\n• 截止提醒：${dueDate}`,
+        message: `已为你添加到 **NoteDown 待办清单**：\n• 任务：**${title}**\n• 优先级：${newTask.priority.toUpperCase()}\n• 截止提醒：${dueDate}`,
         result: {
           type: 'task',
           title: '待办任务已添加',
@@ -613,7 +613,7 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
         : '暂无未完成待办事项，太棒了！';
 
       return {
-        message: `📋 **Knowledge Vault 待办任务清单**：\n未完成 (${pending.length}) 项 / 已完成 (${done.length}) 项：\n\n${lines}`,
+        message: `📋 **NoteDown 待办任务清单**：\n未完成 (${pending.length}) 项 / 已完成 (${done.length}) 项：\n\n${lines}`,
         result: {
           type: 'task',
           title: `待办任务进度 (${pending.length} 待处理 / ${done.length} 已达成)`,

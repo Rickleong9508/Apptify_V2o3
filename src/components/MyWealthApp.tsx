@@ -8,7 +8,8 @@ import {
   Triangle,
   Grid,
   Cloud,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from 'lucide-react';
 import Dashboard from './Dashboard';
 import Accounts from './Accounts';
@@ -20,6 +21,7 @@ import { aiService } from '../services/aiService';
 import { useAuth } from './AuthProvider';
 import { saveAllDataToDrive, loadAllDataFromDrive } from '../services/driveService';
 import AuthModal from './AuthModal';
+import { Language, getStoredLanguage, setStoredLanguage } from '../utils/i18n';
 
 // Initial Data Defaults
 const INITIAL_ACCOUNTS_DEFAULT: Account[] = [];
@@ -30,12 +32,12 @@ const INITIAL_MONTHLY_DATA: MonthlyData = {
 };
 const STORAGE_KEY = 'mw_data_main';
 
-const NAV_ITEMS = [
-  { id: 'dashboard' as const, label: 'Overview' },
-  { id: 'accounts' as const, label: 'Wallets' },
-  { id: 'budget' as const, label: 'Budget' },
-  { id: 'loans' as const, label: 'Loans' },
-  { id: 'investments' as const, label: 'Invest' },
+const getNavItems = (lang: Language) => [
+  { id: 'dashboard' as const, label: lang === 'zh' ? '概览' : 'Overview' },
+  { id: 'accounts' as const, label: lang === 'zh' ? '钱包' : 'Wallets' },
+  { id: 'budget' as const, label: lang === 'zh' ? '预算' : 'Budget' },
+  { id: 'loans' as const, label: lang === 'zh' ? '借贷' : 'Loans' },
+  { id: 'investments' as const, label: lang === 'zh' ? '投资' : 'Invest' },
 ];
 
 interface TabIconProps {
@@ -44,10 +46,9 @@ interface TabIconProps {
 }
 
 const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
-  // Outline style for inactive icons (stroke line icon)
-  const outlineClass = "text-slate-400 dark:text-zinc-400 group-hover:text-slate-700 dark:group-hover:text-zinc-200 transition-colors shrink-0";
-  // Black fill style for active in lightmode, white fill in darkmode
-  const activeClass = "text-slate-900 fill-slate-900 dark:text-white dark:fill-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-transform duration-150 scale-105 shrink-0";
+  // Clear visible icon colors: Electric Volt Lime (#D4FF00) when active!
+  const outlineClass = "text-zinc-400 dark:text-zinc-400 group-hover:text-zinc-200 transition-colors shrink-0";
+  const activeClass = "text-[#D4FF00] fill-[#D4FF00] drop-shadow-[0_0_8px_rgba(212,255,0,0.5)] transition-transform duration-150 scale-105 shrink-0";
 
   if (tabId === 'dashboard') {
     if (isActive) {
@@ -221,7 +222,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     let closestId = activeTab;
     let minDistance = Infinity;
 
-    NAV_ITEMS.forEach((item) => {
+    getNavItems(lang).forEach((item) => {
       const el = tabRefs.current[item.id];
       if (el) {
         const elRect = el.getBoundingClientRect();
@@ -275,14 +276,22 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     return (localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light';
   });
 
+  // --- Language State (Default English, toggleable to Chinese) ---
+  const [lang, setLang] = useState<Language>(getStoredLanguage);
+
   useEffect(() => {
     const syncTheme = () => {
       setThemeState((localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light');
     };
+    const syncLang = () => {
+      setLang(getStoredLanguage());
+    };
     window.addEventListener('apptify_theme_change', syncTheme);
+    window.addEventListener('apptify_language_change', syncLang);
     window.addEventListener('storage', syncTheme);
     return () => {
       window.removeEventListener('apptify_theme_change', syncTheme);
+      window.removeEventListener('apptify_language_change', syncLang);
       window.removeEventListener('storage', syncTheme);
     };
   }, []);
@@ -824,11 +833,10 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         <div className="max-w-5xl mx-auto px-3 sm:px-8 pt-4 pb-36">
 
           {/* Minimal Header Sync Status */}
-          <div className="flex items-center justify-between mb-5 sm:mb-8 animate-fade-in-down">
-            <div className="flex items-center gap-3">
-              {/* Sync Status Indicator */}
+          <div className="flex items-center justify-between mb-4 sm:mb-6 animate-fade-in-down">
+            <div className="flex items-center gap-2">
               <button
-                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 shadow-sm hover:border-blue-500/30 transition-all active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 text-[11px] font-mono font-bold px-3 py-1.5 rounded-full bg-white dark:bg-[#12141A] border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-[#D4FF00] dark:hover:border-[#D4FF00] transition-all active:scale-95 cursor-pointer tactile-press"
                 onClick={async () => {
                   if (isConnected) {
                     setIsSyncing(true);
@@ -845,32 +853,38 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
                     setShowAuthModal(true);
                   }
                 }}
-                title={isConnected ? (user?.email ? `已连接 Google Drive (${user.email})，点击立即同步` : "已连接 Google Drive，点击立即同步") : "点击连接 Google Drive 云端同步"}
+                title={isConnected ? (user?.email ? (lang === 'zh' ? `已连接 Google Drive (${user.email})，点击立即同步` : `Connected: Google Drive (${user.email}). Click to sync`) : (lang === 'zh' ? "已连接 Google Drive，点击立即同步" : "Connected: Google Drive. Click to sync")) : (lang === 'zh' ? "点击连接 Google Drive 云端同步" : "Connect Google Drive to sync")}
               >
                 {isSyncing ? (
-                  <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 animate-pulse">
-                    <Cloud size={14} />
-                    <span>同步中...</span>
+                  <div className="flex items-center gap-1.5 text-zinc-900 dark:text-[#D4FF00] animate-pulse">
+                    <Cloud size={13} />
+                    <span>{lang === 'zh' ? 'SYNCING // 同步中...' : 'SYNCING...'}</span>
                   </div>
                 ) : isConnected ? (
-                  <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 transition-colors">
-                    <Cloud size={14} className="fill-blue-500/20" />
-                    <span>已连接 Google Drive</span>
+                  <div className="flex items-center gap-1.5 text-zinc-900 dark:text-zinc-200">
+                    <Cloud size={13} className="text-emerald-500 fill-emerald-500/20" />
+                    <span>{lang === 'zh' ? 'CLOUD LINKED // 已连接' : 'CLOUD LINKED'}</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    <Cloud size={14} />
-                    <span>连接 Google Drive</span>
+                  <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors">
+                    <Cloud size={13} />
+                    <span>{lang === 'zh' ? 'CONNECT CLOUD // 连接云端' : 'CONNECT CLOUD'}</span>
                   </div>
                 )}
               </button>
 
               {showSyncSuccess && !isSyncing && (
-                <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium animate-fade-in">
-                  <CheckCircle2 size={14} />
-                  <span>已保存</span>
+                <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 animate-fade-in">
+                  <CheckCircle2 size={13} />
+                  <span>SYNCED</span>
                 </div>
               )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500 hidden sm:inline-block">
+                APP // MYWEALTH v2.3
+              </span>
             </div>
           </div>
 
@@ -895,7 +909,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
         </div>
       </main>
 
-      {/* iOS LIQUID GLASS FLOATING DOCK (Draggable Water Droplet & High-Contrast Lightmode) */}
+      {/* AVANT-GARDE TACTICAL FLOATING DOCK */}
       <div className="fixed bottom-3 sm:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none pb-safe">
         <nav
           ref={navRef}
@@ -904,14 +918,14 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
           style={{ touchAction: 'none' }}
-          className={`bg-white/70 dark:bg-[#12151e]/80 backdrop-blur-3xl rounded-full p-1.5 flex items-center gap-1 sm:gap-1.5 border border-slate-200/80 dark:border-white/12 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.15)] pointer-events-auto relative overflow-hidden select-none transition-shadow ${
-            isDragging ? 'cursor-grabbing ring-2 ring-slate-400/20 dark:ring-white/20' : 'cursor-grab'
+          className={`bg-zinc-950/90 dark:bg-[#0D0F14]/95 backdrop-blur-2xl rounded-2xl p-1.5 flex items-center gap-1 sm:gap-1.5 border border-zinc-800/80 dark:border-zinc-800 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.5)] pointer-events-auto relative overflow-hidden select-none transition-shadow ${
+            isDragging ? 'cursor-grabbing ring-2 ring-[#D4FF00]/40' : 'cursor-grab'
           }`}
         >
-          {/* Transparent Liquid Glass Water Droplet Pill */}
+          {/* Tactical Indicator Pill */}
           {pillStyle.width > 0 && (
             <div
-              className={`absolute rounded-full pointer-events-none overflow-hidden ${
+              className={`absolute rounded-xl pointer-events-none overflow-hidden ${
                 isDragging ? 'z-20' : ''
               }`}
               style={{
@@ -919,50 +933,43 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
                 width: `${pillStyle.width}px`,
                 height: `${pillStyle.height}px`,
                 top: '6px',
-                transform: isDragging ? 'scale(1.05) translateZ(0)' : 'scale(1) translateZ(0)',
+                transform: isDragging ? 'scale(1.04) translateZ(0)' : 'scale(1) translateZ(0)',
                 willChange: 'left, width, transform',
                 transition: isDragging
                   ? 'width 180ms ease, transform 150ms cubic-bezier(0.2, 0.8, 0.4, 1.2)'
                   : 'left 280ms cubic-bezier(0.25, 1.25, 0.5, 1), width 260ms cubic-bezier(0.25, 1.25, 0.5, 1), transform 200ms ease',
               }}
             >
-              {/* Droplet Glass Body */}
+              {/* Tactical active pill interior */}
               <div
-                className={`absolute inset-0 rounded-full backdrop-blur-2xl transition-all duration-200 ${
+                className={`absolute inset-0 rounded-xl transition-all duration-200 ${
                   isDragging
-                    ? 'bg-white/95 dark:bg-white/25 border border-white dark:border-white/35 shadow-[0_8px_25px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.55),inset_0_1px_2px_rgba(255,255,255,0.4)]'
-                    : 'bg-white/85 dark:bg-white/15 border border-white/80 dark:border-white/25 shadow-[0_4px_16px_rgba(0,0,0,0.12),inset_0_1px_2px_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_18px_rgba(0,0,0,0.35),inset_0_1px_2px_rgba(255,255,255,0.3)]'
+                    ? 'bg-zinc-800 dark:bg-zinc-800/90 border border-[#D4FF00]/60 shadow-[0_0_15px_rgba(212,255,0,0.25)]'
+                    : 'bg-zinc-800 dark:bg-zinc-800/80 border border-zinc-700/80 dark:border-zinc-700'
                 }`}
               />
-
-              {/* Top Water Specular Reflection */}
-              <div className="absolute top-0 inset-x-3 h-[1px] bg-gradient-to-r from-transparent via-white/90 to-transparent pointer-events-none" />
-
-              {/* Top Glass Lens Glare Bubble */}
-              <div className="absolute -top-1 left-1/4 w-1/2 h-2.5 rounded-full bg-white/40 dark:bg-white/25 blur-[1px] pointer-events-none" />
-
-              {/* Upper-half glass sheen */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/25 via-white/5 to-transparent opacity-90 pointer-events-none" />
+              {/* Specular hairline */}
+              <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-[#D4FF00]/40 to-transparent pointer-events-none" />
             </div>
           )}
 
-          {NAV_ITEMS.map((item) => {
+          {getNavItems(lang).map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 ref={(el) => { tabRefs.current[item.id] = el; }}
                 onClick={() => handleTabClick(item.id)}
-                className={`relative z-10 flex items-center justify-center shrink-0 h-10 rounded-full select-none cursor-pointer group active:scale-95 transition-transform duration-100 ${
+                className={`relative z-10 flex items-center justify-center shrink-0 h-9.5 rounded-xl select-none cursor-pointer group active:scale-95 transition-transform duration-100 ${
                   isActive
-                    ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-5.5 text-slate-900 dark:text-white'
-                    : 'w-10 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white'
+                    ? 'pl-3.5 pr-4 text-white'
+                    : 'w-10 text-zinc-400 hover:text-zinc-200'
                 }`}
                 title={item.label}
               >
                 <TabIcon tabId={item.id} isActive={isActive} />
                 {isActive && (
-                  <span className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white tracking-wide ml-1.5 whitespace-nowrap select-none animate-fade-in">
+                  <span className="text-xs font-mono font-black uppercase tracking-wider text-white ml-2 whitespace-nowrap select-none animate-fade-in">
                     {item.label}
                   </span>
                 )}

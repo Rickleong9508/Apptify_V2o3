@@ -22,6 +22,7 @@ import {
   Flame,
   AlertCircle
 } from 'lucide-react';
+import { getStoredLanguage, SupportedLanguage } from '../utils/i18n';
 
 export interface NoteItem {
   id: string;
@@ -48,17 +49,17 @@ interface KnowledgeVaultProps {
 }
 
 const CATEGORY_MAP = {
-  work: { label: '工作', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20' },
-  idea: { label: '灵感', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20' },
-  meeting: { label: '会议', color: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20' },
-  life: { label: '生活', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' },
+  work: { labelZh: '工作', labelEn: 'Work', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20' },
+  idea: { labelZh: '灵感', labelEn: 'Idea', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20' },
+  meeting: { labelZh: '会议', labelEn: 'Meeting', color: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20' },
+  life: { labelZh: '生活', labelEn: 'Life', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' },
 };
 
 const INITIAL_NOTES: NoteItem[] = [
   {
     id: 'welcome-note',
-    title: '欢迎使用 Apptify 个人笔记与工作台',
-    content: '这里是您的专属工作空间：\n- 随手记录工作日志、会议纪要与突发灵感\n- 支持标签分类、置顶与一键搜索\n- 配合右下角的私人 AI 助手，说一句话即可自动记录或查询！',
+    title: 'Welcome to NoteDown Workspace',
+    content: 'Your dedicated personal notebook:\n- Capture meeting logs, quick memos, and thoughts\n- Tag categorization, pinning, and instant filter\n- Ask the AI Assistant to jot down notes on the fly!',
     category: 'work',
     pinned: true,
     createdAt: new Date().toISOString(),
@@ -69,7 +70,7 @@ const INITIAL_NOTES: NoteItem[] = [
 const INITIAL_TASKS: TaskItem[] = [
   {
     id: 'welcome-task-1',
-    title: '体验 Apptify 待办任务清单',
+    title: 'Explore NoteDown Action Tasks',
     completed: false,
     priority: 'high',
     dueDate: new Date().toISOString().slice(0, 10),
@@ -78,7 +79,7 @@ const INITIAL_TASKS: TaskItem[] = [
   },
   {
     id: 'welcome-task-2',
-    title: '尝试用 AI 助手说：“记一个任务：周五准备汇报”',
+    title: 'Try asking AI: "Add a task: Review Friday report"',
     completed: false,
     priority: 'medium',
     category: 'work',
@@ -87,6 +88,13 @@ const INITIAL_TASKS: TaskItem[] = [
 ];
 
 const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
+  const [lang, setLang] = useState<SupportedLanguage>(getStoredLanguage());
+  useEffect(() => {
+    const handleLang = () => setLang(getStoredLanguage());
+    window.addEventListener('apptify_language_change', handleLang);
+    return () => window.removeEventListener('apptify_language_change', handleLang);
+  }, []);
+
   const [activeTab, setActiveTab] = useState<'notes' | 'tasks' | 'focus'>('notes');
 
   // --- Notes State ---
@@ -197,7 +205,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
     if (editingNote) {
       setNotes(prev => prev.map(n => n.id === editingNote.id ? {
         ...n,
-        title: noteTitle.trim() || '无标题笔记',
+        title: noteTitle.trim() || (lang === 'zh' ? '无标题笔记' : 'Untitled Note'),
         content: noteContent.trim(),
         category: noteCategory,
         updatedAt: new Date().toISOString()
@@ -205,7 +213,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
     } else {
       const newNote: NoteItem = {
         id: 'note_' + Date.now(),
-        title: noteTitle.trim() || '无标题笔记',
+        title: noteTitle.trim() || (lang === 'zh' ? '无标题笔记' : 'Untitled Note'),
         content: noteContent.trim(),
         category: noteCategory,
         pinned: false,
@@ -296,10 +304,10 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-1.5 backdrop-blur-md">
             <Sparkles size={12} className="animate-pulse" />
-            <span>日常笔记 · 工作待办 · 沉浸专注</span>
+            <span>{lang === 'zh' ? '日常笔记 · 工作待办 · 沉浸专注' : 'Notes · Tasks · Focus'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-            Knowledge Vault
+            NoteDown
           </h1>
         </div>
 
@@ -314,7 +322,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             }`}
           >
             <FileText size={15} />
-            <span>笔记 ({notes.length})</span>
+            <span>{lang === 'zh' ? `笔记 (${notes.length})` : `Notes (${notes.length})`}</span>
           </button>
           <button
             onClick={() => setActiveTab('tasks')}
@@ -325,7 +333,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             }`}
           >
             <CheckSquare size={15} />
-            <span>待办 ({pendingCount})</span>
+            <span>{lang === 'zh' ? `待办 (${pendingCount})` : `Tasks (${pendingCount})`}</span>
           </button>
           <button
             onClick={() => setActiveTab('focus')}
@@ -336,7 +344,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             }`}
           >
             <Clock size={15} />
-            <span>专注</span>
+            <span>{lang === 'zh' ? '专注' : 'Focus'}</span>
           </button>
         </div>
       </div>
@@ -352,7 +360,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="搜索笔记标题或内容..."
+                placeholder={lang === 'zh' ? "搜索笔记标题或内容..." : "Search notes..."}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-amber-500 transition-colors shadow-sm"
@@ -369,7 +377,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all whitespace-nowrap"
             >
               <Plus size={18} strokeWidth={2.5} />
-              <span>新建笔记</span>
+              <span>{lang === 'zh' ? '新建笔记' : 'New Note'}</span>
             </button>
           </div>
 
@@ -383,7 +391,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   : 'bg-white/60 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-white/80'
               }`}
             >
-              全部笔记
+              {lang === 'zh' ? '全部笔记' : 'All Notes'}
             </button>
             {Object.entries(CATEGORY_MAP).map(([key, info]) => (
               <button
@@ -395,7 +403,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                     : 'bg-white/60 dark:bg-white/10 text-gray-600 dark:text-gray-300 border-transparent hover:bg-white/80'
                 }`}
               >
-                {info.label}
+                {lang === 'zh' ? info.labelZh : info.labelEn}
               </button>
             ))}
           </div>
@@ -416,7 +424,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   {/* Top Bar: Category & Pin */}
                   <div className="flex items-center justify-between w-full relative z-10">
                     <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${cat.color} backdrop-blur-md`}>
-                      {cat.label}
+                      {lang === 'zh' ? cat.labelZh : cat.labelEn}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -424,14 +432,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                         className={`p-1.5 rounded-full transition-colors ${
                           note.pinned ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
                         }`}
-                        title={note.pinned ? '取消置顶' : '置顶笔记'}
+                        title={note.pinned ? (lang === 'zh' ? '取消置顶' : 'Unpin note') : (lang === 'zh' ? '置顶笔记' : 'Pin note')}
                       >
                         <Pin size={14} className={note.pinned ? 'fill-current' : ''} />
                       </button>
                       <button
                         onClick={e => handleDeleteNote(note.id, e)}
                         className="p-1.5 text-gray-400 hover:text-rose-500 rounded-full transition-colors"
-                        title="删除"
+                        title={lang === 'zh' ? "删除" : "Delete"}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -444,7 +452,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                       {note.title}
                     </h3>
                     <p className="text-xs text-gray-600 dark:text-gray-300 font-medium mt-1 leading-relaxed line-clamp-3 whitespace-pre-wrap">
-                      {note.content || '无内容'}
+                      {note.content || (lang === 'zh' ? '无内容' : 'No content')}
                     </p>
                   </div>
 
@@ -452,7 +460,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   <div className="flex items-center justify-between pt-2 border-t border-amber-500/10 text-[10px] text-gray-400 font-mono relative z-10">
                     <span>{new Date(note.updatedAt).toLocaleDateString()} {new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     <span className="text-amber-600 dark:text-amber-400 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                      编辑 <ChevronRight size={12} />
+                      {lang === 'zh' ? '编辑' : 'Edit'} <ChevronRight size={12} />
                     </span>
                   </div>
                 </div>
@@ -462,8 +470,8 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             {filteredNotes.length === 0 && (
               <div className="col-span-full p-10 rounded-3xl bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-dashed border-gray-300 dark:border-white/10 text-center flex flex-col items-center justify-center">
                 <FileText size={36} className="text-amber-500/40 mb-2" />
-                <p className="font-bold text-gray-700 dark:text-gray-300 text-sm">暂无匹配的笔记</p>
-                <p className="text-xs text-gray-400 mt-1">点击右上角“新建笔记”或让 AI 助手帮您记录一笔</p>
+                <p className="font-bold text-gray-700 dark:text-gray-300 text-sm">{lang === 'zh' ? '暂无匹配的笔记' : 'No matching notes found'}</p>
+                <p className="text-xs text-gray-400 mt-1">{lang === 'zh' ? '点击右上角“新建笔记”或让 AI 助手帮您记录一笔' : 'Click "New Note" above or ask AI assistant to record a note'}</p>
               </div>
             )}
           </div>
@@ -479,13 +487,13 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
           <div className="p-5 sm:p-6 rounded-3xl liquid-card-amber backdrop-blur-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                工作与生活待办概览
+                {lang === 'zh' ? '工作与生活待办概览' : 'Tasks & Action Items'}
               </span>
               <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                今日完成率: {taskProgress}%
+                {lang === 'zh' ? `今日完成率: ${taskProgress}%` : `Completion Rate: ${taskProgress}%`}
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                共 {tasks.length} 项任务 · 待处理 {pendingCount} 项 · 已完成 {completedCount} 项
+                {lang === 'zh' ? `共 ${tasks.length} 项任务 · 待处理 ${pendingCount} 项 · 已完成 ${completedCount} 项` : `${tasks.length} Total · ${pendingCount} Pending · ${completedCount} Completed`}
               </p>
             </div>
 
@@ -499,7 +507,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 font-bold">
                 <span>0%</span>
-                <span>目标 100%</span>
+                <span>{lang === 'zh' ? '目标 100%' : 'Goal 100%'}</span>
               </div>
             </div>
           </div>
@@ -509,7 +517,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="添加新的待办任务... (例如：写周报、跟进客户)"
+                placeholder={lang === 'zh' ? "添加新的待办任务... (例如：写周报、跟进客户)" : "Add a new task... (e.g., Weekly report, Call client)"}
                 value={newTaskTitle}
                 onChange={e => setNewTaskTitle(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-amber-500 transition-colors shadow-sm"
@@ -521,16 +529,16 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 onChange={e => setNewTaskPriority(e.target.value as any)}
                 className="px-3 py-3 rounded-2xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none cursor-pointer"
               >
-                <option value="high">🔴 紧急高优</option>
-                <option value="medium">🟡 正常跟进</option>
-                <option value="low">🟢 日常备忘</option>
+                <option value="high">{lang === 'zh' ? '🔴 紧急高优' : '🔴 High Priority'}</option>
+                <option value="medium">{lang === 'zh' ? '🟡 正常跟进' : '🟡 Medium Priority'}</option>
+                <option value="low">{lang === 'zh' ? '🟢 日常备忘' : '🟢 Low Priority'}</option>
               </select>
               <button
                 type="submit"
                 className="px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-sm shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Plus size={18} strokeWidth={2.5} />
-                <span>添加</span>
+                <span>{lang === 'zh' ? '添加' : 'Add'}</span>
               </button>
             </div>
           </form>
@@ -545,7 +553,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   : 'bg-white/50 dark:bg-white/5 text-gray-500'
               }`}
             >
-              全部 ({tasks.length})
+              {lang === 'zh' ? `全部 (${tasks.length})` : `All (${tasks.length})`}
             </button>
             <button
               onClick={() => setTaskFilter('pending')}
@@ -555,7 +563,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   : 'bg-white/50 dark:bg-white/5 text-gray-500'
               }`}
             >
-              待处理 ({pendingCount})
+              {lang === 'zh' ? `待处理 (${pendingCount})` : `Pending (${pendingCount})`}
             </button>
             <button
               onClick={() => setTaskFilter('completed')}
@@ -565,7 +573,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   : 'bg-white/50 dark:bg-white/5 text-gray-500'
               }`}
             >
-              已完成 ({completedCount})
+              {lang === 'zh' ? `已完成 (${completedCount})` : `Completed (${completedCount})`}
             </button>
           </div>
 
@@ -611,7 +619,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                             : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                         }`}
                       >
-                        {task.priority === 'high' ? '高优先级' : task.priority === 'medium' ? '中等' : '日常'}
+                        {task.priority === 'high' ? (lang === 'zh' ? '高优先级' : 'High') : task.priority === 'medium' ? (lang === 'zh' ? '中等' : 'Medium') : (lang === 'zh' ? '日常' : 'Low')}
                       </span>
                       {task.dueDate && (
                         <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono">
@@ -629,7 +637,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                     handleDeleteTask(task.id);
                   }}
                   className="p-1.5 text-gray-300 hover:text-rose-500 rounded-lg transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-                  title="删除待办"
+                  title={lang === 'zh' ? "删除待办" : "Delete task"}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -638,8 +646,8 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
             {filteredTasks.length === 0 && (
               <div className="p-8 rounded-3xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-dashed border-gray-300 dark:border-white/10 text-center">
-                <p className="text-sm font-bold text-gray-500">没有待办事项</p>
-                <p className="text-xs text-gray-400 mt-0.5">在上方输入框添加任务，或对 AI 助手说：“帮我记个待办”</p>
+                <p className="text-sm font-bold text-gray-500">{lang === 'zh' ? '没有待办事项' : 'No tasks'}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{lang === 'zh' ? '在上方输入框添加任务，或对 AI 助手说：“帮我记个待办”' : 'Add a task above or ask AI assistant to add one'}</p>
               </div>
             )}
           </div>
@@ -661,7 +669,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             {/* Mode Indicator */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-6">
               <Flame size={14} className={isTimerRunning ? 'animate-bounce text-orange-500' : ''} />
-              <span>{focusMode === 'work' ? '沉浸工作专注' : '休息充电时刻'}</span>
+              <span>{focusMode === 'work' ? (lang === 'zh' ? '沉浸工作专注' : 'Deep Work Session') : (lang === 'zh' ? '休息充电时刻' : 'Break Time')}</span>
             </div>
 
             {/* Digital Clock Display */}
@@ -672,7 +680,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             </div>
 
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-8">
-              {isTimerRunning ? '正在专注中，请保持沉浸状态...' : '点击开始，保持 25 分钟单线程高效工作'}
+              {isTimerRunning ? (lang === 'zh' ? '正在专注中，请保持沉浸状态...' : 'Focusing... Stay in flow') : (lang === 'zh' ? '点击开始，保持 25 分钟单线程高效工作' : 'Click Start for a 25-minute single-task sprint')}
             </p>
 
             {/* Control Buttons */}
@@ -694,7 +702,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   setFocusTime(focusMode === 'work' ? 25 * 60 : 5 * 60);
                 }}
                 className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-200 border border-white/60 dark:border-white/15 shadow-sm active:scale-95 transition-all"
-                title="重置计时"
+                title={lang === 'zh' ? "重置计时" : "Reset timer"}
               >
                 <RotateCcw size={18} />
               </button>
@@ -703,12 +711,12 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             {/* Stats Footer */}
             <div className="mt-8 pt-6 border-t border-amber-500/10 w-full flex justify-around text-xs font-bold text-gray-600 dark:text-gray-300">
               <div>
-                <p className="text-[10px] text-gray-400 uppercase">今日专注回合</p>
-                <p className="text-lg font-black text-amber-600 dark:text-amber-400">{completedSessions} 次</p>
+                <p className="text-[10px] text-gray-400 uppercase">{lang === 'zh' ? '今日专注回合' : 'Sessions Today'}</p>
+                <p className="text-lg font-black text-amber-600 dark:text-amber-400">{completedSessions} {lang === 'zh' ? '次' : 'rounds'}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 uppercase">累计专注时长</p>
-                <p className="text-lg font-black text-amber-600 dark:text-amber-400">{completedSessions * 25} 分钟</p>
+                <p className="text-[10px] text-gray-400 uppercase">{lang === 'zh' ? '累计专注时长' : 'Total Focus Time'}</p>
+                <p className="text-lg font-black text-amber-600 dark:text-amber-400">{completedSessions * 25} {lang === 'zh' ? '分钟' : 'mins'}</p>
               </div>
             </div>
           </div>
@@ -723,7 +731,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
           <div className="w-full sm:max-w-lg bg-white/95 dark:bg-[#181A20]/95 backdrop-blur-3xl rounded-t-[32px] sm:rounded-3xl border-t sm:border border-white/60 dark:border-white/10 shadow-2xl p-6 space-y-4 pb-safe animate-fade-in-up">
             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
               <h3 className="font-extrabold text-base text-gray-900 dark:text-white">
-                {editingNote ? '编辑笔记' : '新建日常/工作笔记'}
+                {editingNote ? (lang === 'zh' ? '编辑笔记' : 'Edit Note') : (lang === 'zh' ? '新建日常/工作笔记' : 'New Note')}
               </h3>
               <button
                 onClick={() => setIsCreatingNote(false)}
@@ -736,7 +744,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             {/* Note Title Input */}
             <input
               type="text"
-              placeholder="笔记标题..."
+              placeholder={lang === 'zh' ? "笔记标题..." : "Note title..."}
               value={noteTitle}
               onChange={e => setNoteTitle(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-base font-bold text-gray-900 dark:text-white outline-none focus:border-amber-500 transition-colors"
@@ -744,7 +752,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
             {/* Category Select Pills */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-400">分类:</span>
+              <span className="text-xs font-semibold text-gray-400">{lang === 'zh' ? '分类:' : 'Category:'}</span>
               {Object.entries(CATEGORY_MAP).map(([key, info]) => (
                 <button
                   key={key}
@@ -756,14 +764,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                       : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 border-transparent'
                   }`}
                 >
-                  {info.label}
+                  {lang === 'zh' ? info.labelZh : info.labelEn}
                 </button>
               ))}
             </div>
 
             {/* Note Content Textarea */}
             <textarea
-              placeholder="写下您的工作纪要、灵感草稿或任务备忘..."
+              placeholder={lang === 'zh' ? "写下您的工作纪要、灵感草稿或任务备忘..." : "Write down your meeting memo, idea, or notes..."}
               value={noteContent}
               onChange={e => setNoteContent(e.target.value)}
               rows={6}
@@ -777,14 +785,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 onClick={() => setIsCreatingNote(false)}
                 className="flex-1 py-3 rounded-2xl bg-gray-100 dark:bg-white/10 font-bold text-sm text-gray-700 dark:text-gray-300 active:scale-95 transition-all"
               >
-                取消
+                {lang === 'zh' ? '取消' : 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={handleSaveNote}
                 className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm shadow-md shadow-amber-500/25 active:scale-95 transition-all"
               >
-                保存笔记
+                {lang === 'zh' ? '保存笔记' : 'Save Note'}
               </button>
             </div>
           </div>

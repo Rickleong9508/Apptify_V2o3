@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loan } from '../types';
 import { Trash2, Plus, CreditCard, ChevronRight, Pencil, X, AlertCircle, Calculator, Calendar, DollarSign } from 'lucide-react';
+import { getStoredLanguage, SupportedLanguage } from '../utils/i18n';
 
 interface LoansProps {
   loans: Loan[];
@@ -8,6 +9,13 @@ interface LoansProps {
 }
 
 const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
+  const [lang, setLang] = useState<SupportedLanguage>(getStoredLanguage());
+  useEffect(() => {
+    const handleLang = () => setLang(getStoredLanguage());
+    window.addEventListener('apptify_language_change', handleLang);
+    return () => window.removeEventListener('apptify_language_change', handleLang);
+  }, []);
+
   // --- Modal & Form State ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -95,45 +103,60 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
   const totalMonthlyCommitment = loans.reduce((acc, l) => acc + (l.monthlyPayment || 0), 0);
 
   return (
-    <div className="space-y-6 pb-20 animate-fade-in">
-      {/* Header & Stats Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 pb-20 animate-fade-in font-sans">
+      {/* Avant-Garde Masthead & Stats Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ios-label-primary)]">
-            Loans & Liabilities
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+              LIABILITY // AMORTIZATION
+            </span>
+            <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+              04 // LOANS
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.03em] uppercase text-zinc-950 dark:text-white">
+            {lang === 'zh' ? '借贷与分期履约' : 'Liabilities & Loans'}
           </h2>
-          <p className="text-xs sm:text-sm text-[var(--ios-label-secondary)] mt-0.5">
-            Track amortization, repayments, and debt-free milestones
+          <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
+            {lang === 'zh' ? '独立履约跟踪 · 本金清偿进度 · 每月固定分期流出' : 'Amortization tracking · Principal payoff · Monthly commitments'}
           </p>
         </div>
 
         <button
           onClick={openAddModal}
-          className="ios-button-primary flex items-center justify-center gap-2 tap-scale self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-black uppercase tracking-wider bg-zinc-950 text-white dark:bg-[#D4FF00] dark:text-black hover:opacity-90 transition-all active:scale-95 cursor-pointer tactile-press shadow-sm self-start sm:self-auto"
         >
-          <Plus size={18} />
-          <span>Add Liability</span>
+          <Plus size={15} />
+          <span>{lang === 'zh' ? 'NEW LOAN // 新增借贷' : 'NEW LOAN'}</span>
         </button>
       </div>
 
-      {/* Summary Metrics */}
+      {/* Summary Metrics (Avant-Card Tiles) */}
       {loans.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="ios-card p-4 sm:p-5">
-            <span className="text-[11px] sm:text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider">
-              Total Outstanding Debt
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 font-mono">
+          <div className="avant-card p-5 sm:p-6">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+              {lang === 'zh' ? 'OUTSTANDING PRINCIPAL // 待清偿借贷总额' : 'OUTSTANDING PRINCIPAL'}
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-rose-500 mt-1">
+            <div className="text-2xl sm:text-3xl font-black text-rose-500 mt-1.5 font-mono-numbers">
               RM {totalDebt.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
+            <p className="text-[10px] text-zinc-500 mt-1">
+              {lang === 'zh' ? '独立跟踪项目 · 不从总净资产中扣减' : 'Tracked independently · Not deducted from total net worth'}
+            </p>
           </div>
-          <div className="ios-card p-4 sm:p-5">
-            <span className="text-[11px] sm:text-xs font-semibold text-[var(--ios-label-secondary)] uppercase tracking-wider">
-              Monthly Debt Outflow
+          <div className="avant-card p-5 sm:p-6">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+              {lang === 'zh' ? 'MONTHLY COMMITMENT // 每月还款月供合计' : 'MONTHLY COMMITMENT'}
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[var(--ios-label-primary)] mt-1">
-              RM {totalMonthlyCommitment.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo
+            <div className="text-2xl sm:text-3xl font-black text-zinc-950 dark:text-white mt-1.5 font-mono-numbers">
+              RM {totalMonthlyCommitment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              <span className="text-sm font-normal text-zinc-400 ml-1">{lang === 'zh' ? '/月' : '/mo'}</span>
             </div>
+            <p className="text-[10px] text-zinc-500 mt-1">
+              {lang === 'zh' ? '每月现金流必要流出款项' : 'Essential monthly cashflow commitment'}
+            </p>
           </div>
         </div>
       )}
@@ -148,21 +171,21 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
           return (
             <div
               key={loan.id}
-              className="ios-card p-5 sm:p-6 flex flex-col justify-between space-y-5 transition-all"
+              className="avant-card p-5 sm:p-6 flex flex-col justify-between space-y-5 transition-all"
             >
               <div>
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-                      <CreditCard size={22} />
+                    <div className="w-11 h-11 rounded-2xl bg-zinc-900 dark:bg-zinc-800 text-[#D4FF00] flex items-center justify-center shrink-0 font-bold border border-zinc-800">
+                      <CreditCard size={20} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-base sm:text-lg text-[var(--ios-label-primary)] leading-tight">
+                      <h3 className="font-black text-base sm:text-lg text-zinc-950 dark:text-white uppercase tracking-tight">
                         {loan.name}
                       </h3>
-                      <span className="text-xs text-[var(--ios-label-secondary)] font-medium">
-                        RM {loan.monthlyPayment.toLocaleString()}/month
+                      <span className="text-xs font-mono font-bold text-zinc-400">
+                        RM {loan.monthlyPayment.toLocaleString()}{lang === 'zh' ? '/月供' : '/mo'}
                       </span>
                     </div>
                   </div>
