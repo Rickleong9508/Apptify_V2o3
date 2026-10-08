@@ -515,9 +515,9 @@ const App: React.FC = () => {
         <div className="w-full flex flex-col gap-3.5 sm:gap-4">
           
           {/* Deck 01: MyWealth Flagship Asset Terminal — ink mass carrying the figure */}
-          <div className="relative overflow-hidden rounded-[30px] bg-[#2600FD] text-white p-5 sm:p-6.5 group shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(38,0,253,0.45)]">
+          <div className="relative overflow-hidden rounded-[30px] bg-[#0A0A0B] text-white p-5 sm:p-6.5 group shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(10,10,11,0.42)]">
             {/* Specular edge refraction — the system has no outer glow */}
-            <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
+            <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]" />
 
             {/* Card Header Strip: Badge & Interactive Toggle Switch */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full relative z-10 pb-4 border-b border-white/10">
@@ -653,25 +653,25 @@ const App: React.FC = () => {
             {/* NewsHub — the narrower tile, carrying the attention colour */}
             <button
               onClick={() => setCurrentApp('newshub')}
-              className="col-span-2 rounded-3xl bg-[#FFBF00] text-[#0A0A0B] p-4 flex flex-col justify-between text-left cursor-pointer active:scale-[0.98] transition-transform"
+              className="col-span-2 rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between text-left cursor-pointer active:scale-[0.98] transition-transform"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl bg-black/10 text-[#0A0A0B] flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center shrink-0">
                   <Radio size={18} strokeWidth={2.1} />
                 </div>
-                <span className="font-mono text-[9px] tracking-wider uppercase text-black/50 pt-1">LIVE</span>
+                <span className="font-mono text-[9px] tracking-wider uppercase text-white/55 pt-1">LIVE</span>
               </div>
 
               <div>
                 <h2 className="text-[15px] font-semibold tracking-tight leading-tight">
                   {t.launcher.newsTitle}
                 </h2>
-                <p className="text-[11px] text-black/55 mt-1 leading-snug line-clamp-2">
+                <p className="text-[11px] text-white/55 mt-1 leading-snug line-clamp-2">
                   {lang === 'zh' ? '实时科技与财经' : 'Live tech & markets'}
                 </p>
               </div>
 
-              <span className="mt-3 flex items-center gap-1 text-[11px] font-medium">
+              <span className="mt-3 flex items-center gap-1 text-[11px] font-medium text-[#FFBF00]">
                 <span>{t.launcher.openNews}</span>
                 <ArrowUpRight size={12} strokeWidth={2.3} />
               </span>
