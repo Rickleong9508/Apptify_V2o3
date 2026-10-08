@@ -1,0 +1,3 @@
+# Renders of the retired standalone prototype. Superseded by app-screens/.
+# Regenerate with: python3 verify/shoot.py
+screens/
