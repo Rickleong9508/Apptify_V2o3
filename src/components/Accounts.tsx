@@ -27,34 +27,34 @@ interface AccountsProps {
 
 const CARD_THEMES = [
   {
-    bg: 'bg-zinc-950 dark:bg-[#0D0F14] border border-zinc-800 text-white',
-    accent: 'bg-[#D4FF00]/10 text-[#D4FF00] border border-[#D4FF00]/30',
-    chip: '#D4FF00',
-    highlight: 'text-[#D4FF00]'
+    bg: 'bg-zinc-950 dark:bg-[#0A0A0B] border border-zinc-800 text-white',
+    accent: 'bg-blue-500/10 text-blue-400 border border-blue-500/30',
+    chip: '#2600FD',
+    highlight: 'text-blue-400'
   },
   {
-    bg: 'bg-zinc-900 dark:bg-[#141721] border border-zinc-700/80 text-white',
-    accent: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30',
-    chip: '#22D3EE',
-    highlight: 'text-cyan-400'
+    bg: 'bg-zinc-900 dark:bg-[#141416] border border-zinc-700/80 text-white',
+    accent: 'bg-blue-400/10 text-blue-300 border border-blue-400/30',
+    chip: '#5B3BFF',
+    highlight: 'text-blue-300'
   },
   {
-    bg: 'bg-zinc-900 dark:bg-[#111A18] border border-zinc-700/80 text-white',
-    accent: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
-    chip: '#34D399',
-    highlight: 'text-emerald-400'
-  },
-  {
-    bg: 'bg-zinc-900 dark:bg-[#1C1613] border border-zinc-700/80 text-white',
+    bg: 'bg-zinc-900 dark:bg-[#141416] border border-zinc-700/80 text-white',
     accent: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-    chip: '#FBBF24',
+    chip: '#FFBF00',
     highlight: 'text-amber-400'
   },
   {
-    bg: 'bg-zinc-900 dark:bg-[#191522] border border-zinc-700/80 text-white',
-    accent: 'bg-purple-500/10 text-purple-400 border border-purple-500/30',
-    chip: '#C084FC',
-    highlight: 'text-purple-400'
+    bg: 'bg-zinc-900 dark:bg-[#141416] border border-zinc-700/80 text-white',
+    accent: 'bg-amber-600/10 text-amber-500 border border-amber-600/30',
+    chip: '#DB9F00',
+    highlight: 'text-amber-500'
+  },
+  {
+    bg: 'bg-zinc-900 dark:bg-[#141416] border border-zinc-700/80 text-white',
+    accent: 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/30',
+    chip: '#52525A',
+    highlight: 'text-zinc-400'
   },
 ];
 
@@ -314,7 +314,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#FFBF00] dark:bg-[#FFBF00] dark:text-black">
               VAULT // LIQUIDITY
             </span>
             <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
@@ -334,7 +334,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition-all active:scale-95 cursor-pointer tactile-press shadow-sm ${
             isAddingAccount
               ? 'bg-zinc-800 text-white dark:bg-zinc-700'
-              : 'bg-zinc-950 text-white dark:bg-[#D4FF00] dark:text-black hover:opacity-90'
+              : 'bg-zinc-950 text-white dark:bg-[#2600FD] dark:text-black hover:opacity-90'
           }`}
           aria-label="Add wallet"
         >
@@ -347,7 +347,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
       {isAddingAccount && (
         <div className="p-5 sm:p-6 rounded-3xl avant-card border border-zinc-300 dark:border-zinc-800 shadow-xl animate-scale-in">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-[#D4FF00] flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-[#2600FD] flex items-center justify-center font-bold">
               <Wallet size={18} />
             </div>
             <div>
@@ -364,7 +364,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
             <input
               type="text"
               placeholder={lang === 'zh' ? "账户名称 (例如：Maybank、日常现金钱包)" : "Wallet name (e.g., Maybank, Daily Cash)"}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#D4FF00] transition-colors font-sans"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#2600FD] transition-colors font-sans"
               value={newAccountName}
               onChange={(e) => setNewAccountName(e.target.value)}
               autoFocus
@@ -374,7 +374,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
               <input
                 type="number"
                 placeholder={lang === 'zh' ? "年利率 %" : "APY %"}
-                className="w-24 px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#D4FF00] transition-colors font-mono"
+                className="w-24 px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#2600FD] transition-colors font-mono"
                 value={newInterestRate}
                 onChange={(e) => setNewInterestRate(e.target.value)}
               />
@@ -391,7 +391,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
 
               <button 
                 onClick={addAccount} 
-                className="px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-[#D4FF00] dark:text-black dark:hover:bg-[#c2ea00] active:scale-95 text-white font-mono font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md whitespace-nowrap cursor-pointer tactile-press"
+                className="px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 dark:bg-[#FFBF00] dark:text-black dark:hover:bg-[#1F00D6] active:scale-95 text-white font-mono font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md whitespace-nowrap cursor-pointer tactile-press"
               >
                 {lang === 'zh' ? 'CONFIRM // 创建' : 'CONFIRM'}
               </button>
@@ -420,7 +420,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
               <div className="flex justify-between items-start z-10">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-6 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-inner">
-                    <Wifi size={13} className="text-[#D4FF00] rotate-90" />
+                    <Wifi size={13} className="text-[#2600FD] rotate-90" />
                   </div>
                   <div>
                     <span className="font-black text-base tracking-wide block">{acc.name}</span>
@@ -455,7 +455,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
               {/* Bottom Card Footer */}
               <div className="z-10 flex items-center justify-between pt-3 border-t border-zinc-800">
                 {acc.interestRate && acc.interestFrequency !== 'NONE' ? (
-                  <span className="text-[10px] font-mono font-black text-[#D4FF00] flex items-center gap-1 bg-[#D4FF00]/10 border border-[#D4FF00]/30 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-mono font-black text-[#2600FD] flex items-center gap-1 bg-[#2600FD]/10 border border-[#2600FD]/30 px-2 py-0.5 rounded-md">
                     <TrendingUp size={10} /> +{acc.interestRate}% ({acc.interestFrequency})
                   </span>
                 ) : (
@@ -463,7 +463,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
                 )}
 
                 <span className="text-[11px] font-mono font-bold text-zinc-300 flex items-center gap-1 group-hover:text-white group-hover:translate-x-0.5 transition-all">
-                  DETAILS <ArrowUpRight size={13} className="text-[#D4FF00]" />
+                  DETAILS <ArrowUpRight size={13} className="text-[#FFBF00]" />
                 </span>
               </div>
             </div>
@@ -481,7 +481,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
           />
 
           {/* Modal / Sheet Container */}
-          <div className="w-full sm:max-w-lg bg-white dark:bg-[#181A20] rounded-t-[32px] sm:rounded-3xl border-t sm:border border-white/60 dark:border-white/10 shadow-2xl relative z-10 flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden pb-safe animate-fade-in-up">
+          <div className="w-full sm:max-w-lg bg-white dark:bg-[#141416] rounded-t-[32px] sm:rounded-3xl border-t sm:border border-white/60 dark:border-white/10 shadow-2xl relative z-10 flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden pb-safe animate-fade-in-up">
             
             {/* Grab Handle for Touch Devices */}
             <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-white/20 mx-auto mt-2.5 mb-1 sm:hidden" />

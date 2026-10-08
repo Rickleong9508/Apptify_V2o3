@@ -50,7 +50,7 @@ interface KnowledgeVaultProps {
 
 const CATEGORY_MAP = {
   work: { labelZh: '工作', labelEn: 'Work', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20' },
-  idea: { labelZh: '灵感', labelEn: 'Idea', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20' },
+  idea: { labelZh: '灵感', labelEn: 'Idea', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/20' },
   meeting: { labelZh: '会议', labelEn: 'Meeting', color: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20' },
   life: { labelZh: '生活', labelEn: 'Life', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' },
 };
@@ -298,11 +298,11 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
   };
 
   return (
-    <div className="min-h-screen pt-16 sm:pt-20 pb-28 px-4 sm:px-6 max-w-4xl mx-auto selection:bg-amber-500/20">
+    <div className="min-h-screen pt-16 sm:pt-20 pb-28 px-4 sm:px-6 max-w-4xl mx-auto selection:bg-blue-500/20">
       {/* Top Breadcrumb & Segmented Control */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-1.5 backdrop-blur-md">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider mb-1.5 backdrop-blur-md">
             <Sparkles size={12} className="animate-pulse" />
             <span>{lang === 'zh' ? '日常笔记 · 工作待办 · 沉浸专注' : 'Notes · Tasks · Focus'}</span>
           </div>
@@ -317,7 +317,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             onClick={() => setActiveTab('notes')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === 'notes'
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25 scale-[1.02]'
+                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
                 : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -328,7 +328,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             onClick={() => setActiveTab('tasks')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === 'tasks'
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25 scale-[1.02]'
+                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
                 : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -339,7 +339,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             onClick={() => setActiveTab('focus')}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === 'focus'
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25 scale-[1.02]'
+                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
                 : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -363,7 +363,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 placeholder={lang === 'zh' ? "搜索笔记标题或内容..." : "Search notes..."}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-amber-500 transition-colors shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/70 dark:bg-[#141416]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-blue-500 transition-colors shadow-sm"
               />
             </div>
             <button
@@ -374,7 +374,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 setNoteCategory('work');
                 setIsCreatingNote(true);
               }}
-              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all whitespace-nowrap"
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-600 hover:to-blue-600 active:scale-95 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all whitespace-nowrap"
             >
               <Plus size={18} strokeWidth={2.5} />
               <span>{lang === 'zh' ? '新建笔记' : 'New Note'}</span>
@@ -399,7 +399,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 onClick={() => setSelectedCategory(key)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
                   selectedCategory === key
-                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm'
                     : 'bg-white/60 dark:bg-white/10 text-gray-600 dark:text-gray-300 border-transparent hover:bg-white/80'
                 }`}
               >
@@ -416,7 +416,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 <div
                   key={note.id}
                   onClick={() => handleEditNote(note)}
-                  className="group relative p-5 rounded-3xl liquid-card-amber backdrop-blur-2xl flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 cursor-pointer hover:-translate-y-1 overflow-hidden min-h-[170px]"
+                  className="group relative p-5 rounded-3xl liquid-card-blue backdrop-blur-2xl flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 cursor-pointer hover:-translate-y-1 overflow-hidden min-h-[170px]"
                 >
                   {/* Specular Shimmer */}
                   <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-white/20 dark:bg-white/10 blur-xl pointer-events-none" />
@@ -430,7 +430,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                       <button
                         onClick={e => handleTogglePin(note.id, e)}
                         className={`p-1.5 rounded-full transition-colors ${
-                          note.pinned ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                          note.pinned ? 'text-blue-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
                         }`}
                         title={note.pinned ? (lang === 'zh' ? '取消置顶' : 'Unpin note') : (lang === 'zh' ? '置顶笔记' : 'Pin note')}
                       >
@@ -457,9 +457,9 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   </div>
 
                   {/* Footer Timestamp */}
-                  <div className="flex items-center justify-between pt-2 border-t border-amber-500/10 text-[10px] text-gray-400 font-mono relative z-10">
+                  <div className="flex items-center justify-between pt-2 border-t border-blue-500/10 text-[10px] text-gray-400 font-mono relative z-10">
                     <span>{new Date(note.updatedAt).toLocaleDateString()} {new Date(note.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span className="text-amber-600 dark:text-amber-400 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
                       {lang === 'zh' ? '编辑' : 'Edit'} <ChevronRight size={12} />
                     </span>
                   </div>
@@ -469,7 +469,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
             {filteredNotes.length === 0 && (
               <div className="col-span-full p-10 rounded-3xl bg-white/50 dark:bg-white/5 backdrop-blur-xl border border-dashed border-gray-300 dark:border-white/10 text-center flex flex-col items-center justify-center">
-                <FileText size={36} className="text-amber-500/40 mb-2" />
+                <FileText size={36} className="text-blue-500/40 mb-2" />
                 <p className="font-bold text-gray-700 dark:text-gray-300 text-sm">{lang === 'zh' ? '暂无匹配的笔记' : 'No matching notes found'}</p>
                 <p className="text-xs text-gray-400 mt-1">{lang === 'zh' ? '点击右上角“新建笔记”或让 AI 助手帮您记录一笔' : 'Click "New Note" above or ask AI assistant to record a note'}</p>
               </div>
@@ -484,9 +484,9 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
       {activeTab === 'tasks' && (
         <div className="space-y-6 animate-fade-in">
           {/* Progress Header Card */}
-          <div className="p-5 sm:p-6 rounded-3xl liquid-card-amber backdrop-blur-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 sm:p-6 rounded-3xl liquid-card-blue backdrop-blur-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
                 {lang === 'zh' ? '工作与生活待办概览' : 'Tasks & Action Items'}
               </span>
               <h2 className="text-2xl font-black text-gray-900 dark:text-white">
@@ -502,7 +502,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               <div className="h-3 w-full bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/20">
                 <div
                   style={{ width: `${taskProgress}%` }}
-                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-blue-500 to-blue-500 rounded-full transition-all duration-500"
                 />
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 font-bold">
@@ -520,14 +520,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 placeholder={lang === 'zh' ? "添加新的待办任务... (例如：写周报、跟进客户)" : "Add a new task... (e.g., Weekly report, Call client)"}
                 value={newTaskTitle}
                 onChange={e => setNewTaskTitle(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-amber-500 transition-colors shadow-sm"
+                className="w-full px-4 py-3 rounded-2xl bg-white/70 dark:bg-[#141416]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-blue-500 transition-colors shadow-sm"
               />
             </div>
             <div className="flex items-center gap-2">
               <select
                 value={newTaskPriority}
                 onChange={e => setNewTaskPriority(e.target.value as any)}
-                className="px-3 py-3 rounded-2xl bg-white/70 dark:bg-[#1A1C22]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none cursor-pointer"
+                className="px-3 py-3 rounded-2xl bg-white/70 dark:bg-[#141416]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-200 outline-none cursor-pointer"
               >
                 <option value="high">{lang === 'zh' ? '🔴 紧急高优' : '🔴 High Priority'}</option>
                 <option value="medium">{lang === 'zh' ? '🟡 正常跟进' : '🟡 Medium Priority'}</option>
@@ -535,7 +535,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               </select>
               <button
                 type="submit"
-                className="px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-sm shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5 whitespace-nowrap"
+                className="px-5 py-3 rounded-2xl bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-sm shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span>{lang === 'zh' ? '添加' : 'Add'}</span>
@@ -549,7 +549,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               onClick={() => setTaskFilter('all')}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
                 taskFilter === 'all'
-                  ? 'bg-amber-500 text-white shadow-sm'
+                  ? 'bg-blue-500 text-white shadow-sm'
                   : 'bg-white/50 dark:bg-white/5 text-gray-500'
               }`}
             >
@@ -559,7 +559,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               onClick={() => setTaskFilter('pending')}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
                 taskFilter === 'pending'
-                  ? 'bg-amber-500 text-white shadow-sm'
+                  ? 'bg-blue-500 text-white shadow-sm'
                   : 'bg-white/50 dark:bg-white/5 text-gray-500'
               }`}
             >
@@ -569,7 +569,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               onClick={() => setTaskFilter('completed')}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
                 taskFilter === 'completed'
-                  ? 'bg-amber-500 text-white shadow-sm'
+                  ? 'bg-blue-500 text-white shadow-sm'
                   : 'bg-white/50 dark:bg-white/5 text-gray-500'
               }`}
             >
@@ -586,7 +586,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 className={`p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-3 cursor-pointer group active:scale-[0.99] ${
                   task.completed
                     ? 'bg-white/40 dark:bg-white/5 border-gray-200/50 dark:border-white/5 opacity-60'
-                    : 'bg-white/80 dark:bg-[#1A1C22]/80 backdrop-blur-xl border-white/60 dark:border-white/10 shadow-sm hover:border-amber-500/40'
+                    : 'bg-white/80 dark:bg-[#141416]/80 backdrop-blur-xl border-white/60 dark:border-white/10 shadow-sm hover:border-blue-500/40'
                 }`}
               >
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -594,7 +594,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                     className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
                       task.completed
                         ? 'bg-emerald-500 text-white shadow-sm'
-                        : 'border-2 border-gray-300 dark:border-gray-600 group-hover:border-amber-500'
+                        : 'border-2 border-gray-300 dark:border-gray-600 group-hover:border-blue-500'
                     }`}
                   >
                     {task.completed && <Check size={14} strokeWidth={3} />}
@@ -615,7 +615,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                           task.priority === 'high'
                             ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
                             : task.priority === 'medium'
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
                             : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                         }`}
                       >
@@ -660,15 +660,15 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
       {activeTab === 'focus' && (
         <div className="space-y-6 animate-fade-in flex flex-col items-center">
           {/* Pomodoro Dial Card */}
-          <div className="w-full max-w-md p-8 sm:p-10 rounded-3xl liquid-card-amber backdrop-blur-3xl flex flex-col items-center text-center relative overflow-hidden">
+          <div className="w-full max-w-md p-8 sm:p-10 rounded-3xl liquid-card-blue backdrop-blur-3xl flex flex-col items-center text-center relative overflow-hidden">
             {/* Ambient Background Aura */}
             <div className={`absolute -inset-10 rounded-full blur-3xl opacity-30 transition-all duration-700 pointer-events-none ${
-              isTimerRunning ? 'bg-amber-400 animate-pulse' : 'bg-transparent'
+              isTimerRunning ? 'bg-blue-400 animate-pulse' : 'bg-transparent'
             }`} />
 
             {/* Mode Indicator */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-6">
-              <Flame size={14} className={isTimerRunning ? 'animate-bounce text-orange-500' : ''} />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider mb-6">
+              <Flame size={14} className={isTimerRunning ? 'animate-bounce text-blue-500' : ''} />
               <span>{focusMode === 'work' ? (lang === 'zh' ? '沉浸工作专注' : 'Deep Work Session') : (lang === 'zh' ? '休息充电时刻' : 'Break Time')}</span>
             </div>
 
@@ -690,7 +690,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg active:scale-95 transition-all ${
                   isTimerRunning
                     ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/25'
-                    : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/25'
+                    : 'bg-blue-500 hover:bg-blue-600 shadow-blue-500/25'
                 }`}
               >
                 {isTimerRunning ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
@@ -709,14 +709,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             </div>
 
             {/* Stats Footer */}
-            <div className="mt-8 pt-6 border-t border-amber-500/10 w-full flex justify-around text-xs font-bold text-gray-600 dark:text-gray-300">
+            <div className="mt-8 pt-6 border-t border-blue-500/10 w-full flex justify-around text-xs font-bold text-gray-600 dark:text-gray-300">
               <div>
                 <p className="text-[10px] text-gray-400 uppercase">{lang === 'zh' ? '今日专注回合' : 'Sessions Today'}</p>
-                <p className="text-lg font-black text-amber-600 dark:text-amber-400">{completedSessions} {lang === 'zh' ? '次' : 'rounds'}</p>
+                <p className="text-lg font-black text-blue-600 dark:text-blue-400">{completedSessions} {lang === 'zh' ? '次' : 'rounds'}</p>
               </div>
               <div>
                 <p className="text-[10px] text-gray-400 uppercase">{lang === 'zh' ? '累计专注时长' : 'Total Focus Time'}</p>
-                <p className="text-lg font-black text-amber-600 dark:text-amber-400">{completedSessions * 25} {lang === 'zh' ? '分钟' : 'mins'}</p>
+                <p className="text-lg font-black text-blue-600 dark:text-blue-400">{completedSessions * 25} {lang === 'zh' ? '分钟' : 'mins'}</p>
               </div>
             </div>
           </div>
@@ -728,7 +728,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
           ========================================================================= */}
       {isCreatingNote && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full sm:max-w-lg bg-white/95 dark:bg-[#181A20]/95 backdrop-blur-3xl rounded-t-[32px] sm:rounded-3xl border-t sm:border border-white/60 dark:border-white/10 shadow-2xl p-6 space-y-4 pb-safe animate-fade-in-up">
+          <div className="w-full sm:max-w-lg bg-white/95 dark:bg-[#141416]/95 backdrop-blur-3xl rounded-t-[32px] sm:rounded-3xl border-t sm:border border-white/60 dark:border-white/10 shadow-2xl p-6 space-y-4 pb-safe animate-fade-in-up">
             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
               <h3 className="font-extrabold text-base text-gray-900 dark:text-white">
                 {editingNote ? (lang === 'zh' ? '编辑笔记' : 'Edit Note') : (lang === 'zh' ? '新建日常/工作笔记' : 'New Note')}
@@ -747,7 +747,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               placeholder={lang === 'zh' ? "笔记标题..." : "Note title..."}
               value={noteTitle}
               onChange={e => setNoteTitle(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-base font-bold text-gray-900 dark:text-white outline-none focus:border-amber-500 transition-colors"
+              className="w-full px-4 py-3 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-base font-bold text-gray-900 dark:text-white outline-none focus:border-blue-500 transition-colors"
             />
 
             {/* Category Select Pills */}
@@ -760,7 +760,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   onClick={() => setNoteCategory(key as any)}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
                     noteCategory === key
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                      ? 'bg-blue-500 text-white border-blue-500 shadow-sm'
                       : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 border-transparent'
                   }`}
                 >
@@ -775,7 +775,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               value={noteContent}
               onChange={e => setNoteContent(e.target.value)}
               rows={6}
-              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:border-amber-500 transition-colors resize-none leading-relaxed"
+              className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500 transition-colors resize-none leading-relaxed"
             />
 
             {/* Action Buttons */}
@@ -790,7 +790,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               <button
                 type="button"
                 onClick={handleSaveNote}
-                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm shadow-md shadow-amber-500/25 active:scale-95 transition-all"
+                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-500 text-white font-bold text-sm shadow-md shadow-blue-500/25 active:scale-95 transition-all"
               >
                 {lang === 'zh' ? '保存笔记' : 'Save Note'}
               </button>

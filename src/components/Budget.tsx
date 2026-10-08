@@ -29,12 +29,14 @@ interface BudgetProps {
 }
 
 const CATEGORY_STYLES: Record<string, { id: string; start: string; end: string; text: string }> = {
-  [ExpenseCategory.MAINTENANCE]: { id: 'grad-blue', start: '#0066FF', end: '#38BDF8', text: 'text-blue-500' },
-  [ExpenseCategory.LOAN]: { id: 'grad-red', start: '#EF4444', end: '#F87171', text: 'text-rose-500' },
-  [ExpenseCategory.SAVING]: { id: 'grad-green', start: '#10B981', end: '#34D399', text: 'text-emerald-500' },
-  [ExpenseCategory.FAMILY]: { id: 'grad-orange', start: '#F59E0B', end: '#FBBF24', text: 'text-amber-500' },
-  [ExpenseCategory.OTHER]: { id: 'grad-purple', start: '#8B5CF6', end: '#A78BFA', text: 'text-purple-500' },
-  'Unallocated': { id: 'grad-gray', start: '#6B7280', end: '#9CA3AF', text: 'text-gray-400' }
+  /* Five distinguishable treatments, every one of them inside the four
+     pigments: brand blue, lifted blue, signal yellow, deep yellow, ink. */
+  [ExpenseCategory.MAINTENANCE]: { id: 'tone-blue', start: '#2600FD', end: '#5B3BFF', text: 'text-blue-500' },
+  [ExpenseCategory.LOAN]: { id: 'tone-ink', start: '#0A0A0B', end: '#3A3A40', text: 'text-zinc-500' },
+  [ExpenseCategory.SAVING]: { id: 'tone-blue-lift', start: '#5B3BFF', end: '#A794FF', text: 'text-blue-400' },
+  [ExpenseCategory.FAMILY]: { id: 'tone-yellow', start: '#FFBF00', end: '#FFC929', text: 'text-amber-500' },
+  [ExpenseCategory.OTHER]: { id: 'tone-yellow-deep', start: '#DB9F00', end: '#FFBF00', text: 'text-amber-600' },
+  'Unallocated': { id: 'tone-neutral', start: '#52525A', end: '#717177', text: 'text-gray-400' }
 };
 
 const getStyle = (name: string) => CATEGORY_STYLES[name] || CATEGORY_STYLES['Unallocated'];
@@ -213,7 +215,7 @@ const Budget: React.FC<BudgetProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#FFBF00] dark:bg-[#FFBF00] dark:text-black">
               CAPITAL // ALLOCATION
             </span>
             <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
@@ -229,14 +231,14 @@ const Budget: React.FC<BudgetProps> = ({
         </div>
 
         {/* Tactical Cockpit Bar: Quick Stats */}
-        <div className="flex flex-wrap sm:flex-nowrap items-stretch rounded-2xl bg-white dark:bg-[#12141A] border border-zinc-300 dark:border-zinc-800 shadow-md divide-x divide-zinc-200 dark:divide-zinc-800 overflow-hidden">
+        <div className="flex flex-wrap sm:flex-nowrap items-stretch rounded-2xl bg-white dark:bg-[#141416] border border-zinc-300 dark:border-zinc-800 shadow-md divide-x divide-zinc-200 dark:divide-zinc-800 overflow-hidden">
           {/* Income Input */}
           <div className="px-4 py-2.5 flex flex-col justify-center">
             <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
               {lang === 'zh' ? 'EXPECTED // 本月收入' : 'INCOME // EXPECTED'}
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs font-mono font-black text-[#D4FF00] bg-zinc-900 px-1 py-0.2 rounded">RM</span>
+              <span className="text-xs font-mono font-black text-[#2600FD] bg-zinc-900 px-1 py-0.2 rounded">RM</span>
               <input
                 type="number"
                 value={incomeInput}
@@ -289,7 +291,7 @@ const Budget: React.FC<BudgetProps> = ({
             <div className="p-5 border-b border-zinc-200/60 dark:border-zinc-800/60">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-800 text-[#D4FF00] flex items-center justify-center font-bold">
+                  <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-800 text-[#2600FD] flex items-center justify-center font-bold">
                     <Plus size={15} strokeWidth={2.5} />
                   </div>
                   <h3 className="font-black text-sm text-zinc-950 dark:text-white uppercase tracking-tight">
@@ -301,13 +303,13 @@ const Budget: React.FC<BudgetProps> = ({
                 <div className="flex p-0.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60 font-mono">
                   <button
                     onClick={() => setIsRecurring(false)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${!isRecurring ? 'bg-zinc-950 text-white dark:bg-[#D4FF00] dark:text-black shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${!isRecurring ? 'bg-zinc-950 text-white dark:bg-[#2600FD] dark:text-black shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}
                   >
                     {lang === 'zh' ? '单次日常' : 'One-Time'}
                   </button>
                   <button
                     onClick={() => setIsRecurring(true)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${isRecurring ? 'bg-zinc-950 text-white dark:bg-[#D4FF00] dark:text-black shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${isRecurring ? 'bg-zinc-950 text-white dark:bg-[#2600FD] dark:text-black shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}
                   >
                     <Repeat size={11} /> {lang === 'zh' ? '固定周期' : 'Recurring'}
                   </button>
@@ -321,10 +323,10 @@ const Budget: React.FC<BudgetProps> = ({
                   placeholder={isRecurring ? (lang === 'zh' ? "固定账单 (例如：房贷、宽带费)" : "Recurring Bill (e.g., Rent, Utilities)") : (lang === 'zh' ? "支出事项 (例如：超市采买)" : "Expense (e.g., Groceries, Fuel)")}
                   value={newExpName}
                   onChange={e => setNewExpName(e.target.value)}
-                  className="flex-[2] px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#D4FF00]"
+                  className="flex-[2] px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-950 dark:text-white outline-none focus:border-[#2600FD]"
                 />
 
-                <div className="flex-1 flex items-center px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus-within:border-[#D4FF00]">
+                <div className="flex-1 flex items-center px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus-within:border-[#2600FD]">
                   <span className="text-xs font-mono font-bold text-zinc-400 mr-1">RM</span>
                   <input
                     type="number"
@@ -349,7 +351,7 @@ const Budget: React.FC<BudgetProps> = ({
 
                 <button
                   onClick={addExpense}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-900 dark:bg-[#D4FF00] dark:text-black dark:hover:bg-[#c2ea00] text-white font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center cursor-pointer tactile-press"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-900 dark:bg-[#FFBF00] dark:text-black dark:hover:bg-[#1F00D6] text-white font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center cursor-pointer tactile-press"
                   title={lang === 'zh' ? "添加项目" : "Add Item"}
                 >
                   <ArrowRight size={18} />
@@ -405,7 +407,7 @@ const Budget: React.FC<BudgetProps> = ({
           {/* Projected Savings Card */}
           <div className="p-6 rounded-3xl avant-card">
             <div className="flex items-center gap-2 mb-2">
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold ${balance >= 0 ? 'bg-zinc-950 dark:bg-zinc-800 text-[#D4FF00]' : 'bg-rose-500/10 text-rose-500'}`}>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold ${balance >= 0 ? 'bg-zinc-950 dark:bg-zinc-800 text-[#2600FD]' : 'bg-rose-500/10 text-rose-500'}`}>
                 <Calculator size={16} />
               </div>
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
@@ -413,7 +415,7 @@ const Budget: React.FC<BudgetProps> = ({
               </span>
             </div>
 
-            <div className={`text-3xl font-black font-mono tracking-tight my-2 font-mono-numbers ${balance >= 0 ? 'text-zinc-950 dark:text-[#D4FF00]' : 'text-rose-500'}`}>
+            <div className={`text-3xl font-black font-mono tracking-tight my-2 font-mono-numbers ${balance >= 0 ? 'text-zinc-950 dark:text-[#2600FD]' : 'text-rose-500'}`}>
               RM {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
 
@@ -428,7 +430,7 @@ const Budget: React.FC<BudgetProps> = ({
           {/* Savings Allocation (60% Invest / 40% Backup) */}
           <div className="p-6 rounded-3xl avant-card space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-zinc-950 dark:bg-zinc-800 text-[#D4FF00] flex items-center justify-center font-bold">
+              <div className="w-7 h-7 rounded-lg bg-zinc-950 dark:bg-zinc-800 text-[#2600FD] flex items-center justify-center font-bold">
                 <TrendingUp size={15} />
               </div>
               <h3 className="font-mono font-black text-xs text-zinc-900 dark:text-zinc-200 uppercase tracking-wider">{lang === 'zh' ? '结余资金科学分配 (60/40)' : 'SURPLUS ALLOCATION (60/40)'}</h3>
@@ -455,7 +457,7 @@ const Budget: React.FC<BudgetProps> = ({
           <div className="p-6 rounded-3xl avant-card">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
               <h3 className="font-mono font-black text-xs text-zinc-950 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <PieIcon size={15} className="text-[#D4FF00]" />
+                <PieIcon size={15} className="text-[#FFBF00]" />
                 {lang === 'zh' ? '支出结构分布 (BREAKDOWN)' : 'EXPENSE BREAKDOWN'}
               </h3>
             </div>

@@ -506,7 +506,7 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+                        <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#FFBF00] dark:bg-[#FFBF00] dark:text-black">
                             CAPITAL // MARKETS
                         </span>
                         <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
@@ -527,12 +527,12 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                         disabled={isRefreshing}
                         className="flex items-center gap-2 py-2 px-3.5 text-xs font-bold rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-all active:scale-95 cursor-pointer tactile-press border border-zinc-200 dark:border-zinc-700"
                     >
-                        {isRefreshing ? <Loader2 size={13} className="animate-spin text-[#D4FF00]" /> : <RefreshCcw size={13} className="text-[#D4FF00]" />}
+                        {isRefreshing ? <Loader2 size={13} className="animate-spin text-[#2600FD]" /> : <RefreshCcw size={13} className="text-[#FFBF00]" />}
                         <span>{isRefreshing ? "SYNCING..." : (lang === 'zh' ? "QUOTES // 刷新行情" : "QUOTES // SYNC")}</span>
                     </button>
                     <button
                         onClick={() => setShowAdd(!showAdd)}
-                        className="flex items-center gap-1.5 py-2 px-3.5 text-xs font-black uppercase tracking-wider rounded-xl bg-zinc-950 text-white dark:bg-[#D4FF00] dark:text-black hover:opacity-90 transition-all active:scale-95 cursor-pointer tactile-press shadow-sm"
+                        className="flex items-center gap-1.5 py-2 px-3.5 text-xs font-black uppercase tracking-wider rounded-xl bg-zinc-950 text-white dark:bg-[#2600FD] dark:text-black hover:opacity-90 transition-all active:scale-95 cursor-pointer tactile-press shadow-sm"
                     >
                         {showAdd ? <X size={14} /> : <Plus size={14} />}
                         <span>{showAdd ? (lang === 'zh' ? 'CLOSE // 关闭' : 'CLOSE') : (lang === 'zh' ? 'NEW POSITION // 加仓' : 'NEW POSITION')}</span>
@@ -593,7 +593,7 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                     <div>
                         <div className="flex items-center justify-between pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
                             <div className="flex items-center gap-2">
-                                <Globe size={16} className="text-[#D4FF00]" />
+                                <Globe size={16} className="text-[#FFBF00]" />
                                 <span className="text-xs font-black text-zinc-950 dark:text-white uppercase font-mono">USD / MYR RATE</span>
                             </div>
                             <div className="flex items-center gap-1">
@@ -603,14 +603,14 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                                     step="0.01"
                                     value={exchangeRate}
                                     onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
-                                    className="w-16 text-right font-black font-mono text-sm text-zinc-950 dark:text-white bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-0.5 focus:outline-none focus:border-[#D4FF00]"
+                                    className="w-16 text-right font-black font-mono text-sm text-zinc-950 dark:text-white bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-0.5 focus:outline-none focus:border-[#2600FD]"
                                 />
                             </div>
                         </div>
 
                         <div className="mt-4">
                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 mb-2.5">
-                                <Coins size={14} className="text-[#D4FF00]" />
+                                <Coins size={14} className="text-[#FFBF00]" />
                                 {lang === 'zh' ? 'BROKER CASH // 券商闲置资金' : 'BROKER CASH'}
                             </span>
                             <div className="space-y-2">
@@ -620,7 +620,7 @@ const Investments: React.FC<InvestmentsProps> = ({ stocks, setStocks, cash, setC
                                         type="number"
                                         value={cash.myr || ''}
                                         onChange={e => setCash({ ...cash, myr: parseFloat(e.target.value) || 0 })}
-                                        className="w-28 text-right font-black font-mono text-zinc-950 dark:text-white bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[#D4FF00] font-mono-numbers"
+                                        className="w-28 text-right font-black font-mono text-zinc-950 dark:text-white bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[#2600FD] font-mono-numbers"
                                         placeholder="0.00"
                                     />
                                 </div>

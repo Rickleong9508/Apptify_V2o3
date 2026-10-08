@@ -46,9 +46,9 @@ interface TabIconProps {
 }
 
 const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
-  // Clear visible icon colors: Electric Volt Lime (#D4FF00) when active!
+  // Clear visible icon colors: Electric Volt Lime (#2600FD) when active!
   const outlineClass = "text-zinc-400 dark:text-zinc-400 group-hover:text-zinc-200 transition-colors shrink-0";
-  const activeClass = "text-[#D4FF00] fill-[#D4FF00] drop-shadow-[0_0_8px_rgba(212,255,0,0.5)] transition-transform duration-150 scale-105 shrink-0";
+  const activeClass = "text-[#2600FD] fill-[#2600FD] drop-shadow-none transition-transform duration-150 scale-105 shrink-0";
 
   if (tabId === 'dashboard') {
     if (isActive) {
@@ -836,7 +836,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           <div className="flex items-center justify-between mb-4 sm:mb-6 animate-fade-in-down">
             <div className="flex items-center gap-2">
               <button
-                className="flex items-center gap-2 text-[11px] font-mono font-bold px-3 py-1.5 rounded-full bg-white dark:bg-[#12141A] border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-[#D4FF00] dark:hover:border-[#D4FF00] transition-all active:scale-95 cursor-pointer tactile-press"
+                className="flex items-center gap-2 text-[11px] font-mono font-bold px-3 py-1.5 rounded-full bg-white dark:bg-[#141416] border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-[#2600FD] dark:hover:border-[#2600FD] transition-all active:scale-95 cursor-pointer tactile-press"
                 onClick={async () => {
                   if (isConnected) {
                     setIsSyncing(true);
@@ -856,7 +856,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
                 title={isConnected ? (user?.email ? (lang === 'zh' ? `已连接 Google Drive (${user.email})，点击立即同步` : `Connected: Google Drive (${user.email}). Click to sync`) : (lang === 'zh' ? "已连接 Google Drive，点击立即同步" : "Connected: Google Drive. Click to sync")) : (lang === 'zh' ? "点击连接 Google Drive 云端同步" : "Connect Google Drive to sync")}
               >
                 {isSyncing ? (
-                  <div className="flex items-center gap-1.5 text-zinc-900 dark:text-[#D4FF00] animate-pulse">
+                  <div className="flex items-center gap-1.5 text-zinc-900 dark:text-[#2600FD] animate-pulse">
                     <Cloud size={13} />
                     <span>{lang === 'zh' ? 'SYNCING // 同步中...' : 'SYNCING...'}</span>
                   </div>
@@ -918,8 +918,8 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
           style={{ touchAction: 'none' }}
-          className={`bg-zinc-950/90 dark:bg-[#0D0F14]/95 backdrop-blur-2xl rounded-2xl p-1.5 flex items-center gap-1 sm:gap-1.5 border border-zinc-800/80 dark:border-zinc-800 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.5)] pointer-events-auto relative overflow-hidden select-none transition-shadow ${
-            isDragging ? 'cursor-grabbing ring-2 ring-[#D4FF00]/40' : 'cursor-grab'
+          className={`bg-zinc-950/90 dark:bg-[#0A0A0B]/95 backdrop-blur-2xl rounded-2xl p-1.5 flex items-center gap-1 sm:gap-1.5 border border-zinc-800/80 dark:border-zinc-800 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.5)] pointer-events-auto relative overflow-hidden select-none transition-shadow ${
+            isDragging ? 'cursor-grabbing ring-2 ring-[#2600FD]/40' : 'cursor-grab'
           }`}
         >
           {/* Tactical Indicator Pill */}
@@ -944,12 +944,12 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
               <div
                 className={`absolute inset-0 rounded-xl transition-all duration-200 ${
                   isDragging
-                    ? 'bg-zinc-800 dark:bg-zinc-800/90 border border-[#D4FF00]/60 shadow-[0_0_15px_rgba(212,255,0,0.25)]'
+                    ? 'bg-zinc-800 dark:bg-zinc-800/90 border border-[#2600FD]/60 shadow-none'
                     : 'bg-zinc-800 dark:bg-zinc-800/80 border border-zinc-700/80 dark:border-zinc-700'
                 }`}
               />
               {/* Specular hairline */}
-              <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-[#D4FF00]/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-[#2600FD]/40 to-transparent pointer-events-none" />
             </div>
           )}
 

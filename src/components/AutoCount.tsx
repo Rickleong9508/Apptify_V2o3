@@ -207,7 +207,7 @@ Please run the framework and output the research report with the Signal Block at
         try {
             const dateStr = new Date().toISOString().split('T')[0];
             const fileName = `${stockData.symbol}_InvestReport_${selectedPromptId}_${dateStr}.html`;
-            const scoreColor = parsedSignal.signal === 'BULLISH' ? '#10B981' : (parsedSignal.signal === 'BEARISH' ? '#EF4444' : '#F59E0B');
+            const scoreColor = parsedSignal.signal === 'BULLISH' ? '#2600FD' : (parsedSignal.signal === 'BEARISH' ? '#0A0A0B' : '#FFBF00');
             
             const htmlContent = `
 <!DOCTYPE html>
@@ -219,8 +219,8 @@ Please run the framework and output the research report with the Signal Block at
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #0F172A;
-            color: #F8FAFC;
+            background-color: #0A0A0B;
+            color: #FFFFFF;
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             margin: 0;
             padding: 40px 20px;
@@ -230,7 +230,7 @@ Please run the framework and output the research report with the Signal Block at
         .container {
             max-width: 900px;
             width: 100%;
-            background: #1E293B;
+            background: #141416;
             padding: 40px;
             border-radius: 32px;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -246,7 +246,7 @@ Please run the framework and output the research report with the Signal Block at
         .header-meta {
             text-align: center;
             font-size: 13px;
-            color: #94A3B8;
+            color: #717177;
             margin-bottom: 32px;
         }
         .signal-grid {
@@ -271,12 +271,12 @@ Please run the framework and output the research report with the Signal Block at
         .signal-label {
             font-size: 11px;
             font-weight: 600;
-            color: #94A3B8;
+            color: #717177;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
         .score-card {
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(38, 0, 253, 0.1);
             border: 2px solid ${scoreColor};
         }
         .score-val {
@@ -288,12 +288,12 @@ Please run the framework and output the research report with the Signal Block at
         .report-content {
             line-height: 1.8;
             font-size: 14px;
-            color: #E2E8F0;
+            color: #E6E6E8;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             padding-top: 28px;
         }
         .report-content h2, .report-content h3 {
-            color: #38BDF8;
+            color: #5B3BFF;
             margin-top: 24px;
             margin-bottom: 12px;
         }

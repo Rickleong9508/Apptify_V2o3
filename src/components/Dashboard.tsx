@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+            <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#FFBF00] dark:bg-[#FFBF00] dark:text-black">
               CAPITAL // TERMINAL
             </span>
             <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
@@ -114,7 +114,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Hero Section: Net Worth Card (Avant-Garde Capital Cockpit) */}
       <div className="avant-card rounded-3xl p-6 sm:p-8 relative overflow-hidden group">
         {/* Ambient Specular Accent */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4FF00]/10 dark:bg-[#D4FF00]/15 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-[#2600FD]/10 dark:bg-[#2600FD]/15 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-950/20 dark:via-white/30 to-transparent pointer-events-none" />
 
         <div className="relative z-10">
@@ -473,7 +473,7 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
             onClick={() => setViewMode('actual')}
             className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
               viewMode === 'actual' 
-                ? 'bg-zinc-950 dark:bg-[#D4FF00] text-[#D4FF00] dark:text-black shadow-xs' 
+                ? 'bg-zinc-950 dark:bg-[#FFBF00] text-[#FFBF00] dark:text-black shadow-xs' 
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
             }`}
           >
@@ -483,7 +483,7 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
             onClick={() => setViewMode('budget')}
             className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
               viewMode === 'budget' 
-                ? 'bg-zinc-950 dark:bg-[#D4FF00] text-[#D4FF00] dark:text-black shadow-xs' 
+                ? 'bg-zinc-950 dark:bg-[#FFBF00] text-[#FFBF00] dark:text-black shadow-xs' 
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
             }`}
           >

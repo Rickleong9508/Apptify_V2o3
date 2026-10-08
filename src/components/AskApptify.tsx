@@ -954,7 +954,7 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
             userSelect: 'none',
             zIndex: 45,
           }}
-          className={`flex items-center gap-1.5 py-2.5 bg-white/85 dark:bg-[#16181F]/90 backdrop-blur-2xl border text-gray-800 dark:text-gray-100 shadow-[-4px_10px_30px_rgba(59,130,246,0.28)] transition-shadow duration-200 group cursor-grab active:cursor-grabbing select-none ${
+          className={`flex items-center gap-1.5 py-2.5 bg-white/85 dark:bg-[#141416]/90 backdrop-blur-2xl border text-gray-800 dark:text-gray-100 shadow-[-4px_10px_30px_rgba(10,10,11,0.28)] transition-shadow duration-200 group cursor-grab active:cursor-grabbing select-none ${
             btnPos.x === null
               ? 'pl-2.5 pr-1.5 rounded-l-2xl rounded-r-none border-l border-t border-b border-r-0 border-white/60 dark:border-white/15'
               : 'px-3 rounded-full border-white/60 dark:border-white/15 shadow-xl'
@@ -994,7 +994,7 @@ OUTPUT SCHEMA (MUST BE VALID JSON ONLY, NO MARKDOWN, NO CODEBLOCKS):
 
           {/* Liquid Glass Drawer Panel */}
           <div 
-            className="w-full sm:w-[440px] h-full relative z-10 flex flex-col bg-white/80 dark:bg-[#12141A]/90 backdrop-blur-3xl border-l border-white/40 dark:border-white/10 shadow-2xl animate-slide-in-right overflow-hidden"
+            className="w-full sm:w-[440px] h-full relative z-10 flex flex-col bg-white/80 dark:bg-[#141416]/90 backdrop-blur-3xl border-l border-white/40 dark:border-white/10 shadow-2xl animate-slide-in-right overflow-hidden"
             style={{
               boxShadow: '-15px 0 50px rgba(0, 0, 0, 0.25)'
             }}

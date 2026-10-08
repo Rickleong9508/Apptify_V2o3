@@ -453,7 +453,7 @@ const App: React.FC = () => {
 
     // Avant-Garde Kinetic Modular Launcher
     return (
-      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-3.5 sm:px-6 py-3.5 sm:py-6 max-w-2xl mx-auto space-y-4 sm:space-y-5 selection:bg-[#D4FF00] selection:text-black animate-fade-in font-sans">
+      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-3.5 sm:px-6 py-3.5 sm:py-6 max-w-2xl mx-auto space-y-4 sm:space-y-5 selection:bg-[#2600FD] selection:text-black animate-fade-in font-sans">
         
         {/* 1. Tactical Micro Status Bar */}
         <div className="w-full flex items-center justify-between py-1 relative z-30">
@@ -475,7 +475,7 @@ const App: React.FC = () => {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-xl border shadow-sm text-xs font-semibold active:scale-95 transition-all cursor-pointer ${
                 isConnected
                   ? (needsReauth
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
+                      ? 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400'
                       : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400')
                   : 'bg-black/5 dark:bg-white/10 border-black/10 dark:border-white/10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
               }`}
@@ -511,7 +511,7 @@ const App: React.FC = () => {
               className="w-8.5 h-8.5 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/10 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-sm text-zinc-800 dark:text-zinc-200 active:scale-90 hover:border-black/20 dark:hover:border-white/25 transition-all cursor-pointer"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <Sun size={15} className="text-[#D4FF00]" /> : <Moon size={15} className="text-zinc-900" />}
+              {theme === 'dark' ? <Sun size={15} className="text-[#FFBF00]" /> : <Moon size={15} className="text-zinc-900" />}
             </button>
           </div>
         </div>
@@ -520,13 +520,13 @@ const App: React.FC = () => {
         <header className="w-full flex items-end justify-between pt-1 pb-1 px-1">
           <div className="flex flex-col text-left">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#D4FF00] dark:bg-[#D4FF00] dark:text-black">
+              <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#FFBF00] dark:bg-[#FFBF00] dark:text-black">
                 OS V2.3 // KINETIC
               </span>
               <div className="flex items-center gap-1 h-3">
-                <span className="w-1 h-3 rounded-full bg-zinc-900 dark:bg-[#D4FF00] animate-pulse"></span>
+                <span className="w-1 h-3 rounded-full bg-zinc-900 dark:bg-[#FFBF00] animate-pulse"></span>
                 <span className="w-1 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-pulse delay-75"></span>
-                <span className="w-1 h-3.5 rounded-full bg-zinc-900 dark:bg-[#D4FF00] animate-pulse delay-150"></span>
+                <span className="w-1 h-3.5 rounded-full bg-zinc-900 dark:bg-[#FFBF00] animate-pulse delay-150"></span>
                 <span className="w-1 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600"></span>
               </div>
             </div>
@@ -550,41 +550,41 @@ const App: React.FC = () => {
         {/* 3. Modular Tactical Deck */}
         <div className="w-full flex flex-col gap-3.5 sm:gap-4">
           
-          {/* Deck 01: MyWealth Flagship Asset Terminal */}
-          <div className="avant-card rounded-3xl p-5 sm:p-6.5 relative overflow-hidden group">
-            {/* Ambient specular corner light */}
-            <div className="absolute top-0 right-0 w-36 h-36 bg-[#D4FF00]/10 dark:bg-[#D4FF00]/15 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
-            
+          {/* Deck 01: MyWealth Flagship Asset Terminal — ink mass carrying the figure */}
+          <div className="relative overflow-hidden rounded-[30px] bg-[#0A0A0B] dark:bg-[#141416] text-white p-5 sm:p-6.5 group shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(10,10,11,0.35)]">
+            {/* Specular edge refraction — the system has no outer glow */}
+            <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]" />
+
             {/* Card Header Strip: Badge & Interactive Toggle Switch */}
-            <div className="flex items-center justify-between w-full relative z-10 pb-4 border-b border-zinc-200/60 dark:border-zinc-800/60">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full relative z-10 pb-4 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-zinc-950 dark:bg-white text-[#D4FF00] dark:text-black flex items-center justify-center font-black shadow-md shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-black shrink-0">
                   <Wallet size={20} strokeWidth={2.2} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-black tracking-tight text-zinc-950 dark:text-white uppercase leading-none">
+                    <h2 className="text-lg font-semibold tracking-tight text-white uppercase leading-none">
                       {t.launcher.myWealthTitle}
                     </h2>
-                    <span className="font-mono text-[9px] tracking-wider uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold">
+                    <span className="font-mono text-[9px] tracking-wider uppercase px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-bold whitespace-nowrap">
                       01 // COCKPIT
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-1">
+                  <p className="text-xs text-white/55 font-medium mt-1">
                     {t.launcher.myWealthDesc}
                   </p>
                 </div>
               </div>
 
               {/* Interactive In-Card Metric Switcher */}
-              <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/90 border border-zinc-200/70 dark:border-zinc-700/60 text-[10px] font-mono font-bold">
+              <div className="flex items-center p-1 rounded-xl bg-white/10 border border-white/10 text-[10px] font-mono font-bold self-start sm:self-auto shrink-0">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setWealthView('total'); }}
                   className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
                     wealthView === 'total'
-                      ? 'bg-zinc-950 dark:bg-[#D4FF00] text-[#D4FF00] dark:text-black shadow-xs'
-                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      ? 'bg-[#FFBF00] text-[#0A0A0B]'
+                      : 'text-white/55 hover:text-white'
                   }`}
                 >
                   {lang === 'zh' ? '总资产' : 'TOTAL'}
@@ -594,8 +594,8 @@ const App: React.FC = () => {
                   onClick={(e) => { e.stopPropagation(); setWealthView('cash'); }}
                   className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
                     wealthView === 'cash'
-                      ? 'bg-zinc-950 dark:bg-[#D4FF00] text-[#D4FF00] dark:text-black shadow-xs'
-                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      ? 'bg-[#FFBF00] text-[#0A0A0B]'
+                      : 'text-white/55 hover:text-white'
                   }`}
                 >
                   {lang === 'zh' ? '现金' : 'CASH'}
@@ -605,8 +605,8 @@ const App: React.FC = () => {
                   onClick={(e) => { e.stopPropagation(); setWealthView('invest'); }}
                   className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
                     wealthView === 'invest'
-                      ? 'bg-zinc-950 dark:bg-[#D4FF00] text-[#D4FF00] dark:text-black shadow-xs'
-                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      ? 'bg-[#FFBF00] text-[#0A0A0B]'
+                      : 'text-white/55 hover:text-white'
                   }`}
                 >
                   {lang === 'zh' ? '投资' : 'INVEST'}
@@ -615,36 +615,36 @@ const App: React.FC = () => {
             </div>
 
             {/* Large Tabular Number Display */}
-            <div 
+            <div
               onClick={() => setCurrentApp('mywealth')}
               className="py-5 cursor-pointer relative z-10 group/num"
             >
               <div className="flex items-baseline gap-2">
-                <span className="font-mono text-xs sm:text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                <span className="font-mono text-xs sm:text-sm font-bold text-white/45 uppercase tracking-wider">
                   RM
                 </span>
-                <span className="font-mono font-black text-3xl sm:text-4xl lg:text-5xl tracking-tight text-zinc-950 dark:text-white font-mono-numbers group-hover/num:text-emerald-600 dark:group-hover/num:text-[#D4FF00] transition-colors">
+                <span className="font-mono font-semibold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-white font-mono-numbers group-hover/num:text-[#FFBF00] transition-colors">
                   {wealthView === 'total' ? liveNetWorth : wealthView === 'cash' ? liveCash : liveInvest}
                 </span>
               </div>
-              <p className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-2">
+              <p className="font-mono text-[11px] text-white/55 mt-1 flex items-center gap-2">
                 <span>
                   {wealthView === 'total' ? t.launcher.netWorthLabel : wealthView === 'cash' ? (lang === 'zh' ? '流动现金及多币种账户' : 'Liquid Multi-Currency Accounts') : (lang === 'zh' ? '当前持仓市值与投资本金' : 'Securities & Active Holdings')}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="signal-dot"></span>
               </p>
             </div>
 
             {/* Bottom Actions & Launch Bar */}
-            <div className="flex items-center justify-between pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60 relative z-10">
-              <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500 dark:text-zinc-400">
-                <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/80 font-bold">50/30/20</span>
-                <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/80 font-bold hidden xs:inline">MULTI-FX</span>
+            <div className="flex items-center justify-between pt-3 border-t border-white/10 relative z-10">
+              <div className="flex items-center gap-2 text-[11px] font-mono text-white/55">
+                <span className="px-2 py-0.5 rounded bg-white/10 font-bold">50/30/20</span>
+                <span className="px-2 py-0.5 rounded bg-white/10 font-bold hidden xs:inline">MULTI-FX</span>
               </div>
 
               <button
                 onClick={() => setCurrentApp('mywealth')}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-black text-xs font-bold font-mono tracking-tight hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer group/btn"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FFBF00] text-[#0A0A0B] text-xs font-bold font-mono tracking-tight hover:opacity-90 active:scale-95 transition-all cursor-pointer group/btn"
               >
                 <span>{t.launcher.openWealth}</span>
                 <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
@@ -657,13 +657,13 @@ const App: React.FC = () => {
             
             {/* Deck 02: NoteDown (Interactive Scratchpad & Todos) */}
             <div className="avant-card rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between group">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-amber-400/10 dark:bg-amber-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+              <div className="absolute top-0 right-0 w-28 h-28 bg-blue-400/10 dark:bg-blue-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
 
               {/* Header */}
               <div className="relative z-10">
                 <div className="flex items-center justify-between w-full mb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-sm">
+                    <div className="w-9 h-9 rounded-xl bg-blue-500 text-white flex items-center justify-center font-bold shadow-sm">
                       <NotebookPen size={18} strokeWidth={2.2} />
                     </div>
                     <div>
@@ -676,7 +676,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/25 text-amber-800 dark:text-amber-300">
+                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-800 dark:text-blue-300">
                     {taskCount > 0 ? `${taskCount} ${lang === 'zh' ? '待办' : 'TASKS'}` : `${noteCount} ${lang === 'zh' ? '便签' : 'NOTES'}`}
                   </span>
                 </div>
@@ -687,11 +687,11 @@ const App: React.FC = () => {
 
                 {/* Interactive In-Card Fast Jot Input */}
                 <form onSubmit={handleQuickJotSubmit} className="mb-3 relative">
-                  <div className="flex items-center rounded-xl bg-zinc-100 dark:bg-zinc-800/90 border border-zinc-200/80 dark:border-zinc-700/80 p-1 focus-within:border-amber-500 transition-colors">
+                  <div className="flex items-center rounded-xl bg-zinc-100 dark:bg-zinc-800/90 border border-zinc-200/80 dark:border-zinc-700/80 p-1 focus-within:border-blue-500 transition-colors">
                     <button
                       type="button"
                       onClick={() => setQuickJotType(quickJotType === 'task' ? 'note' : 'task')}
-                      className="px-2 py-1 rounded-lg text-[10px] font-mono font-bold bg-zinc-200/80 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 shrink-0 cursor-pointer hover:bg-amber-500 hover:text-white transition-colors"
+                      className="px-2 py-1 rounded-lg text-[10px] font-mono font-bold bg-zinc-200/80 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 shrink-0 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors"
                       title={lang === 'zh' ? '点击切换 待办 / 便签' : 'Click to toggle Task / Note'}
                     >
                       {quickJotType === 'task' ? (lang === 'zh' ? '待办' : 'TASK') : (lang === 'zh' ? '便签' : 'NOTE')}
@@ -706,7 +706,7 @@ const App: React.FC = () => {
                     <button
                       type="submit"
                       disabled={!quickJotText.trim()}
-                      className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-[#D4FF00] text-white dark:text-black flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                      className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-[#FFBF00] text-white dark:text-black flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
                     >
                       <Plus size={14} strokeWidth={2.5} />
                     </button>
@@ -714,7 +714,7 @@ const App: React.FC = () => {
 
                   {/* Instant save feedback toast */}
                   {quickJotToast && (
-                    <div className="absolute -bottom-6 left-1 text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 animate-fade-in">
+                    <div className="absolute -bottom-6 left-1 text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-fade-in">
                       <Check size={11} strokeWidth={2.5} />
                       <span>{quickJotToast}</span>
                     </div>
@@ -730,7 +730,7 @@ const App: React.FC = () => {
 
                 <button
                   onClick={() => setCurrentApp('knowledgevault')}
-                  className="flex items-center gap-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:text-amber-600 dark:hover:text-amber-400 active:scale-95 transition-all cursor-pointer"
+                  className="flex items-center gap-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:text-blue-600 dark:hover:text-blue-400 active:scale-95 transition-all cursor-pointer"
                 >
                   <span>{t.launcher.openVault}</span>
                   <ArrowUpRight size={13} strokeWidth={2.5} />
@@ -828,7 +828,7 @@ const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
-                    className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-zinc-600 dark:text-zinc-300 hover:text-[#D4FF00] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-zinc-600 dark:text-zinc-300 hover:text-[#2600FD] transition-colors cursor-pointer"
                   >
                     <Cpu size={12} className="text-zinc-400" />
                     <span>AI: {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}</span>
@@ -854,10 +854,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans avant-grid-bg selection:bg-[#D4FF00] selection:text-black">
+    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans avant-grid-bg selection:bg-[#2600FD] selection:text-black">
       {/* Universal Floating Top Bar for Sub-Apps (iOS Safe Area Ready) */}
       {currentApp !== 'launcher' && (
-        <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/75 dark:bg-[#0D0E10]/80 backdrop-blur-2xl border-b border-black/5 dark:border-white/10 transition-colors">
+        <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/75 dark:bg-[#0A0A0B]/80 backdrop-blur-2xl border-b border-black/5 dark:border-white/10 transition-colors">
           <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
             {/* Back Button (iOS Style Chevron) */}
             <button
@@ -908,7 +908,7 @@ const App: React.FC = () => {
                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer pointer-events-auto"
                 aria-label="Toggle theme"
               >
-                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-indigo-600" />}
+                {theme === 'dark' ? <Sun size={16} className="text-blue-400" /> : <Moon size={16} className="text-indigo-600" />}
               </button>
 
               {/* AI Model Selector Button */}
@@ -928,7 +928,7 @@ const App: React.FC = () => {
                 {showDropdown && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-                    <div className="absolute right-0 mt-2 w-60 sm:w-64 rounded-2xl p-3 bg-white/95 dark:bg-[#1A1C22]/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 z-50 shadow-2xl max-h-[340px] overflow-y-auto no-scrollbar animate-scale-in">
+                    <div className="absolute right-0 mt-2 w-60 sm:w-64 rounded-2xl p-3 bg-white/95 dark:bg-[#141416]/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 z-50 shadow-2xl max-h-[340px] overflow-y-auto no-scrollbar animate-scale-in">
                       <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-gray-100 dark:border-white/10">
                         <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">{lang === 'zh' ? '选择 AI 模型' : 'SELECT MODEL'}</span>
                         <span className="text-[9px] font-bold text-purple-600 dark:text-purple-400 uppercase px-2 py-0.5 rounded-full bg-purple-500/10">
@@ -939,7 +939,7 @@ const App: React.FC = () => {
                       {/* Favorites */}
                       {favorites.length > 0 && (
                         <div className="mb-3">
-                          <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider block mb-1">⭐ {lang === 'zh' ? '常用收藏' : 'FAVORITES'}</span>
+                          <span className="text-[9px] font-bold text-blue-500 uppercase tracking-wider block mb-1">⭐ {lang === 'zh' ? '常用收藏' : 'FAVORITES'}</span>
                           <div className="space-y-1">
                             {favorites.map(id => (
                               <button

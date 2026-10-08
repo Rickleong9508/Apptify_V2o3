@@ -5,22 +5,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <title>Apptify</title>
-  
+
   <!-- iOS & PWA Native App Meta -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Apptify" />
-  <meta name="theme-color" content="#F8F9FA" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0D0E10" media="(prefers-color-scheme: dark)" />
-  
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0A0A0B" media="(prefers-color-scheme: dark)" />
+
   <link rel="icon" type="image/png" href="/icon.png?v=2" />
   <link rel="apple-touch-icon" href="/icon.png?v=2" />
   <link rel="manifest" href="/manifest.json" />
 
-  <!-- Premium Typography: Plus Jakarta Sans & JetBrains Mono -->
+  <!-- Typography: Geist & Geist Mono (Ink & Signal system) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Google Identity Services (GIS) for Google Drive BYOS Cloud Sync -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -28,11 +28,70 @@
   <!-- Tailwind CSS CDN Engine -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+    /* ======================================================================
+       INK & SIGNAL — PALETTE LAW
+       Four pigments only: #2600FD · #0A0A0B · #FFBF00 · #FFFFFF
+
+       Every Tailwind colour family is remapped onto this system so that all
+       ~1000 existing utility classes across the codebase render in the new
+       palette WITHOUT a single change to component logic.
+
+       Neutrals converge on the ink ladder. Every cool hue converges on blue;
+       warm hues converge on yellow. No surviving hue sits outside the four.
+       Loss / danger reads as ink rather than red, per the four-pigment law.
+       ====================================================================== */
+
+    /* Neutral ladder — one hue, eleven weights */
+    const INK = {
+      50:  '#FAFAFA',
+      100: '#F4F4F5',
+      200: '#E6E6E8',
+      300: '#D2D2D6',
+      400: '#A0A0A6',
+      500: '#717177',
+      600: '#52525A',
+      700: '#3A3A40',
+      800: '#242428',
+      900: '#141416',
+      950: '#0A0A0B',
+    };
+
+    /* Brand blue — #2600FD */
+    const BLUE = {
+      50:  '#EFEBFF',
+      100: '#E0D9FF',
+      200: '#C4B8FF',
+      300: '#A794FF',
+      400: '#5B3BFF',
+      500: '#2600FD',
+      600: '#1F00D6',
+      700: '#1900AD',
+      800: '#130085',
+      900: '#0D005C',
+      950: '#070030',
+    };
+
+    /* Signal yellow — #FFBF00 */
+    const YELLOW = {
+      50:  '#FFF8E5',
+      100: '#FFF0C7',
+      200: '#FFE28F',
+      300: '#FFD357',
+      400: '#FFC929',
+      500: '#FFBF00',
+      600: '#DB9F00',
+      700: '#B07F00',
+      800: '#855F00',
+      900: '#5C4100',
+      950: '#332400',
+    };
+
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           colors: {
+            /* Semantic tokens — names unchanged, now bound to new CSS vars */
             primary: 'rgb(var(--color-primary) / <alpha-value>)',
             secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
             accent: 'rgb(var(--color-accent) / <alpha-value>)',
@@ -42,10 +101,26 @@
             'text-muted': 'rgb(var(--color-text-muted) / <alpha-value>)',
             'border-color': 'rgb(var(--color-border) / <alpha-value>)',
             'input-bg': 'rgb(var(--color-input-bg) / <alpha-value>)',
+
+            /* Palette remap */
+            slate: INK, gray: INK, zinc: INK, neutral: INK, stone: INK,
+            blue: BLUE, indigo: BLUE, violet: BLUE, purple: BLUE,
+            fuchsia: BLUE, sky: BLUE, cyan: BLUE, teal: BLUE,
+            green: BLUE, lime: BLUE, emerald: BLUE,
+            amber: YELLOW, yellow: YELLOW, orange: YELLOW,
+            red: INK, rose: INK, pink: INK,
           },
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'system-ui', 'sans-serif'],
+            mono: ['"Geist Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+          },
+          borderRadius: {
+            'ios': '24px',
+            'panel': '24px',
+            'sheet': '36px',
+          },
+          spacing: {
+            'gutter': '20px',
           },
           animation: {
             'fade-in-up': 'fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
@@ -80,52 +155,10 @@
       }
     }
   </script>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <style>
-    /* Ambient Glowing Atmosphere */
-    .bg-orb {
-      position: fixed;
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      pointer-events: none;
-      filter: blur(120px);
-      z-index: 0;
-      opacity: 0.35;
-      transition: opacity 0.8s ease;
-    }
-    .bg-orb-1 {
-      top: -15%;
-      left: -10%;
-      background: radial-gradient(circle, rgba(14, 165, 233, 0.35) 0%, rgba(56, 189, 248, 0) 70%);
-    }
-    .bg-orb-2 {
-      bottom: -15%;
-      right: -10%;
-      background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, rgba(236, 72, 153, 0) 70%);
-    }
-    .bg-orb-3 {
-      top: 40%;
-      left: 30%;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(14, 165, 233, 0) 65%);
-    }
-    .dark .bg-orb-1 {
-      background: radial-gradient(circle, rgba(14, 116, 220, 0.28) 0%, transparent 70%);
-    }
-    .dark .bg-orb-2 {
-      background: radial-gradient(circle, rgba(147, 51, 234, 0.22) 0%, transparent 70%);
-    }
-    .dark .bg-orb-3 {
-      background: radial-gradient(circle, rgba(16, 185, 129, 0.16) 0%, transparent 65%);
-    }
 
-    /* Tactile Grain Texture */
+  <style>
+    /* Tactile grain — fixed, pointer-events none, never on a scroll container.
+       The ambient colour orbs are gone: Ink & Signal has no glow. */
     .bg-grain {
       position: fixed;
       inset: 0;
@@ -133,7 +166,7 @@
       height: 100%;
       pointer-events: none;
       z-index: 1;
-      opacity: 0.035;
+      opacity: 0.022;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     }
   </style>
@@ -153,10 +186,7 @@
 </head>
 
 <body>
-  <!-- Ambient Atmospheric Backing -->
-  <div class="bg-orb bg-orb-1"></div>
-  <div class="bg-orb bg-orb-2"></div>
-  <div class="bg-orb bg-orb-3"></div>
+  <!-- Tactile grain overlay -->
   <div class="bg-grain"></div>
 
   <!-- App Mount Root -->

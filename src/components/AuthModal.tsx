@@ -166,7 +166,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <button
                         onClick={handleConnect}
                         disabled={loading || isSyncing}
-                        className="w-full py-3.5 px-4 rounded-2xl bg-white dark:bg-[#1f2024] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-white/10 shadow-md hover:shadow-lg active:scale-98 transition-all font-semibold text-sm flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
+                        className="w-full py-3.5 px-4 rounded-2xl bg-white dark:bg-[#141416] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-white/10 shadow-md hover:shadow-lg active:scale-98 transition-all font-semibold text-sm flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
                     >
                         {loading ? (
                             <Loader2 className="animate-spin text-blue-500" size={20} />

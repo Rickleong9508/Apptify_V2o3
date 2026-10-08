@@ -980,7 +980,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                                 {/* Active Model Indicator */}
                                 <div className="px-4 py-3 rounded-2xl bg-[var(--ios-card-bg)] flex justify-between items-center text-xs font-bold"
-                                     style={{ boxShadow: "inset 3px 3px 6px #b8b9be, inset -3px -3px 6px #ffffff" }}>
+                                     style={{ boxShadow: "inset 3px 3px 6px #A0A0A6, inset -3px -3px 6px #ffffff" }}>
                                     <span className="text-gray-400">Currently Active Model:</span>
                                     <span className="text-purple-600 font-mono">{aiModel || 'None Selected'}</span>
                                 </div>

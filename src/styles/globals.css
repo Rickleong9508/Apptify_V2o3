@@ -1,150 +1,187 @@
 /* ==========================================================================
-   APPTIFY DESIGN SYSTEM (iOS HIG & Spatial Glassmorphism)
-   Tailwind + Custom CSS Tokens for Mobile-First & Desktop
+   APPTIFY — "INK & SIGNAL" DESIGN SYSTEM
+   ==========================================================================
+
+   PALETTE LAW — four pigments only:
+     --blue    #2600FD   primary action · brand · live signal · active state
+     --ink     #0A0A0B   mass · data panels · typography · structure
+     --yellow  #FFBF00   attention · warning · emphasis
+     --white   #FFFFFF   canvas
+
+   Every neutral below is black or white carrying alpha — there is no third
+   hue anywhere in the system, including the greys.
+
+   IMPORTANT: every class name from the previous glassmorphism system is
+   preserved. Only what those classes *render as* has changed. This is what
+   lets the whole app re-skin without a single change to component logic.
    ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   1. TOKENS
+   -------------------------------------------------------------------------- */
 :root {
-  /* --- Apple Clean Light Palette --- */
-  --color-primary: 0 113 227;        /* #0071E3 Apple Royal Blue */
-  --color-primary-hover: 0 99 204;
-  --color-secondary: 29 29 31;
-  --color-accent: 245 99 0;          /* #F56300 Apple Vibrant Orange */
-  
-  --color-background: 248 249 250;   /* #F8F9FA Fresh Canvas */
+  /* --- Pigments ---------------------------------------------------------- */
+  --blue: #2600fd;
+  --blue-deep: #1a00b3;
+  --yellow: #ffbf00;
+  --ink: #0a0a0b;
+  --white: #ffffff;
+
+  /* --- Ink ladder: one hue, nine weights --------------------------------- */
+  --ink-88: rgba(10, 10, 11, 0.88);
+  --ink-72: rgba(10, 10, 11, 0.72);
+  --ink-56: rgba(10, 10, 11, 0.56);
+  --ink-40: rgba(10, 10, 11, 0.4);
+  --ink-24: rgba(10, 10, 11, 0.24);
+  --ink-14: rgba(10, 10, 11, 0.14);
+  --ink-08: rgba(10, 10, 11, 0.08);
+  --ink-05: rgba(10, 10, 11, 0.05);
+  --ink-03: rgba(10, 10, 11, 0.03);
+
+  --on-ink-70: rgba(255, 255, 255, 0.7);
+  --on-ink-45: rgba(255, 255, 255, 0.45);
+  --on-ink-20: rgba(255, 255, 255, 0.2);
+  --on-ink-10: rgba(255, 255, 255, 0.1);
+
+  --blue-12: rgba(38, 0, 253, 0.12);
+  --blue-08: rgba(38, 0, 253, 0.08);
+  --yellow-16: rgba(255, 191, 0, 0.16);
+
+  --paper: #f4f4f5;
+  --paper-warm: #fafafa;
+
+  /* --- Semantic tokens (names unchanged — bound to the new palette) ------ */
+  --color-primary: 38 0 253;          /* #2600FD */
+  --color-primary-hover: 31 0 214;
+  --color-secondary: 10 10 11;        /* #0A0A0B */
+  --color-accent: 255 191 0;          /* #FFBF00 */
+
+  --color-background: 255 255 255;    /* #FFFFFF canvas */
   --color-surface: 255 255 255;
-  --color-text-main: 17 24 39;        /* #111827 High contrast */
-  --color-text-muted: 107 114 128;   /* #6B7280 */
-  --color-border: 229 231 235;       /* #E5E7EB */
-  --color-input-bg: 243 244 246;
+  --color-text-main: 10 10 11;        /* #0A0A0B */
+  --color-text-muted: 113 113 119;
+  --color-border: 230 230 232;
+  --color-input-bg: 244 244 245;
 
-  /* iOS Label & Card Tokens */
-  --ios-label-primary: #111827;
-  --ios-label-secondary: #6B7280;
-  --ios-card-bg: rgba(255, 255, 255, 0.78);
-  --ios-card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
+  /* --- Legacy "glass" tokens — flattened into the ink & signal system ----
+     The names survive so existing components keep working; the values no
+     longer describe glass, they describe flat surfaces with hairline edges. */
+  --ios-label-primary: #0a0a0b;
+  --ios-label-secondary: #717177;
+  --ios-card-bg: #ffffff;
+  --ios-card-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 14px 34px -22px rgba(10, 10, 11, 0.18);
 
-  /* Modern Spatial Glass Tokens (Light Mode) */
-  --glass-card-bg: rgba(255, 255, 255, 0.75);
-  --glass-card-border: rgba(255, 255, 255, 0.65);
-  --glass-card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
-  
-  --glass-btn-bg: rgba(255, 255, 255, 0.85);
-  --glass-btn-border: rgba(0, 0, 0, 0.06);
-  --glass-btn-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
-  
-  --glass-input-bg: rgba(243, 244, 246, 0.7);
-  --glass-input-border: rgba(0, 0, 0, 0.08);
-  --glass-input-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --glass-input-focus-border: rgba(0, 113, 227, 0.5);
+  --glass-card-bg: #ffffff;
+  --glass-card-border: #e6e6e8;
+  --glass-card-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 14px 34px -22px rgba(10, 10, 11, 0.18);
 
-  /* Modern Subtle Fluid Canvas Ambient Light */
-  --app-bg-gradient: radial-gradient(at 0% 0%, rgba(224, 242, 254, 0.45) 0px, transparent 50%),
-                     radial-gradient(at 100% 0%, rgba(243, 232, 255, 0.4) 0px, transparent 50%),
-                     radial-gradient(at 50% 100%, rgba(240, 253, 244, 0.35) 0px, transparent 50%);
+  --glass-btn-bg: #ffffff;
+  --glass-btn-border: #e6e6e8;
+  --glass-btn-shadow: 0 1px 2px rgba(10, 10, 11, 0.04);
+
+  --glass-input-bg: #f4f4f5;
+  --glass-input-border: transparent;
+  --glass-input-shadow: none;
+  --glass-input-focus-border: #2600fd;
+
+  /* No ambient colour wash. The canvas is paper, nothing else. */
+  --app-bg-gradient: none;
+
+  /* --- Depth — tinted to the canvas hue, never blue-grey ---------------- */
+  --lift-1: 0 1px 2px rgba(10, 10, 11, 0.04);
+  --lift-2: 0 2px 6px rgba(10, 10, 11, 0.05), 0 18px 40px -22px rgba(10, 10, 11, 0.16);
+  --lift-3: 0 24px 60px -28px rgba(10, 10, 11, 0.4);
+
+  /* --- Motion ------------------------------------------------------------ */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 0.18s;
+  --t-mid: 0.32s;
 }
 
-/* --- Dark Mode (Deep OLED Black & Subtle Specular Borders) --- */
-.dark, html.dark {
-  --color-primary: 10 132 255;       /* #0A84FF Apple Bright Blue */
-  --color-primary-hover: 64 156 255;
-  --color-secondary: 245 245 247;
-  --color-accent: 255 159 10;
-  
-  --color-background: 13 14 16;      /* #0D0E10 Deep Rich Obsidian */
-  --color-surface: 24 25 28;         /* #18191C */
-  --color-text-main: 249 250 251;    /* #F9FAFB */
-  --color-text-muted: 156 163 175;   /* #9CA3AF */
-  --color-border: 39 41 46;          /* #27292E */
-  --color-input-bg: 22 23 26;
+/* --- Dark mode: the canvas becomes the ink itself ---------------------- */
+.dark,
+html.dark {
+  --color-primary: 91 59 255;         /* #5B3BFF — brand blue lifted for ink contrast */
+  --color-primary-hover: 122 95 255;
+  --color-secondary: 244 244 245;
+  --color-accent: 255 191 0;
 
-  /* iOS Label & Card Tokens */
-  --ios-label-primary: #F9FAFB;
-  --ios-label-secondary: #9CA3AF;
-  --ios-card-bg: rgba(22, 24, 29, 0.78);
-  --ios-card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+  --color-background: 10 10 11;       /* #0A0A0B */
+  --color-surface: 20 20 22;          /* #141416 */
+  --color-text-main: 250 250 250;
+  --color-text-muted: 160 160 166;
+  --color-border: 42 42 46;
+  --color-input-bg: 20 20 22;
 
-  /* Modern Spatial Glass Tokens (Dark Mode) */
-  --glass-card-bg: rgba(22, 24, 29, 0.75);
-  --glass-card-border: rgba(255, 255, 255, 0.08);
-  --glass-card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 1px 1px 0 rgba(255, 255, 255, 0.05) inset;
-  
-  --glass-btn-bg: rgba(255, 255, 255, 0.07);
+  --ios-label-primary: #fafafa;
+  --ios-label-secondary: #a0a0a6;
+  --ios-card-bg: #141416;
+  --ios-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 40px -24px rgba(0, 0, 0, 0.75);
+
+  --glass-card-bg: #141416;
+  --glass-card-border: rgba(255, 255, 255, 0.09);
+  --glass-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 40px -24px rgba(0, 0, 0, 0.75);
+
+  --glass-btn-bg: #141416;
   --glass-btn-border: rgba(255, 255, 255, 0.1);
-  --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3);
-  
-  --glass-input-bg: rgba(18, 19, 23, 0.8);
-  --glass-input-border: rgba(255, 255, 255, 0.1);
-  --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-  --glass-input-focus-border: rgba(10, 132, 255, 0.5);
+  --glass-btn-shadow: none;
 
-  --app-bg-gradient: radial-gradient(at 0% 0%, rgba(14, 52, 100, 0.3) 0px, transparent 55%),
-                     radial-gradient(at 100% 0%, rgba(55, 24, 80, 0.25) 0px, transparent 55%),
-                     radial-gradient(at 50% 100%, rgba(16, 40, 26, 0.2) 0px, transparent 55%);
+  --glass-input-bg: #141416;
+  --glass-input-border: rgba(255, 255, 255, 0.1);
+  --glass-input-shadow: none;
+  --glass-input-focus-border: #5b3bff;
+
+  --app-bg-gradient: none;
+
+  --lift-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --lift-2: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+  --lift-3: 0 24px 60px -28px rgba(0, 0, 0, 0.9);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --color-primary: 10 132 255;
-    --color-secondary: 245 245 247;
-    --color-accent: 255 159 10;
-    --color-background: 13 14 16;
-    --color-surface: 24 25 28;
-    --color-text-main: 249 250 251;
-    --color-text-muted: 156 163 175;
-    --color-border: 39 41 46;
-    --color-input-bg: 22 23 26;
+    --color-primary: 91 59 255;
+    --color-primary-hover: 122 95 255;
+    --color-secondary: 244 244 245;
+    --color-accent: 255 191 0;
+    --color-background: 10 10 11;
+    --color-surface: 20 20 22;
+    --color-text-main: 250 250 250;
+    --color-text-muted: 160 160 166;
+    --color-border: 42 42 46;
+    --color-input-bg: 20 20 22;
 
-    --glass-card-bg: rgba(22, 24, 29, 0.75);
-    --glass-card-border: rgba(255, 255, 255, 0.08);
-    --glass-card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 1px 1px 0 rgba(255, 255, 255, 0.05) inset;
-    
-    --glass-btn-bg: rgba(255, 255, 255, 0.07);
+    --glass-card-bg: #141416;
+    --glass-card-border: rgba(255, 255, 255, 0.09);
+    --glass-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 40px -24px rgba(0, 0, 0, 0.75);
+    --glass-btn-bg: #141416;
     --glass-btn-border: rgba(255, 255, 255, 0.1);
-    --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3);
-    
-    --glass-input-bg: rgba(18, 19, 23, 0.8);
+    --glass-btn-shadow: none;
+    --glass-input-bg: #141416;
     --glass-input-border: rgba(255, 255, 255, 0.1);
-    --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-    --glass-input-focus-border: rgba(10, 132, 255, 0.5);
-
-    --app-bg-gradient: radial-gradient(at 0% 0%, rgba(14, 52, 100, 0.3) 0px, transparent 55%),
-                       radial-gradient(at 100% 0%, rgba(55, 24, 80, 0.25) 0px, transparent 55%),
-                       radial-gradient(at 50% 100%, rgba(16, 40, 26, 0.2) 0px, transparent 55%);
+    --glass-input-shadow: none;
+    --glass-input-focus-border: #5b3bff;
+    --app-bg-gradient: none;
   }
 }
 
 /* Explicit class-based dark override */
 html.dark {
-  --color-primary: 10 132 255;
-  --color-secondary: 245 245 247;
-  --color-accent: 255 159 10;
-  --color-background: 13 14 16;
-  --color-surface: 24 25 28;
-  --color-text-main: 249 250 251;
-  --color-text-muted: 156 163 175;
-  --color-border: 39 41 46;
-  --color-input-bg: 22 23 26;
-
-  --glass-card-bg: rgba(22, 24, 29, 0.75);
-  --glass-card-border: rgba(255, 255, 255, 0.08);
-  --glass-card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 1px 1px 0 rgba(255, 255, 255, 0.05) inset;
-  
-  --glass-btn-bg: rgba(255, 255, 255, 0.07);
-  --glass-btn-border: rgba(255, 255, 255, 0.1);
-  --glass-btn-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3);
-  
-  --glass-input-bg: rgba(18, 19, 23, 0.8);
-  --glass-input-border: rgba(255, 255, 255, 0.1);
-  --glass-input-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-  --glass-input-focus-border: rgba(10, 132, 255, 0.5);
-
-  --app-bg-gradient: radial-gradient(at 0% 0%, rgba(14, 52, 100, 0.3) 0px, transparent 55%),
-                     radial-gradient(at 100% 0%, rgba(55, 24, 80, 0.25) 0px, transparent 55%),
-                     radial-gradient(at 50% 100%, rgba(16, 40, 26, 0.2) 0px, transparent 55%);
+  --color-primary: 91 59 255;
+  --color-secondary: 244 244 245;
+  --color-accent: 255 191 0;
+  --color-background: 10 10 11;
+  --color-surface: 20 20 22;
+  --color-text-main: 250 250 250;
+  --color-text-muted: 160 160 166;
+  --color-border: 42 42 46;
+  --color-input-bg: 20 20 22;
+  --app-bg-gradient: none;
 }
 
 /* ==========================================================================
-   BASE & MOBILE TOUCH HYGIENE
+   2. BASE
    ========================================================================== */
 
 * {
@@ -152,15 +189,15 @@ html.dark {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   min-height: -webkit-fill-available;
-  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: rgb(var(--color-background)) !important;
   background-image: var(--app-bg-gradient) !important;
-  background-attachment: fixed !important;
   color: rgb(var(--color-text-main));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -169,147 +206,184 @@ html, body {
   overscroll-behavior-y: none;
 }
 
-/* iOS inputs: enforce 16px minimum on touch screens to prevent unwanted viewport zoom */
+/* iOS inputs: enforce 16px minimum on touch screens to prevent viewport zoom */
 @media screen and (max-width: 768px) {
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     font-size: 16px !important;
   }
 }
 
+/* Monetary / temporal figures.
+
+   Geist Mono draws a SLASHED zero by default and no OpenType feature turns it
+   off (verified: "zero" 0, ss01 and ss02 all keep the slash). At display sizes
+   that reads as "Ø", which is unacceptable for money. Geist proportional has a
+   plain zero, so financial figures use it with tabular-nums — columns still
+   line up, but the zero reads as a zero.
+
+   The doubled class selector is deliberate: it outranks Tailwind's own
+   `.font-mono` utility regardless of stylesheet injection order. */
+.font-mono-numbers.font-mono-numbers {
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+::selection {
+  background: var(--blue);
+  color: var(--white);
+}
+
 /* ==========================================================================
-   SAFE AREA UTILITIES FOR iOS (Dynamic Island & Home Indicator)
+   3. SAFE AREA UTILITIES (iOS Dynamic Island & Home Indicator)
    ========================================================================== */
 
-.pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.pl-safe {
-  padding-left: env(safe-area-inset-left, 0px);
-}
-
-.pr-safe {
-  padding-right: env(safe-area-inset-right, 0px);
-}
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pl-safe { padding-left: env(safe-area-inset-left, 0px); }
+.pr-safe { padding-right: env(safe-area-inset-right, 0px); }
 
 .min-h-screen-safe {
   min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 }
 
 /* ==========================================================================
-   TACTILE & GLASS UTILITIES (Emil Kowalski Physics & Polish)
+   4. TACTILE PHYSICS
    ========================================================================== */
 
-/* Active scale micro-interaction */
 .tap-scale {
   transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease;
   user-select: none;
   -webkit-user-select: none;
 }
+
 .tap-scale:active {
   transform: scale(0.96);
   opacity: 0.88;
 }
 
-/* Glass Surface Styles (iOS HIG & Spatial Liquid Glass) */
-.ios-glass {
-  background: var(--glass-card-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--glass-card-border);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.6), var(--glass-card-shadow);
+.tactile-press {
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.12s ease;
+  user-select: none;
 }
-.dark .ios-glass {
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.16), var(--glass-card-shadow);
+
+.tactile-press:active {
+  transform: scale(0.975);
+}
+
+/* ==========================================================================
+   5. SURFACES
+   Flat paper panels with hairline edges. No blur, no glass, no outer glow.
+   Depth comes from a shadow tinted to the canvas hue, never from colour.
+   ========================================================================== */
+
+.ios-glass,
+.ios-card {
+  background: var(--glass-card-bg);
+  border: 1px solid var(--glass-card-border);
+  box-shadow: var(--glass-card-shadow);
 }
 
 .ios-card {
-  background: var(--glass-card-bg);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid var(--glass-card-border);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.6), var(--glass-card-shadow);
   border-radius: 24px;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-}
-.dark .ios-card {
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.14), var(--glass-card-shadow);
-}
-
-/* Liquid Glass Frosted Gradient Card Variants */
-.liquid-card-emerald {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(20, 184, 166, 0.08) 50%, rgba(255, 255, 255, 0.6) 100%);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-  border-top-color: rgba(255, 255, 255, 0.75);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.7), 0 12px 32px -4px rgba(16, 185, 129, 0.15);
-}
-.dark .liquid-card-emerald {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(20, 184, 166, 0.12) 50%, rgba(20, 24, 28, 0.7) 100%);
-  border: 1px solid rgba(16, 185, 129, 0.26);
-  border-top-color: rgba(255, 255, 255, 0.25);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.2), 0 16px 40px -4px rgba(16, 185, 129, 0.22);
-}
-
-.liquid-card-blue {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16) 0%, rgba(99, 102, 241, 0.08) 50%, rgba(255, 255, 255, 0.6) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.28);
-  border-top-color: rgba(255, 255, 255, 0.75);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.7), 0 12px 32px -4px rgba(59, 130, 246, 0.15);
-}
-.dark .liquid-card-blue {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(99, 102, 241, 0.12) 50%, rgba(20, 24, 28, 0.7) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.26);
-  border-top-color: rgba(255, 255, 255, 0.25);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.2), 0 16px 40px -4px rgba(59, 130, 246, 0.22);
-}
-
-.liquid-card-amber {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(249, 115, 22, 0.08) 50%, rgba(255, 255, 255, 0.6) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  border-top-color: rgba(255, 255, 255, 0.75);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.7), 0 12px 32px -4px rgba(245, 158, 11, 0.15);
-}
-.dark .liquid-card-amber {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(249, 115, 22, 0.12) 50%, rgba(20, 24, 28, 0.7) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.26);
-  border-top-color: rgba(255, 255, 255, 0.25);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.2), 0 16px 40px -4px rgba(245, 158, 11, 0.22);
-}
-
-.liquid-card-purple {
-  background: linear-gradient(135deg, rgba(217, 70, 239, 0.16) 0%, rgba(168, 85, 247, 0.08) 50%, rgba(255, 255, 255, 0.6) 100%);
-  border: 1px solid rgba(217, 70, 239, 0.28);
-  border-top-color: rgba(255, 255, 255, 0.75);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.7), 0 12px 32px -4px rgba(217, 70, 239, 0.15);
-}
-.dark .liquid-card-purple {
-  background: linear-gradient(135deg, rgba(217, 70, 239, 0.22) 0%, rgba(168, 85, 247, 0.12) 50%, rgba(20, 24, 28, 0.7) 100%);
-  border: 1px solid rgba(217, 70, 239, 0.26);
-  border-top-color: rgba(255, 255, 255, 0.25);
-  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.2), 0 16px 40px -4px rgba(217, 70, 239, 0.22);
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 @media (min-width: 768px) {
   .ios-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 20px 42px -6px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--glass-card-border);
+    border-color: rgba(10, 10, 11, 0.24);
+    box-shadow: 0 2px 6px rgba(10, 10, 11, 0.05), 0 22px 48px -24px rgba(10, 10, 11, 0.22);
+  }
+
+  .dark .ios-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 52px -24px rgba(0, 0, 0, 0.85);
   }
 }
 
+/* Legacy liquid-glass card variants — collapsed onto the four pigments.
+   Blue and yellow carry every accent that used to be emerald / purple / amber. */
+.liquid-card-emerald,
+.liquid-card-blue,
+.liquid-card-purple {
+  background: var(--blue-08);
+  border: 1px solid rgba(38, 0, 253, 0.24);
+  box-shadow: var(--lift-1);
+}
+
+.dark .liquid-card-emerald,
+.dark .liquid-card-blue,
+.dark .liquid-card-purple {
+  background: rgba(91, 59, 255, 0.12);
+  border: 1px solid rgba(91, 59, 255, 0.3);
+}
+
+.liquid-card-amber {
+  background: var(--yellow-16);
+  border: 1px solid rgba(255, 191, 0, 0.42);
+  box-shadow: var(--lift-1);
+}
+
+.dark .liquid-card-amber {
+  background: rgba(255, 191, 0, 0.14);
+  border: 1px solid rgba(255, 191, 0, 0.32);
+}
+
+/* Avant-garde card — same paper panel, tighter radius language */
+.avant-card {
+  background: var(--white);
+  border: 1px solid var(--ink-14);
+  box-shadow: var(--lift-1);
+  transition: transform 0.22s var(--ease-out), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dark .avant-card,
+html.dark .avant-card {
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: var(--lift-1);
+}
+
+.avant-card:hover {
+  border-color: var(--ink-24);
+  box-shadow: var(--lift-2);
+}
+
+.dark .avant-card:hover,
+html.dark .avant-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Grid paper — kept, but stripped of colour and reduced in contrast */
+.avant-grid-bg {
+  background-color: var(--white);
+  background-image: radial-gradient(var(--ink-08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .avant-grid-bg,
+html.dark .avant-grid-bg {
+  background-color: var(--ink);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ==========================================================================
+   6. CONTROLS
+   ========================================================================== */
+
 .ios-button {
   background: var(--glass-btn-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-btn-border);
   box-shadow: var(--glass-btn-shadow);
   color: rgb(var(--color-text-main));
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s var(--ease-out), background 0.2s ease, border-color 0.2s ease;
   min-height: 44px; /* iOS HIG minimum hit area */
 }
+
 .ios-button:active {
   transform: scale(0.97);
 }
@@ -321,40 +395,203 @@ html, body {
   color: rgb(var(--color-text-main));
   border-radius: 14px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
+
+.ios-input::placeholder {
+  color: var(--ink-40);
+}
+
 .ios-input:focus {
+  background: var(--glass-card-bg);
   border-color: var(--glass-input-focus-border);
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+  box-shadow: none;
 }
 
 /* ==========================================================================
-   BACKWARD-COMPATIBLE CLASS ALIASES FOR LEGACY NEUMORPHIC CLASSES
-   (Smoothly maps old hardcoded #E0E5EC classes to modern spatial glass)
+   7. INK & SIGNAL PRIMITIVES
+   New structural classes used by the re-skinned screens.
    ========================================================================== */
 
-.bg-\[\#E0E5EC\] {
+/* Black mass panel — carries the oversized figures */
+.ink-panel {
+  background: var(--ink);
+  color: var(--white);
+  border-radius: 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Specular edge refraction instead of an outer glow */
+.ink-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+}
+
+.blue-panel {
+  background: var(--blue);
+  color: var(--white);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.yellow-panel {
+  background: var(--yellow);
+  color: var(--ink);
+  border-radius: 24px;
+}
+
+/* Oversized financial figure */
+.signal-figure {
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 44px;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  font-weight: 600;
+}
+
+.signal-figure-sm {
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+}
+
+/* Micro mono label */
+.signal-label {
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  line-height: 1.3;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Hairline divider — used instead of card walls */
+.hairline {
+  height: 1px;
+  background: var(--ink-08);
+}
+
+.dark .hairline {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Circular icon button — the recurring unit of the system */
+.circle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--ink-14);
+  background: var(--white);
+  color: var(--ink);
+  transition: transform var(--t-fast) var(--ease-out), background var(--t-fast) ease,
+    border-color var(--t-fast) ease, color var(--t-fast) ease;
+}
+
+.circle-btn:active {
+  transform: scale(0.9);
+  background: var(--ink-05);
+}
+
+.dark .circle-btn {
+  background: #141416;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fafafa;
+}
+
+.dark .circle-btn:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Capsule segmented control */
+.seg {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--ink-05);
+  border-radius: 999px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dark .seg {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.seg::-webkit-scrollbar {
+  display: none;
+}
+
+.seg__item {
+  flex: 1 1 auto;
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: -0.012em;
+  color: var(--ink-56);
+  white-space: nowrap;
+  transition: background var(--t-mid) var(--ease-out), color var(--t-mid) var(--ease-out);
+}
+
+.dark .seg__item {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.seg__item.is-on {
+  background: var(--ink);
+  color: var(--white);
+}
+
+.dark .seg__item.is-on {
+  background: var(--white);
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   8. LEGACY NEUMORPHIC ALIASES
+   ========================================================================== */
+
+.bg-\[\#F4F4F5\] {
   background: var(--glass-card-bg) !important;
   border-color: var(--glass-card-border) !important;
 }
 
-div.min-h-screen.bg-\[\#E0E5EC\], div.pt-24.bg-\[\#E0E5EC\].min-h-screen {
+div.min-h-screen.bg-\[\#F4F4F5\],
+div.pt-24.bg-\[\#F4F4F5\].min-h-screen {
   background: transparent !important;
   border: none !important;
 }
 
-/* Subtle sleek scrollbar */
+/* ==========================================================================
+   9. SCROLLBARS
+   ========================================================================== */
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(150, 150, 150, 0.2);
   border-radius: 99px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.4);
 }
@@ -362,110 +599,30 @@ div.min-h-screen.bg-\[\#E0E5EC\], div.pt-24.bg-\[\#E0E5EC\].min-h-screen {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
 /* ==========================================================================
-   LIQUID GLASS WATER DROPLET NAVIGATION ANIMATIONS
+   10. MOTION KEYFRAMES
    ========================================================================== */
 
 @keyframes waterDropSwell {
-  0% {
-    transform: scale(0.96);
-  }
-  50% {
-    transform: scale(1.04);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(0.96); }
+  50% { transform: scale(1.04); }
+  100% { transform: scale(1); }
 }
 
 @keyframes liquidSheenMove {
-  0% {
-    transform: translateX(-100%) skewX(-20deg);
-  }
-  100% {
-    transform: translateX(220%) skewX(-20deg);
-  }
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
 }
 
 @keyframes waterRipplePulse {
-  0% {
-    opacity: 0.65;
-    transform: scale(0.88);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.3);
-  }
-}
-
-.animate-liquid-sheen {
-  animation: liquidSheenMove 0.42s ease-out forwards;
-}
-
-.animate-water-ripple {
-  animation: waterRipplePulse 0.38s ease-out forwards;
-}
-
-.animate-water-drop {
-  animation: waterDropSwell 0.32s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
-}
-
-/* ==========================================================================
-   AVANT-GARDE TACTILE OS UTILITIES (Anti-Slop / Youth Kinetic Deck)
-   ========================================================================== */
-
-.avant-grid-bg {
-  background-color: #F8F9FA;
-  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-.dark .avant-grid-bg,
-html.dark .avant-grid-bg {
-  background-color: #090A0D;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-.avant-card {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.dark .avant-card,
-html.dark .avant-card {
-  background: rgba(18, 20, 26, 0.82);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-}
-
-.avant-card:hover {
-  border-color: rgba(0, 0, 0, 0.25);
-  box-shadow: 0 12px 36px -6px rgba(0, 0, 0, 0.08);
-}
-.dark .avant-card:hover,
-html.dark .avant-card:hover {
-  border-color: rgba(212, 255, 0, 0.4);
-  box-shadow: 0 14px 40px -6px rgba(0, 0, 0, 0.7), 0 0 20px -6px rgba(212, 255, 0, 0.15);
-}
-
-.tactile-press {
-  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.12s ease;
-  user-select: none;
-}
-.tactile-press:active {
-  transform: scale(0.975);
-}
-
-.font-mono-numbers {
-  font-feature-settings: "tnum" 1, "zero" 1;
+  0% { opacity: 0.65; transform: scale(0.88); }
+  100% { opacity: 0; transform: scale(1.3); }
 }
 
 @keyframes radarSweep {
@@ -473,8 +630,55 @@ html.dark .avant-card:hover {
   100% { transform: rotate(360deg); }
 }
 
-.animate-radar-sweep {
-  animation: radarSweep 4s linear infinite;
+@keyframes signalPulse {
+  0% { opacity: 0.5; transform: scale(0.95); }
+  70% { opacity: 0; transform: scale(1.12); }
+  100% { opacity: 0; }
 }
 
+.animate-liquid-sheen { animation: liquidSheenMove 0.42s ease-out forwards; }
+.animate-water-ripple { animation: waterRipplePulse 0.38s ease-out forwards; }
+.animate-water-drop { animation: waterDropSwell 0.32s cubic-bezier(0.34, 1.45, 0.64, 1) forwards; }
+.animate-radar-sweep { animation: radarSweep 4s linear infinite; }
 
+/* Perpetual signal ring for live indicators */
+.signal-dot {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blue);
+  flex: none;
+}
+
+.signal-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--blue);
+  animation: signalPulse 2.6s var(--ease-out) infinite;
+}
+
+.dark .signal-dot {
+  background: #5b3bff;
+}
+
+.dark .signal-dot::after {
+  border-color: #5b3bff;
+}
+
+/* ==========================================================================
+   11. REDUCED MOTION
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
