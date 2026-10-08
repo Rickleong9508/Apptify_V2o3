@@ -374,7 +374,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 {/* Google Drive sync — a blue panel: this is a primary / connected state */}
                 <section className="blue-panel p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-3">
-                        <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.16] text-white shrink-0">
+                        <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#FFBF00] text-[#0A0A0B] shrink-0">
                             <Cloud size={19} />
                         </span>
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold shrink-0 ${

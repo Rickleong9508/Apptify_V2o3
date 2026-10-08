@@ -112,7 +112,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Hero: Net Worth — an ink mass carrying the figure */}
-      <div className="relative overflow-hidden rounded-[30px] bg-[#2600FD] text-white p-6 sm:p-8 group
+      <div className="relative overflow-hidden rounded-[30px] bg-[#0A0A0B] text-white p-6 sm:p-8 group
                       shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(10,10,11,0.35)]">
         {/* Specular edge refraction — the system has no outer glow */}
         <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
@@ -198,7 +198,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div>
             <div className="flex items-center justify-between mb-6 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-black flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
                   <PieChart size={16} />
                 </div>
                 <div>
@@ -275,7 +275,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="avant-card p-6 sm:p-7 rounded-3xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-black flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
                 <Layers size={16} />
               </div>
               <div>
@@ -447,13 +447,39 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
 
   const displayData = showAll ? historyData : historyData.slice(0, 6);
 
+  // Monthly flow chart series. Bars are scaled against the largest single
+  // figure in the window so inflow and outflow stay directly comparable.
+  const flowChart = useMemo(() => {
+    const rows = displayData.map((item) => {
+      const d = viewMode === 'actual' ? item.actual : item.budget;
+      return {
+        month: item.month,
+        inflow: d.totalIn || 0,
+        outflow: d.totalOut || 0,
+        balance: d.balance || 0,
+      };
+    });
+    const peak = Math.max(1, ...rows.map((r) => Math.max(r.inflow, r.outflow)));
+    return rows.map((r) => ({
+      ...r,
+      inPct: Math.max(r.inflow > 0 ? 3 : 0, Math.round((r.inflow / peak) * 100)),
+      outPct: Math.max(r.outflow > 0 ? 3 : 0, Math.round((r.outflow / peak) * 100)),
+    }));
+  }, [displayData, viewMode]);
+
+  const flowTotals = useMemo(() => {
+    const inflow = flowChart.reduce((a, r) => a + r.inflow, 0);
+    const outflow = flowChart.reduce((a, r) => a + r.outflow, 0);
+    return { inflow, outflow, net: inflow - outflow };
+  }, [flowChart]);
+
   if (historyData.length === 0) return null;
 
   return (
     <div className="w-full space-y-4 font-sans">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-black flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
             <Activity size={16} />
           </div>
           <div>
@@ -486,6 +512,91 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
           >
             {lang === 'zh' ? '预算规划收支' : 'Budget Projection'}
           </button>
+        </div>
+      </div>
+
+      {/* Monthly flow — the shape of the ledger at a glance */}
+      <div className="avant-card rounded-3xl p-4 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+          <div>
+            <span className="signal-label text-black/45 dark:text-white/45">
+              {lang === 'zh' ? '月度现金流' : 'Monthly cash flow'}
+            </span>
+            <p className="mt-1 text-[12px] text-black/50 dark:text-white/50">
+              {lang === 'zh'
+                ? '蓝 = 流入 · 墨 = 流出 · 底部为当月经结余'
+                : 'Blue = inflow · ink = outflow · net below each month'}
+            </p>
+          </div>
+          <div className="flex items-center gap-4 font-mono text-[11px]">
+            <span className="flex items-center gap-1.5 text-black/60 dark:text-white/60">
+              <i className="w-2.5 h-2.5 rounded-[3px] bg-[#2600FD]" />
+              {lang === 'zh' ? '流入' : 'IN'}
+            </span>
+            <span className="flex items-center gap-1.5 text-black/60 dark:text-white/60">
+              <i className="w-2.5 h-2.5 rounded-[3px] bg-[#0A0A0B] dark:bg-white" />
+              {lang === 'zh' ? '流出' : 'OUT'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-end gap-1.5 sm:gap-3 h-44">
+          {flowChart.map((row) => (
+            <div key={row.month} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full gap-2">
+              <div className="flex items-end justify-center gap-1 w-full flex-1 min-h-0">
+                <div
+                  className="w-1/2 max-w-[16px] rounded-t-[4px] bg-[#2600FD] transition-[height] duration-500"
+                  style={{ height: `${row.inPct}%` }}
+                  title={`${lang === 'zh' ? '流入' : 'Inflow'}: RM ${row.inflow.toLocaleString()}`}
+                />
+                <div
+                  className="w-1/2 max-w-[16px] rounded-t-[4px] bg-[#0A0A0B] dark:bg-white/85 transition-[height] duration-500"
+                  style={{ height: `${row.outPct}%` }}
+                  title={`${lang === 'zh' ? '流出' : 'Outflow'}: RM ${row.outflow.toLocaleString()}`}
+                />
+              </div>
+              <span className="w-full text-center font-mono text-[9px] text-black/40 dark:text-white/40 truncate">
+                {row.month}
+              </span>
+              <span
+                className={`w-full text-center font-mono text-[10px] font-semibold font-mono-numbers ${
+                  row.balance >= 0 ? 'text-[#2600FD]' : 'text-[#0A0A0B] dark:text-white'
+                }`}
+              >
+                {row.balance >= 0 ? '+' : ''}
+                {Math.round(row.balance).toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-black/[0.08] dark:border-white/[0.09] grid grid-cols-3 gap-3">
+          <div>
+            <span className="signal-label block text-black/40 dark:text-white/40">
+              {lang === 'zh' ? '总流入' : 'Total in'}
+            </span>
+            <p className="mt-1 font-mono font-semibold text-[15px] font-mono-numbers text-[#2600FD]">
+              +RM {Math.round(flowTotals.inflow).toLocaleString()}
+            </p>
+          </div>
+          <div>
+            <span className="signal-label block text-black/40 dark:text-white/40">
+              {lang === 'zh' ? '总流出' : 'Total out'}
+            </span>
+            <p className="mt-1 font-mono font-semibold text-[15px] font-mono-numbers text-[#0A0A0B] dark:text-white">
+              -RM {Math.round(flowTotals.outflow).toLocaleString()}
+            </p>
+          </div>
+          <div>
+            <span className="signal-label block text-black/40 dark:text-white/40">
+              {lang === 'zh' ? '净结余' : 'Net'}
+            </span>
+            <p className={`mt-1 font-mono font-semibold text-[15px] font-mono-numbers ${
+              flowTotals.net >= 0 ? 'text-[#2600FD]' : 'text-[#0A0A0B] dark:text-white'
+            }`}>
+              {flowTotals.net >= 0 ? '+' : ''}RM {Math.round(flowTotals.net).toLocaleString()}
+            </p>
+          </div>
         </div>
       </div>
 

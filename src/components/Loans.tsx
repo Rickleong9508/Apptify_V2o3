@@ -177,7 +177,7 @@ const Loans: React.FC<LoansProps> = ({ loans, setLoans }) => {
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-zinc-900 dark:bg-zinc-800 text-[#2600FD] flex items-center justify-center shrink-0 font-bold border border-zinc-800">
+                    <div className="w-11 h-11 rounded-2xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center shrink-0 font-bold">
                       <CreditCard size={20} />
                     </div>
                     <div>

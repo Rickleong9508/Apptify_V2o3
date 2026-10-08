@@ -347,7 +347,7 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
       {isAddingAccount && (
         <div className="p-5 sm:p-6 rounded-3xl avant-card border border-zinc-300 dark:border-zinc-800 shadow-xl animate-scale-in">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-[#2600FD] flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
               <Wallet size={18} />
             </div>
             <div>

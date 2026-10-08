@@ -705,7 +705,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                   setIsTimerRunning(false);
                   setFocusTime(focusMode === 'work' ? 25 * 60 : 5 * 60);
                 }}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-200 border border-white/60 dark:border-white/15 shadow-sm active:scale-95 transition-all"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center bg-[#FFBF00] text-[#0A0A0B] active:scale-95 transition-all"
                 title={lang === 'zh' ? "重置计时" : "Reset timer"}
               >
                 <RotateCcw size={18} />

@@ -622,7 +622,7 @@ const App: React.FC = () => {
             {/* NoteDown — the wider tile */}
             <div className="col-span-3 rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl bg-white/15 text-white flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center shrink-0">
                   <NotebookPen size={18} strokeWidth={2.1} />
                 </div>
                 <span className="font-mono text-[9px] tracking-wider uppercase text-white/55 pt-1">

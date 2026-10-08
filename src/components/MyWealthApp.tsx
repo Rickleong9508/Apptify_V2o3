@@ -49,7 +49,8 @@ const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
   // Clear visible icon colors: Electric Volt Lime (#2600FD) when active!
   // Inherits the button's colour so the parent's hover state reaches the glyph.
   const outlineClass = "text-current opacity-100 transition-colors shrink-0";
-  const activeClass = "text-[#2600FD] fill-[#2600FD] drop-shadow-none transition-transform duration-150 scale-105 shrink-0";
+  // White fill: the active pill is brand blue, so a blue glyph vanished into it.
+  const activeClass = "text-white fill-white transition-transform duration-150 scale-105 shrink-0";
 
   if (tabId === 'dashboard') {
     if (isActive) {
