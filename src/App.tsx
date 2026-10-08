@@ -913,7 +913,7 @@ const App: React.FC = () => {
       )}
 
       {/* Main Sub-App Content with Safe-Area Offset */}
-      <main className={currentApp !== 'launcher' ? 'pt-16 sm:pt-20 pb-[116px] min-h-screen-safe' : 'pb-[116px] min-h-screen-safe'}>
+      <main className={currentApp !== 'launcher' ? 'pt-16 sm:pt-20 pb-[104px] min-h-screen-safe' : 'pb-[104px] min-h-screen-safe'}>
         {renderSubApp()}
       </main>
 
