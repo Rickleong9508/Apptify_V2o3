@@ -32,6 +32,7 @@ import GlobalSettings from './components/GlobalSettings';
 import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal';
 import AskApptify from './components/AskApptify';
+import AppDock from './components/AppDock';
 import { useAuth } from './components/AuthProvider';
 import { Language, translations, getStoredLanguage, setStoredLanguage } from './utils/i18n';
 
@@ -521,7 +522,7 @@ const App: React.FC = () => {
           <div className="flex flex-col text-left">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded font-extrabold bg-zinc-900 text-[#FFBF00] dark:bg-[#FFBF00] dark:text-black">
-                OS V2.3 // KINETIC
+                OS V2.3 // INK & SIGNAL
               </span>
               <div className="flex items-center gap-1 h-3">
                 <span className="w-1 h-3 rounded-full bg-zinc-900 dark:bg-[#FFBF00] animate-pulse"></span>
@@ -652,199 +653,169 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Split Deck: NoteDown (Interactive Scratchpad) + NewsHub (Live Radar) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 w-full">
-            
-            {/* Deck 02: NoteDown (Interactive Scratchpad & Todos) */}
-            <div className="avant-card rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between group">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-blue-400/10 dark:bg-blue-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
+          {/* Bento: module tiles — asymmetric grid, the Ink & Signal unit */}
+          <div className="grid grid-cols-5 gap-3 w-full">
 
-              {/* Header */}
-              <div className="relative z-10">
-                <div className="flex items-center justify-between w-full mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-blue-500 text-white flex items-center justify-center font-bold shadow-sm">
-                      <NotebookPen size={18} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-black tracking-tight text-zinc-950 dark:text-white uppercase leading-none">
-                        NoteDown
-                      </h2>
-                      <span className="font-mono text-[9px] text-zinc-400 dark:text-zinc-500 font-bold">
-                        02 // SCRATCHPAD
-                      </span>
-                    </div>
-                  </div>
-
-                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-800 dark:text-blue-300">
-                    {taskCount > 0 ? `${taskCount} ${lang === 'zh' ? '待办' : 'TASKS'}` : `${noteCount} ${lang === 'zh' ? '便签' : 'NOTES'}`}
-                  </span>
+            {/* NoteDown — the wider tile */}
+            <div className="col-span-3 rounded-3xl border border-black/[0.12] dark:border-white/10 bg-white dark:bg-[#141416] p-4 flex flex-col justify-between">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-9 h-9 rounded-xl bg-[#2600FD] text-white flex items-center justify-center shrink-0">
+                  <NotebookPen size={18} strokeWidth={2.1} />
                 </div>
-
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium mb-3">
-                  {lang === 'zh' ? '灵感闪念速记 · 待办清单 · 极简专注' : 'Instant Notes, Action Tasks & Clean Focus'}
-                </p>
-
-                {/* Interactive In-Card Fast Jot Input */}
-                <form onSubmit={handleQuickJotSubmit} className="mb-3 relative">
-                  <div className="flex items-center rounded-xl bg-zinc-100 dark:bg-zinc-800/90 border border-zinc-200/80 dark:border-zinc-700/80 p-1 focus-within:border-blue-500 transition-colors">
-                    <button
-                      type="button"
-                      onClick={() => setQuickJotType(quickJotType === 'task' ? 'note' : 'task')}
-                      className="px-2 py-1 rounded-lg text-[10px] font-mono font-bold bg-zinc-200/80 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 shrink-0 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors"
-                      title={lang === 'zh' ? '点击切换 待办 / 便签' : 'Click to toggle Task / Note'}
-                    >
-                      {quickJotType === 'task' ? (lang === 'zh' ? '待办' : 'TASK') : (lang === 'zh' ? '便签' : 'NOTE')}
-                    </button>
-                    <input
-                      type="text"
-                      value={quickJotText}
-                      onChange={(e) => setQuickJotText(e.target.value)}
-                      placeholder={quickJotType === 'task' ? (lang === 'zh' ? '极速记待办并按回车...' : 'Quick task & press enter...') : (lang === 'zh' ? '极速记闪念灵感...' : 'Quick jot an idea...')}
-                      className="w-full bg-transparent px-2.5 py-1 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!quickJotText.trim()}
-                      className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-[#FFBF00] text-white dark:text-black flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <Plus size={14} strokeWidth={2.5} />
-                    </button>
-                  </div>
-
-                  {/* Instant save feedback toast */}
-                  {quickJotToast && (
-                    <div className="absolute -bottom-6 left-1 text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-fade-in">
-                      <Check size={11} strokeWidth={2.5} />
-                      <span>{quickJotToast}</span>
-                    </div>
-                  )}
-                </form>
-              </div>
-
-              {/* Bottom Jump Button */}
-              <div className="pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between relative z-10 mt-2">
-                <span className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500">
-                  {noteCount} {lang === 'zh' ? '篇随手记' : 'Total Notes'}
+                <span className="font-mono text-[9px] tracking-wider uppercase text-black/45 dark:text-white/45 pt-1">
+                  {taskCount > 0
+                    ? `${taskCount} ${lang === 'zh' ? '待办' : 'TASKS'}`
+                    : `${noteCount} ${lang === 'zh' ? '便签' : 'NOTES'}`}
                 </span>
-
-                <button
-                  onClick={() => setCurrentApp('knowledgevault')}
-                  className="flex items-center gap-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:text-blue-600 dark:hover:text-blue-400 active:scale-95 transition-all cursor-pointer"
-                >
-                  <span>{t.launcher.openVault}</span>
-                  <ArrowUpRight size={13} strokeWidth={2.5} />
-                </button>
               </div>
+
+              <div>
+                <h2 className="text-[15px] font-semibold tracking-tight text-zinc-950 dark:text-white leading-tight">
+                  NoteDown
+                </h2>
+                <p className="text-[11px] text-black/45 dark:text-white/45 mt-1 leading-snug">
+                  {lang === 'zh' ? '速记 · 待办 · 专注' : 'Notes, tasks & focus'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setCurrentApp('knowledgevault')}
+                className="mt-3 flex items-center gap-1 text-[11px] font-medium text-[#2600FD] cursor-pointer active:scale-95 transition-transform self-start"
+              >
+                <span>{t.launcher.openVault}</span>
+                <ArrowUpRight size={12} strokeWidth={2.3} />
+              </button>
             </div>
 
-            {/* Deck 03: NewsHub (Live Radar Feed) */}
-            <div className="avant-card rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between group">
-              <div className="absolute top-0 right-0 w-28 h-28 bg-cyan-400/10 dark:bg-cyan-400/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
-
-              {/* Header */}
-              <div className="relative z-10">
-                <div className="flex items-center justify-between w-full mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center font-bold shadow-sm">
-                      <Radio size={18} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-black tracking-tight text-zinc-950 dark:text-white uppercase leading-none">
-                        {t.launcher.newsTitle}
-                      </h2>
-                      <span className="font-mono text-[9px] text-zinc-400 dark:text-zinc-500 font-bold">
-                        03 // RADAR FEED
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Pulsing Radar Badge */}
-                  <span className="flex items-center gap-1.5 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/25 text-cyan-800 dark:text-cyan-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping"></span>
-                    <span>LIVE STREAM</span>
-                  </span>
+            {/* NewsHub — the narrower tile, carrying the attention colour */}
+            <button
+              onClick={() => setCurrentApp('newshub')}
+              className="col-span-2 rounded-3xl bg-[#FFBF00] text-[#0A0A0B] p-4 flex flex-col justify-between text-left cursor-pointer active:scale-[0.98] transition-transform"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-9 h-9 rounded-xl bg-black/10 text-[#0A0A0B] flex items-center justify-center shrink-0">
+                  <Radio size={18} strokeWidth={2.1} />
                 </div>
+                <span className="font-mono text-[9px] tracking-wider uppercase text-black/50 pt-1">LIVE</span>
+              </div>
 
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium mb-3">
-                  {t.launcher.newsDesc}
+              <div>
+                <h2 className="text-[15px] font-semibold tracking-tight leading-tight">
+                  {t.launcher.newsTitle}
+                </h2>
+                <p className="text-[11px] text-black/55 mt-1 leading-snug line-clamp-2">
+                  {lang === 'zh' ? '实时科技与财经' : 'Live tech & markets'}
                 </p>
-
-                {/* Dynamic Radar Topics Strip */}
-                <div className="grid grid-cols-2 gap-1.5 mb-3">
-                  {newsRadarTopics.map(topic => (
-                    <div
-                      key={topic.id}
-                      onClick={() => setCurrentApp('newshub')}
-                      className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 hover:border-cyan-500/50 cursor-pointer transition-all flex items-center justify-between"
-                    >
-                      <span className="font-mono text-[10px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
-                        #{topic.label}
-                      </span>
-                      <span className="font-mono text-[9px] text-cyan-600 dark:text-cyan-400 font-bold">
-                        {topic.count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </div>
 
-              {/* Bottom Jump Button */}
-              <div className="pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between relative z-10 mt-1">
-                <span className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500">
-                  {lang === 'zh' ? '多源科技与宏观快讯' : 'Real-time Tech & Markets'}
-                </span>
-
-                <button
-                  onClick={() => setCurrentApp('newshub')}
-                  className="flex items-center gap-1 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:text-cyan-600 dark:hover:text-cyan-400 active:scale-95 transition-all cursor-pointer"
-                >
-                  <span>{t.launcher.openNews}</span>
-                  <ArrowUpRight size={13} strokeWidth={2.5} />
-                </button>
-              </div>
-            </div>
+              <span className="mt-3 flex items-center gap-1 text-[11px] font-medium">
+                <span>{t.launcher.openNews}</span>
+                <ArrowUpRight size={12} strokeWidth={2.3} />
+              </span>
+            </button>
           </div>
 
-          {/* Deck 04: System Hardware Console & AI Switcher */}
-          <div className="avant-card rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 relative overflow-hidden group">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 shadow-xs shrink-0 group-hover:rotate-45 transition-transform duration-300">
-                <Settings size={18} />
+          {/* Radar topics — real feed counts, kept as a horizontal chip rail */}
+          {newsRadarTopics.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto no-scrollbar w-full pb-0.5">
+              {newsRadarTopics.map(topic => (
+                <button
+                  key={topic.id}
+                  onClick={() => setCurrentApp('newshub')}
+                  className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-[#141416] border border-black/[0.12] dark:border-white/10 cursor-pointer active:scale-95 transition-transform"
+                >
+                  <span className="font-mono text-[10px] tracking-tight text-black/70 dark:text-white/70">
+                    #{topic.label}
+                  </span>
+                  <span className="font-mono text-[10px] font-semibold text-[#2600FD]">
+                    {topic.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Quick-Jot — the scratchpad, promoted to its own full-width strip */}
+          <div className="avant-card rounded-3xl p-4 w-full relative">
+            <div className="flex items-center justify-between mb-3">
+              <span className="signal-label text-black/45 dark:text-white/45">
+                {lang === 'zh' ? '速记' : 'Quick Jot'}
+              </span>
+              <span className="font-mono text-[10px] text-black/40 dark:text-white/40">
+                {noteCount} {lang === 'zh' ? '篇随手记' : 'Total Notes'}
+              </span>
+            </div>
+
+            <form onSubmit={handleQuickJotSubmit} className="relative">
+              <div className="flex items-center rounded-full bg-black/5 dark:bg-white/[0.07] p-1 focus-within:ring-1 focus-within:ring-[#2600FD] transition-all">
+                <button
+                  type="button"
+                  onClick={() => setQuickJotType(quickJotType === 'task' ? 'note' : 'task')}
+                  className="px-2.5 py-1.5 rounded-full text-[10px] font-mono font-medium text-black/55 dark:text-white/55 shrink-0 cursor-pointer hover:text-[#2600FD] dark:hover:text-[#5B3BFF] transition-colors"
+                  title={lang === 'zh' ? '点击切换 待办 / 便签' : 'Click to toggle Task / Note'}
+                >
+                  {quickJotType === 'task' ? (lang === 'zh' ? '待办' : 'TASK') : (lang === 'zh' ? '便签' : 'NOTE')}
+                </button>
+                <input
+                  type="text"
+                  value={quickJotText}
+                  onChange={(e) => setQuickJotText(e.target.value)}
+                  placeholder={quickJotType === 'task'
+                    ? (lang === 'zh' ? '极速记待办并按回车...' : 'Quick task & press enter...')
+                    : (lang === 'zh' ? '极速记闪念灵感...' : 'Quick jot an idea...')}
+                  className="w-full bg-transparent px-2 py-1 text-[13px] text-zinc-900 dark:text-white placeholder-black/35 dark:placeholder-white/35 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!quickJotText.trim()}
+                  className="w-8 h-8 rounded-full bg-[#2600FD] text-white flex items-center justify-center shrink-0 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-all cursor-pointer"
+                >
+                  <Plus size={15} strokeWidth={2.4} />
+                </button>
               </div>
-              
-              <div className="flex flex-col text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-zinc-950 dark:text-white uppercase font-mono tracking-tight">
-                    {t.launcher.settingsTitle}
-                  </span>
-                  <span className="font-mono text-[9px] text-zinc-400 uppercase">
-                    04 // SYSTEM
-                  </span>
+
+              {quickJotToast && (
+                <div className="absolute -bottom-5 left-2 text-[10px] font-mono text-[#2600FD] flex items-center gap-1 animate-fade-in">
+                  <Check size={11} strokeWidth={2.5} />
+                  <span>{quickJotToast}</span>
                 </div>
-                
-                {/* AI Model Indicator Pill */}
-                <div className="flex items-center gap-2 mt-0.5">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
-                    className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-zinc-600 dark:text-zinc-300 hover:text-[#2600FD] transition-colors cursor-pointer"
-                  >
-                    <Cpu size={12} className="text-zinc-400" />
-                    <span>AI: {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}</span>
-                    <ChevronDown size={11} />
-                  </button>
-                </div>
+              )}
+            </form>
+          </div>
+
+          {/* System row — a hairline group rather than another card wall */}
+          <div className="w-full rounded-2xl border border-black/[0.12] dark:border-white/10 bg-white dark:bg-[#141416] p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="circle-btn w-9 h-9 shrink-0">
+                <Settings size={17} strokeWidth={1.9} />
+              </span>
+
+              <div className="min-w-0">
+                <span className="signal-label block text-black/40 dark:text-white/40">
+                  {t.launcher.settingsTitle}
+                </span>
+
+                {/* AI model — live picker, unchanged handler */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
+                  className="inline-flex items-center gap-1.5 mt-0.5 max-w-full text-[12.5px] font-medium text-zinc-900 dark:text-white hover:text-[#2600FD] dark:hover:text-[#5B3BFF] transition-colors cursor-pointer"
+                >
+                  <Cpu size={12} className="text-black/40 dark:text-white/40 shrink-0" />
+                  <span className="truncate">
+                    {activeModel.includes('/') ? activeModel.split('/').pop() : activeModel}
+                  </span>
+                  <ChevronDown size={11} className="shrink-0" />
+                </button>
               </div>
             </div>
 
-            {/* Launch Settings Button */}
             <button
               onClick={() => setCurrentApp('settings')}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/90 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold font-mono flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer border border-zinc-200/80 dark:border-zinc-700/80"
+              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-black/[0.12] dark:border-white/[0.12] text-[12px] font-medium text-zinc-900 dark:text-white active:scale-95 transition-transform cursor-pointer"
             >
-              <span>{lang === 'zh' ? '偏好与密钥控制' : 'Preferences & Keys'}</span>
-              <ArrowRight size={13} strokeWidth={2.5} />
+              <span>{lang === 'zh' ? '偏好与密钥' : 'Preferences'}</span>
+              <ArrowRight size={13} strokeWidth={2.2} />
             </button>
           </div>
 
@@ -857,19 +828,10 @@ const App: React.FC = () => {
     <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans avant-grid-bg selection:bg-[#2600FD] selection:text-black">
       {/* Universal Floating Top Bar for Sub-Apps (iOS Safe Area Ready) */}
       {currentApp !== 'launcher' && (
-        <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/75 dark:bg-[#0A0A0B]/80 backdrop-blur-2xl border-b border-black/5 dark:border-white/10 transition-colors">
+        <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/85 dark:bg-[#0A0A0B]/90 backdrop-blur-xl border-b border-black/5 dark:border-white/10 transition-colors">
           <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-            {/* Back Button (iOS Style Chevron) */}
-            <button
-              onClick={() => setCurrentApp('launcher')}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 bg-black/5 dark:bg-white/10 active:scale-95 transition-all"
-            >
-              <ChevronLeft size={18} strokeWidth={2.5} />
-              <span>{t.nav.home}</span>
-            </button>
-
-            {/* Active App Title */}
-            <h2 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white truncate max-w-[140px] sm:max-w-xs text-center">
+            {/* Active App Title — navigation now lives in the bottom dock */}
+            <h2 className="font-semibold text-[15px] sm:text-base tracking-tight text-gray-900 dark:text-white truncate">
               {getAppTitle()}
             </h2>
 
@@ -1001,11 +963,12 @@ const App: React.FC = () => {
       )}
 
       {/* Main Sub-App Content with Safe-Area Offset */}
-      <main className={currentApp !== 'launcher' ? 'pt-16 sm:pt-20 min-h-screen-safe' : 'min-h-screen-safe'}>
+      <main className={currentApp !== 'launcher' ? 'pt-16 sm:pt-20 pb-[116px] min-h-screen-safe' : 'pb-[116px] min-h-screen-safe'}>
         {renderSubApp()}
       </main>
 
       {/* Global AI Floating Copilot Drawer */}
+      <AppDock currentApp={currentApp} setCurrentApp={setCurrentApp} lang={lang} />
       <AskApptify currentApp={currentApp} setCurrentApp={setCurrentApp} />
 
       {/* Google Drive Auth & Welcome Modal */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     ArrowLeft,
     ChevronLeft,
+    ChevronRight,
     Server,
     Key,
     Cpu,
@@ -34,6 +35,21 @@ import { Language, translations, getStoredLanguage, setStoredLanguage } from '..
 interface GlobalSettingsProps {
     onExit: () => void;
 }
+
+/**
+ * Section header in the Ink & Signal language: a mono micro label over a
+ * 15px section title, with an optional right-aligned micro note. Purely
+ * presentational — it carries no state.
+ */
+const SectionHead: React.FC<{ label: string; title: string; meta?: string }> = ({ label, title, meta }) => (
+    <div className="flex items-baseline justify-between gap-3 mb-3.5">
+        <div className="min-w-0">
+            <span className="signal-label block text-black/40 dark:text-white/40">{label}</span>
+            <h2 className="text-[15px] font-semibold tracking-[-0.02em] mt-1 text-[var(--ios-label-primary)]">{title}</h2>
+        </div>
+        {meta && <span className="signal-label text-black/40 dark:text-white/40 shrink-0">{meta}</span>}
+    </div>
+);
 
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     // --- AI Provider & Key State ---
@@ -385,266 +401,205 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     const [confirmLogout, setConfirmLogout] = useState(false);
 
     return (
-        <div className="min-h-screen pb-24 text-[var(--ios-label-primary)] flex flex-col items-center px-6 pb-6 pt-0 animate-fade-in font-sans">
-            <div className="max-w-4xl w-full space-y-6 pb-20">
-                {/* Header Back Button */}
-                <div className="flex items-center justify-between pt-2">
-                    <button
-                        onClick={onExit}
-                        className="flex items-center gap-1.5 text-blue-500 font-semibold text-sm tap-scale cursor-pointer"
-                    >
-                        <ChevronLeft size={20} />
-                        <span>Back to Launcher</span>
-                    </button>
-                    <span className="text-xs font-semibold text-[var(--ios-label-secondary)]">Apptify System Settings</span>
+        <div className="min-h-screen pb-28 text-[var(--ios-label-primary)] animate-fade-in font-sans">
+            <div className="max-w-3xl mx-auto w-full px-5 sm:px-6 space-y-9 pb-20">
+                {/* Page header — module identity, no back-to-launcher affordance (the dock navigates) */}
+                <div className="flex items-start justify-between gap-4 pt-4">
+                    <div>
+                        <span className="signal-label block text-black/40 dark:text-white/40">
+                            {currentLang === 'zh' ? '模块' : 'MODULE'}
+                        </span>
+                        <h1 className="text-[27px] font-semibold tracking-[-0.038em] leading-[1.05] mt-1.5 text-[var(--ios-label-primary)]">
+                            {currentLang === 'zh' ? '设置' : 'Settings'}
+                        </h1>
+                    </div>
+                    <span className="signal-label text-black/40 dark:text-white/40 mt-1 text-right">
+                        INK &amp; SIGNAL
+                    </span>
                 </div>
 
-                {/* Google Drive Cloud Sync Card */}
-                <div
-                    className="ios-card p-6 sm:p-8 animate-scale-in"
-                    style={{
-                        background: "var(--ios-card-bg)",
-                        boxShadow: "var(--ios-card-shadow)"
-                    }}
-                >
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div
-                                className="w-12 h-12 rounded-2xl flex items-center justify-center text-blue-500"
-                                style={{
-                                    background: "var(--ios-card-bg)",
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                                }}
-                            >
-                                <Cloud size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-100">{currentLang === 'zh' ? '云端多端同步' : 'Cloud Sync'}</h2>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{currentLang === 'zh' ? '基于 Google Drive 的去中心化私有云存储' : 'Decentralized private cloud storage powered by Google Drive'}</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                                isConnected
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                    : 'bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-500/20'
-                            }`}>
-                                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                                {isConnected ? (currentLang === 'zh' ? '已连接 Google Drive' : 'Connected to Google Drive') : (currentLang === 'zh' ? '本地离线模式' : 'Local Offline Mode')}
-                            </span>
-                        </div>
+                {/* Google Drive sync — a blue panel: this is a primary / connected state */}
+                <section className="blue-panel p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                        <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.16] text-white shrink-0">
+                            <Cloud size={19} />
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold shrink-0 ${
+                            isConnected ? 'bg-[#FFBF00] text-[#0A0A0B]' : 'bg-white/[0.16] text-white/80'
+                        }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-[#0A0A0B]' : 'bg-white/60'}`} />
+                            {isConnected ? (currentLang === 'zh' ? '已连接 Google Drive' : 'Connected to Google Drive') : (currentLang === 'zh' ? '本地离线模式' : 'Local Offline Mode')}
+                        </span>
                     </div>
 
-                    <div className="p-4 sm:p-5 rounded-2xl bg-[var(--ios-fill-tertiary)] border border-[var(--ios-separator)] space-y-4">
-                        {isConnected && user ? (
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-3.5">
-                                    {user.picture ? (
-                                        <img src={user.picture} alt={user.name} className="w-11 h-11 rounded-full border border-black/10 dark:border-white/10 shadow-sm" />
-                                    ) : (
-                                        <div className="w-11 h-11 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold text-base">
-                                            {user.name?.charAt(0) || user.email?.charAt(0) || 'G'}
+                    <h2 className="mt-4 text-[17px] font-semibold tracking-[-0.02em] text-white">
+                        {currentLang === 'zh' ? '云端多端同步' : 'Google Drive sync'}
+                    </h2>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
+                        {currentLang === 'zh' ? '基于 Google Drive 的去中心化私有云存储' : 'Decentralized private cloud storage powered by Google Drive'}
+                    </p>
+
+                    {isConnected && user ? (
+                        <div className="mt-5 pt-5 border-t border-white/[0.16] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                                {user.picture ? (
+                                    <img src={user.picture} alt={user.name} className="w-11 h-11 rounded-full object-cover border border-white/25" />
+                                ) : (
+                                    <div className="w-11 h-11 rounded-full bg-white/[0.16] text-white flex items-center justify-center font-semibold text-base shrink-0">
+                                        {user.name?.charAt(0) || user.email?.charAt(0) || 'G'}
+                                    </div>
+                                )}
+                                <div className="min-w-0">
+                                    <div className="font-semibold text-sm text-white truncate">{user.name}</div>
+                                    <div className="text-xs font-mono text-white/60 truncate">{user.email}</div>
+                                    {lastSyncedTime && (
+                                        <div className="text-[11px] text-white/45 mt-0.5">
+                                            {currentLang === 'zh' ? '最后同步：' : 'Last synced: '}{new Date(lastSyncedTime).toLocaleString()}
                                         </div>
                                     )}
-                                    <div>
-                                        <div className="font-bold text-sm text-[var(--ios-label-primary)]">{user.name}</div>
-                                        <div className="text-xs text-[var(--ios-label-secondary)] font-mono">{user.email}</div>
-                                        {lastSyncedTime && (
-                                            <div className="text-[11px] text-[var(--ios-label-tertiary)] mt-0.5">
-                                                {currentLang === 'zh' ? '最后同步：' : 'Last synced: '}{new Date(lastSyncedTime).toLocaleString()}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={async () => {
-                                            try {
-                                                await syncNow();
-                                            } catch (e: any) {
-                                                alert((currentLang === 'zh' ? "同步失败：" : "Sync failed: ") + e.message);
-                                            }
-                                        }}
-                                        disabled={isSyncing}
-                                        className="px-4 py-2.5 rounded-xl font-bold text-xs bg-blue-500 hover:bg-blue-600 text-white shadow-md active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-                                    >
-                                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                                        <span>{isSyncing ? (currentLang === 'zh' ? '同步中...' : 'Syncing...') : (currentLang === 'zh' ? '立即同步' : 'Sync Now')}</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            if (confirmLogout) {
-                                                disconnectGoogleDrive();
-                                                setConfirmLogout(false);
-                                            } else {
-                                                setConfirmLogout(true);
-                                                setTimeout(() => setConfirmLogout(false), 3000);
-                                            }
-                                        }}
-                                        className={`px-4 py-2.5 rounded-xl font-bold text-xs text-white transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer ${
-                                            confirmLogout ? 'bg-red-600 animate-pulse' : 'bg-red-500 hover:bg-red-600'
-                                        }`}
-                                    >
-                                        {confirmLogout ? (currentLang === 'zh' ? "确认断开？" : "Confirm Disconnect?") : (currentLang === 'zh' ? "断开连接" : "Disconnect")}
-                                    </button>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="space-y-1">
-                                    <h4 className="font-bold text-sm text-[var(--ios-label-primary)]">
-                                        {currentLang === 'zh' ? '尚未连接 Google Drive 云端' : 'Google Drive Not Connected'}
-                                    </h4>
-                                    <p className="text-xs text-[var(--ios-label-secondary)] max-w-lg leading-relaxed">
-                                        {currentLang === 'zh' 
-                                            ? '连接后，数据将以隐私文件形式保存在您的个人 Google 云端硬盘中，可在电脑、手机或平板间全自动实时漫游。'
-                                            : 'Once connected, your data will be securely synced to your personal Google Drive for cross-device access.'}
-                                    </p>
-                                </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            await syncNow();
+                                        } catch (e: any) {
+                                            alert((currentLang === 'zh' ? "同步失败：" : "Sync failed: ") + e.message);
+                                        }
+                                    }}
+                                    disabled={isSyncing}
+                                    className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white text-[#2600FD] font-semibold text-xs active:scale-95 transition-transform disabled:opacity-50 cursor-pointer"
+                                >
+                                    <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                                    <span>{isSyncing ? (currentLang === 'zh' ? '同步中...' : 'Syncing...') : (currentLang === 'zh' ? '立即同步' : 'Sync Now')}</span>
+                                </button>
 
                                 <button
-                                    onClick={() => setShowAuthModal(true)}
-                                    className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-blue-500 hover:bg-blue-600 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                                    onClick={() => {
+                                        if (confirmLogout) {
+                                            disconnectGoogleDrive();
+                                            setConfirmLogout(false);
+                                        } else {
+                                            setConfirmLogout(true);
+                                            setTimeout(() => setConfirmLogout(false), 3000);
+                                        }
+                                    }}
+                                    className={`inline-flex items-center h-10 px-4 rounded-full font-semibold text-xs border active:scale-95 transition-transform cursor-pointer ${
+                                        confirmLogout
+                                            ? 'bg-[#0A0A0B] border-transparent text-[#FFBF00]'
+                                            : 'bg-white/[0.15] border-white/20 text-white hover:bg-white/[0.22]'
+                                    }`}
                                 >
-                                    <Cloud size={15} />
-                                    <span>{currentLang === 'zh' ? '连接 Google Drive' : 'Connect Google Drive'}</span>
+                                    {confirmLogout ? (currentLang === 'zh' ? "确认断开？" : "Confirm Disconnect?") : (currentLang === 'zh' ? "断开连接" : "Disconnect")}
                                 </button>
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Preferences & Appearance Card */}
-                <div
-                    className="ios-card p-6 sm:p-8 animate-scale-in"
-                    style={{
-                        background: "var(--ios-card-bg)",
-                        boxShadow: "var(--ios-card-shadow)"
-                    }}
-                >
-                    <div className="flex items-center gap-3 mb-6">
-                        <div
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-blue-500"
-                            style={{
-                                background: "var(--ios-card-bg)",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                            }}
-                        >
-                            <Globe size={24} />
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                                {currentLang === 'zh' ? '偏好与外观' : 'Preferences & Display'}
-                            </h2>
-                            <p className="text-sm text-gray-500 font-medium">
-                                {currentLang === 'zh' ? '多语言切换与系统主题自适应' : 'Language & system adaptive theme'}
-                            </p>
-                        </div>
-                    </div>
+                    ) : (
+                        <div className="mt-5 pt-5 border-t border-white/[0.16] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1 min-w-0">
+                                <h4 className="font-semibold text-sm text-white">
+                                    {currentLang === 'zh' ? '尚未连接 Google Drive 云端' : 'Google Drive Not Connected'}
+                                </h4>
+                                <p className="text-xs text-white/70 max-w-lg leading-relaxed">
+                                    {currentLang === 'zh' 
+                                        ? '连接后，数据将以隐私文件形式保存在您的个人 Google 云端硬盘中，可在电脑、手机或平板间全自动实时漫游。'
+                                        : 'Once connected, your data will be securely synced to your personal Google Drive for cross-device access.'}
+                                </p>
+                            </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Language Selection */}
-                        <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/5 dark:border-white/10 space-y-2">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                                {currentLang === 'zh' ? '应用显示语言' : 'App Display Language'}
+                            <button
+                                onClick={() => setShowAuthModal(true)}
+                                className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-white text-[#2600FD] font-semibold text-xs shrink-0 active:scale-95 transition-transform cursor-pointer"
+                            >
+                                <Cloud size={15} />
+                                <span>{currentLang === 'zh' ? '连接 Google Drive' : 'Connect Google Drive'}</span>
+                            </button>
+                        </div>
+                    )}
+                </section>
+
+                {/* Preferences & Display */}
+                <section>
+                    <SectionHead
+                        label={currentLang === 'zh' ? '偏好' : 'PREFERENCES'}
+                        title={currentLang === 'zh' ? '偏好与外观' : 'Preferences & Display'}
+                    />
+
+                    {/* Language */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="min-w-0">
+                            <span className="block text-[14px] font-semibold">{currentLang === 'zh' ? '应用显示语言' : 'App Display Language'}</span>
+                            <span className="block text-xs text-[var(--ios-label-secondary)] mt-0.5">
+                                {currentLang === 'zh' ? '界面与 AI 输出语言' : 'Interface & AI output language'}
                             </span>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={() => handleLanguageChange('en')}
-                                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                                        currentLang === 'en'
-                                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
-                                    }`}
-                                >
-                                    <span>English (EN)</span>
-                                    {currentLang === 'en' && <Check size={14} />}
-                                </button>
-                                <button
-                                    onClick={() => handleLanguageChange('zh')}
-                                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                                        currentLang === 'zh'
-                                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
-                                    }`}
-                                >
-                                    <span>中文 (ZH)</span>
-                                    {currentLang === 'zh' && <Check size={14} />}
-                                </button>
-                            </div>
                         </div>
+                        <div className="seg w-full sm:w-[210px] shrink-0">
+                            <button
+                                onClick={() => handleLanguageChange('en')}
+                                className={`seg__item flex-1 min-w-0 text-center !px-2 ${currentLang === 'en' ? 'is-on' : ''}`}
+                            >
+                                English (EN)
+                            </button>
+                            <button
+                                onClick={() => handleLanguageChange('zh')}
+                                className={`seg__item flex-1 min-w-0 text-center !px-2 ${currentLang === 'zh' ? 'is-on' : ''}`}
+                            >
+                                中文 (ZH)
+                            </button>
+                        </div>
+                    </div>
 
-                        {/* Theme Selection */}
-                        <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/5 dark:border-white/10 space-y-2">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                                {currentLang === 'zh' ? '外观主题' : 'Appearance Theme'}
+                    <div className="hairline my-4" />
+
+                    {/* Theme */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="min-w-0">
+                            <span className="block text-[14px] font-semibold">{currentLang === 'zh' ? '外观主题' : 'Appearance Theme'}</span>
+                            <span className="block text-xs text-[var(--ios-label-secondary)] mt-0.5">
+                                {currentLang === 'zh' ? '跟随系统或手动指定' : 'Follow the system, or set it manually'}
                             </span>
-                            <div className="grid grid-cols-3 gap-1.5">
-                                <button
-                                    onClick={() => handleThemeChange('auto')}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                                        themeMode === 'auto'
-                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
-                                    }`}
-                                >
-                                    <span>{currentLang === 'zh' ? '系统跟随' : 'Auto'}</span>
-                                </button>
-                                <button
-                                    onClick={() => handleThemeChange('light')}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                                        themeMode === 'light'
-                                            ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
-                                    }`}
-                                >
-                                    <Sun size={13} />
-                                    <span>{currentLang === 'zh' ? '浅色' : 'Light'}</span>
-                                </button>
-                                <button
-                                    onClick={() => handleThemeChange('dark')}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                                        themeMode === 'dark'
-                                            ? 'bg-indigo-900 text-white shadow-md shadow-indigo-900/30'
-                                            : 'bg-white/70 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20'
-                                    }`}
-                                >
-                                    <Moon size={13} />
-                                    <span>{currentLang === 'zh' ? '深色' : 'Dark'}</span>
-                                </button>
-                            </div>
+                        </div>
+                        <div className="seg w-full sm:w-[250px] shrink-0">
+                            <button
+                                onClick={() => handleThemeChange('auto')}
+                                className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1 !px-2 ${themeMode === 'auto' ? 'is-on' : ''}`}
+                            >
+                                <span className="truncate">{currentLang === 'zh' ? '系统跟随' : 'Auto'}</span>
+                            </button>
+                            <button
+                                onClick={() => handleThemeChange('light')}
+                                className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1 !px-2 ${themeMode === 'light' ? 'is-on' : ''}`}
+                            >
+                                <Sun size={13} />
+                                <span className="truncate">{currentLang === 'zh' ? '浅色' : 'Light'}</span>
+                            </button>
+                            <button
+                                onClick={() => handleThemeChange('dark')}
+                                className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1 !px-2 ${themeMode === 'dark' ? 'is-on' : ''}`}
+                            >
+                                <Moon size={13} />
+                                <span className="truncate">{currentLang === 'zh' ? '深色' : 'Dark'}</span>
+                            </button>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* AI Configuration Card */}
-                <div
-                    className="ios-card p-6 sm:p-8 animate-scale-in"
-                    style={{
-                        background: "var(--ios-card-bg)",
-                        boxShadow: "var(--ios-card-shadow)"
-                    }}
-                >
-                    <div className="flex items-center gap-3 mb-8">
-                        <div
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-purple-600"
-                            style={{
-                                background: "var(--ios-card-bg)",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                            }}
-                        >
-                            <BrainCircuit size={24} />
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-700">AI Intelligence Providers</h2>
-                    </div>
+                {/* AI Intelligence */}
+                <section>
+                    <SectionHead
+                        label={currentLang === 'zh' ? '智能' : 'INTELLIGENCE'}
+                        title="AI Intelligence Providers"
+                        meta={currentLang === 'zh' ? '自备密钥' : 'BYO KEY'}
+                    />
 
-                    {/* Provider Select Grid */}
-                    <div className="mb-8">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">Select AI Provider</label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* Provider Select */}
+                    <div>
+                        <span className="signal-label block text-black/40 dark:text-white/40 mb-2.5">
+                            {currentLang === 'zh' ? '选择服务商' : 'SELECT AI PROVIDER'}
+                        </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {[
                                 { id: 'google', label: 'Google Gemini' },
                                 { id: 'openai', label: 'OpenAI' },
@@ -660,13 +615,11 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                         setCheckStatus('idle');
                                         setStatusMsg('');
                                     }}
-                                    className={`py-4 px-2 rounded-2xl text-sm font-bold transition-all ${aiProvider === p.id ? 'text-purple-600' : 'text-gray-400 hover:text-gray-600'}`}
-                                    style={{
-                                        background: "var(--ios-card-bg)",
-                                        boxShadow: aiProvider === p.id
-                                            ? "none"
-                                            : "0 2px 8px rgba(0,0,0,0.06)"
-                                    }}
+                                    className={`h-11 px-2 rounded-full text-[12.5px] font-semibold border transition-colors active:scale-95 ${
+                                        aiProvider === p.id
+                                            ? 'bg-[#2600FD] border-transparent text-white'
+                                            : 'bg-white dark:bg-transparent border-black/[0.14] dark:border-white/[0.15] text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
+                                    }`}
                                 >
                                     {p.label}
                                 </button>
@@ -674,17 +627,19 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         </div>
                     </div>
 
+                    <div className="hairline my-5" />
+
                     {/* API Key */}
-                    <div className="mb-8">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 block pl-2">
+                    <div>
+                        <span className="signal-label block text-black/40 dark:text-white/40 mb-2.5">
                             {aiProvider === 'google' && 'Google AI Studio API Key'}
                             {aiProvider === 'openai' && 'OpenAI API Key'}
                             {aiProvider === 'anthropic' && 'Anthropic API Key'}
                             {aiProvider === 'deepseek' && 'DeepSeek API Key'}
                             {aiProvider === 'siliconflow' && 'SiliconFlow API Key'}
                             {aiProvider === 'openrouter' && 'OpenRouter API Key'}
-                        </label>
-                        <div className="flex gap-4">
+                        </span>
+                        <div className="flex items-stretch gap-2">
                             <input
                                 type="password"
                                 value={apiKeys[aiProvider] || ''}
@@ -693,19 +648,14 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     setCheckStatus('idle');
                                 }}
                                 placeholder="sk-... / AIzaSy..."
-                                className="flex-1 p-4 rounded-2xl font-mono text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
-                                style={{
-                                    boxShadow: "none"
-                                }}
+                                className="ios-input flex-1 min-w-0 px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-200"
                             />
                             <button
                                 onClick={checkConnection}
                                 disabled={!apiKeys[aiProvider] || checkStatus === 'checking'}
-                                className={`px-6 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 active:scale-95 ${checkStatus === 'success' ? 'text-green-500' : checkStatus === 'error' ? 'text-red-500' : 'text-gray-600'}`}
-                                style={{
-                                    background: "var(--ios-card-bg)",
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                                }}
+                                className={`ios-button shrink-0 px-4 rounded-[14px] font-semibold text-xs whitespace-nowrap active:scale-95 transition-all flex items-center gap-2 ${
+                                    checkStatus === 'success' ? 'text-green-500' : checkStatus === 'error' ? 'text-red-500' : 'text-gray-600'
+                                }`}
                             >
                                 {checkStatus === 'checking' ? <Activity className="animate-spin" size={18} /> :
                                     checkStatus === 'success' ? <Check size={18} /> :
@@ -714,24 +664,25 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             </button>
                         </div>
                         {statusMsg && (
-                            <p className={`text-xs font-bold mt-3 pl-2 ${checkStatus === 'success' ? 'text-green-600' : checkStatus === 'error' ? 'text-red-600' : 'text-gray-400'}`}>
+                            <p className={`text-xs font-semibold mt-2.5 ${checkStatus === 'success' ? 'text-green-600' : checkStatus === 'error' ? 'text-red-600' : 'text-gray-400'}`}>
                                 {statusMsg}
                             </p>
                         )}
                     </div>
 
+                    <div className="hairline my-5" />
+
                     {/* Unified Model Selection Block */}
-                    <div className="mb-4">
-                        <div className="flex justify-between items-center mb-4 pl-2 pr-2">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Model Selection</label>
+                    <div>
+                        <div className="flex items-center justify-between gap-3 mb-2.5">
+                            <span className="signal-label text-black/40 dark:text-white/40">
+                                {currentLang === 'zh' ? '模型选择' : 'MODEL SELECTION'}
+                            </span>
                             {aiProvider === 'siliconflow' && (
                                 <button
                                     onClick={() => loadSiliconFlowModels(apiKeys.siliconflow, true)}
                                     disabled={isLoadingModels || !apiKeys.siliconflow}
-                                    className="px-3.5 py-1.5 rounded-xl text-[10px] font-extrabold bg-[var(--ios-card-bg)] hover:text-purple-600 transition flex items-center gap-1.5 active:scale-95"
-                                    style={{
-                                        boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
-                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-black/[0.14] dark:border-white/[0.15] text-[10.5px] font-semibold text-black/60 dark:text-white/60 hover:text-[#2600FD] dark:hover:text-blue-400 transition-colors active:scale-95 disabled:opacity-50"
                                 >
                                     <RefreshCw size={10} className={isLoadingModels ? 'animate-spin' : ''} />
                                     Sync Catalog
@@ -740,7 +691,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         </div>
 
                         {aiProvider !== 'siliconflow' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="divide-y divide-black/[0.08] dark:divide-white/[0.09]">
+
                                 {aiProvider === 'google' && [
                                     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Recommended: Default fast & efficient' },
                                     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', desc: 'Best for complex analysis & reasoning' },
@@ -752,19 +704,17 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     <div
                                         key={m.id}
                                         onClick={() => setAiModel(m.id)}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "var(--ios-card-bg)",
-                                            boxShadow: aiModel === m.id
-                                                ? "none"
-                                                : "var(--ios-card-shadow)"
-                                        }}
+                                        className="flex items-start gap-3 py-3.5 cursor-pointer active:opacity-70 transition-opacity"
                                     >
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-bold">{m.name}</span>
-                                            {aiModel === m.id && <CheckCircle2 size={16} />}
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[13.5px] font-semibold ${aiModel === m.id ? 'text-purple-600' : 'text-[var(--ios-label-primary)]'}`}>
+                                                    {m.name}
+                                                </span>
+                                                {aiModel === m.id && <CheckCircle2 size={14} className="shrink-0 text-purple-600" />}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-0.5 leading-relaxed">{m.desc}</div>
                                         </div>
-                                        <div className="text-xs text-gray-400">{m.desc}</div>
                                     </div>
                                 ))}
 
@@ -777,19 +727,17 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     <div
                                         key={m.id}
                                         onClick={() => setAiModel(m.id)}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "var(--ios-card-bg)",
-                                            boxShadow: aiModel === m.id
-                                                ? "none"
-                                                : "var(--ios-card-shadow)"
-                                        }}
+                                        className="flex items-start gap-3 py-3.5 cursor-pointer active:opacity-70 transition-opacity"
                                     >
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-bold">{m.name}</span>
-                                            {aiModel === m.id && <CheckCircle2 size={16} />}
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[13.5px] font-semibold ${aiModel === m.id ? 'text-purple-600' : 'text-[var(--ios-label-primary)]'}`}>
+                                                    {m.name}
+                                                </span>
+                                                {aiModel === m.id && <CheckCircle2 size={14} className="shrink-0 text-purple-600" />}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-0.5 leading-relaxed">{m.desc}</div>
                                         </div>
-                                        <div className="text-xs text-gray-400">{m.desc}</div>
                                     </div>
                                 ))}
 
@@ -802,19 +750,17 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     <div
                                         key={m.id}
                                         onClick={() => setAiModel(m.id)}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "var(--ios-card-bg)",
-                                            boxShadow: aiModel === m.id
-                                                ? "none"
-                                                : "var(--ios-card-shadow)"
-                                        }}
+                                        className="flex items-start gap-3 py-3.5 cursor-pointer active:opacity-70 transition-opacity"
                                     >
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-bold">{m.name}</span>
-                                            {aiModel === m.id && <CheckCircle2 size={16} />}
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[13.5px] font-semibold ${aiModel === m.id ? 'text-purple-600' : 'text-[var(--ios-label-primary)]'}`}>
+                                                    {m.name}
+                                                </span>
+                                                {aiModel === m.id && <CheckCircle2 size={14} className="shrink-0 text-purple-600" />}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-0.5 leading-relaxed">{m.desc}</div>
                                         </div>
-                                        <div className="text-xs text-gray-400">{m.desc}</div>
                                     </div>
                                 ))}
 
@@ -826,25 +772,23 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                     <div
                                         key={m.id}
                                         onClick={() => setAiModel(m.id)}
-                                        className={`p-5 rounded-2xl cursor-pointer transition-all active:scale-95 group ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
-                                        style={{
-                                            background: "var(--ios-card-bg)",
-                                            boxShadow: aiModel === m.id
-                                                ? "none"
-                                                : "var(--ios-card-shadow)"
-                                        }}
+                                        className="flex items-start gap-3 py-3.5 cursor-pointer active:opacity-70 transition-opacity"
                                     >
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-bold">{m.name}</span>
-                                            {aiModel === m.id && <CheckCircle2 size={16} />}
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[13.5px] font-semibold ${aiModel === m.id ? 'text-purple-600' : 'text-[var(--ios-label-primary)]'}`}>
+                                                    {m.name}
+                                                </span>
+                                                {aiModel === m.id && <CheckCircle2 size={14} className="shrink-0 text-purple-600" />}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-0.5 leading-relaxed">{m.desc}</div>
                                         </div>
-                                        <div className="text-xs text-gray-400">{m.desc}</div>
                                     </div>
                                 ))}
 
                                 {aiProvider === 'openrouter' && (
-                                    <div className="col-span-full space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="pt-2 space-y-4">
+                                        <div className="divide-y divide-black/[0.08] dark:divide-white/[0.09]">
                                             {[
                                                 { id: 'deepseek/deepseek-v4-pro', name: 'DeepSeek-V4 Pro', provider: 'DeepSeek' },
                                                 { id: 'deepseek/deepseek-flash', name: 'DeepSeek-V4 Flash', provider: 'DeepSeek' },
@@ -863,65 +807,54 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                                 <div
                                                     key={m.id}
                                                     onClick={() => setAiModel(m.id)}
-                                                    className={`p-4 rounded-2xl cursor-pointer transition-all active:scale-95 ${aiModel === m.id ? 'text-purple-600 font-bold' : 'text-gray-600'}`}
-                                                    style={{
-                                                        background: "var(--ios-card-bg)",
-                                                        boxShadow: aiModel === m.id
-                                                            ? "none"
-                                                            : "0 2px 8px rgba(0,0,0,0.06)"
-                                                    }}
+                                                    className="flex items-center justify-between gap-3 py-3.5 cursor-pointer active:opacity-70 transition-opacity"
                                                 >
-                                                    <div className="font-bold text-sm flex items-center justify-between">
-                                                        {m.name}
-                                                        {aiModel === m.id && <CheckCircle2 size={16} />}
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="font-semibold text-[13.5px] truncate">
+                                                            {m.name}
+                                                        </div>
+                                                        <div className="text-[10.5px] text-gray-400 font-mono">{m.provider}</div>
                                                     </div>
-                                                    <div className="text-[10px] text-gray-400">{m.provider}</div>
+                                                    {aiModel === m.id && <CheckCircle2 size={15} className="shrink-0 text-purple-600" />}
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="relative">
+                                        <div className="relative pt-1">
                                             <input
-                                                className="w-full p-4 rounded-2xl text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
+                                                className="ios-input w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-200"
                                                 placeholder="Or enter custom OpenRouter model ID"
                                                 value={aiModel}
                                                 onChange={e => setAiModel(e.target.value)}
-                                                style={{
-                                                    boxShadow: "none"
-                                                }}
                                             />
                                         </div>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="space-y-6">
+                            <div className="space-y-5">
                                 {/* Search & Filters Panel */}
-                                <div className="space-y-4">
+                                <div className="space-y-5">
                                     <div className="relative">
                                         <input
                                             type="text"
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             placeholder="Search by Model Name, Provider, Capability (e.g. qwen, deepseek, flux)..."
-                                            className="w-full pl-12 pr-4 py-4 rounded-2xl text-sm outline-none text-gray-700 bg-[var(--ios-card-bg)]"
-                                            style={{
-                                                boxShadow: "none"
-                                            }}
+                                            className="ios-input w-full pl-11 pr-4 py-3 text-sm text-gray-700 dark:text-gray-200"
                                         />
-                                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                                     </div>
 
                                     {/* Filter Controls */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-[var(--ios-card-bg)]"
-                                         style={{ boxShadow: "none" }}>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         
                                         {/* Capability Filter */}
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Capability</label>
+                                            <label className="signal-label text-black/40 dark:text-white/40 mb-2 block">Capability</label>
                                             <select
                                                 value={selectedCapability}
                                                 onChange={e => setSelectedCapability(e.target.value)}
-                                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--ios-card-bg)] outline-none text-gray-600 border border-gray-300/40"
+                                                className="ios-input w-full px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300"
                                             >
                                                 <option value="all">All Capabilities</option>
                                                 <option value="chat">General Chat</option>
@@ -937,11 +870,11 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                                         {/* Sub-Provider Filter */}
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Sub-Provider</label>
+                                            <label className="signal-label text-black/40 dark:text-white/40 mb-2 block">Sub-Provider</label>
                                             <select
                                                 value={selectedSubProvider}
                                                 onChange={e => setSelectedSubProvider(e.target.value)}
-                                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--ios-card-bg)] outline-none text-gray-600 border border-gray-300/40"
+                                                className="ios-input w-full px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300"
                                             >
                                                 <option value="all">All Sub-Providers</option>
                                                 <option value="deepseek">DeepSeek</option>
@@ -955,11 +888,11 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
                                         {/* Context Length Filter */}
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2 block">Context Size</label>
+                                            <label className="signal-label text-black/40 dark:text-white/40 mb-2 block">Context Size</label>
                                             <select
                                                 value={selectedContextLength}
                                                 onChange={e => setSelectedContextLength(e.target.value)}
-                                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--ios-card-bg)] outline-none text-gray-600 border border-gray-300/40"
+                                                className="ios-input w-full px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300"
                                             >
                                                 <option value="all">Any Context Length</option>
                                                 <option value="32k">32K+ Tokens</option>
@@ -972,21 +905,20 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                 </div>
 
                                 {modelError && (
-                                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-sm flex items-center gap-2">
-                                        <AlertCircle size={16} />
+                                    <div className="flex items-center gap-2 text-sm text-red-600">
+                                        <AlertCircle size={16} className="shrink-0" />
                                         {modelError}
                                     </div>
                                 )}
 
-                                {/* Active Model Indicator */}
-                                <div className="px-4 py-3 rounded-2xl bg-[var(--ios-card-bg)] flex justify-between items-center text-xs font-bold"
-                                     style={{ boxShadow: "inset 3px 3px 6px #A0A0A6, inset -3px -3px 6px #ffffff" }}>
-                                    <span className="text-gray-400">Currently Active Model:</span>
-                                    <span className="text-purple-600 font-mono">{aiModel || 'None Selected'}</span>
+                                {/* Active Model Indicator — ink mass */}
+                                <div className="ink-panel px-4 py-3.5 flex items-center justify-between gap-3">
+                                    <span className="signal-label text-white/45 relative z-10">Currently Active Model</span>
+                                    <span className="relative z-10 text-xs font-mono text-white truncate">{aiModel || 'None Selected'}</span>
                                 </div>
 
-                                {/* Catalog Model List */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                                {/* Catalog Model List — hairline separated rows */}
+                                <div className="divide-y divide-black/[0.08] dark:divide-white/[0.09] max-h-[420px] overflow-y-auto no-scrollbar">
                                     {sortedModels.length > 0 ? (
                                         sortedModels.map((m) => {
                                             const isSelected = aiModel === m.id;
@@ -994,69 +926,58 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             return (
                                                 <div
                                                     key={m.id}
-                                                    className={`p-5 rounded-2xl transition-all relative flex flex-col justify-between border ${
-                                                        isSelected ? 'border-purple-300/60 shadow-clay-inner' : 'border-white/20'
-                                                    }`}
-                                                    style={{
-                                                        background: "var(--ios-card-bg)",
-                                                        boxShadow: isSelected
-                                                            ? "none"
-                                                            : "0 2px 8px rgba(0,0,0,0.06)"
-                                                    }}
+                                                    className="py-4"
                                                 >
-                                                    <div>
-                                                        <div className="flex justify-between items-start gap-2 mb-2">
-                                                            <div className="flex-1">
-                                                                <h4 className="text-sm font-extrabold text-gray-800 leading-tight break-all">
-                                                                    {m.name}
-                                                                </h4>
-                                                                <p className="text-[10px] text-gray-400 font-mono mt-0.5 break-all">
-                                                                    {m.id}
-                                                                </p>
-                                                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mt-1.5 inline-block">
-                                                                    {m.provider}
-                                                                </span>
-                                                            </div>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    toggleFavorite(m.id);
-                                                                }}
-                                                                className={`p-1.5 rounded-lg active:scale-95 transition-all text-amber-500`}
-                                                            >
-                                                                <Star size={16} fill={isFav ? "currentColor" : "none"} />
-                                                            </button>
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-[13.5px] font-semibold text-gray-800 dark:text-gray-100 leading-tight break-all">
+                                                                {m.name}
+                                                            </h4>
+                                                            <p className="text-[10.5px] text-gray-400 font-mono mt-0.5 break-all">
+                                                                {m.id}
+                                                            </p>
+                                                            <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full mt-1.5 inline-block">
+                                                                {m.provider}
+                                                            </span>
                                                         </div>
-                                                        <p className="text-xs text-gray-400 mb-3 leading-relaxed">
-                                                            {m.description}
-                                                        </p>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleFavorite(m.id);
+                                                            }}
+                                                            className={`p-1.5 rounded-full active:scale-95 transition-colors shrink-0 ${
+                                                                isFav ? 'text-amber-500' : 'text-gray-400 hover:text-amber-500'
+                                                            }`}
+                                                        >
+                                                            <Star size={16} fill={isFav ? "currentColor" : "none"} />
+                                                        </button>
                                                     </div>
 
-                                                    <div className="mt-4 pt-3 border-t border-gray-300/40 flex justify-between items-center">
-                                                        <div className="space-y-1">
-                                                            <span className="text-[9px] font-extrabold text-gray-400 uppercase block">Specs</span>
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {m.context_length > 0 ? (
-                                                                    <span className="text-[9px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
-                                                                        Context: {m.context_length >= 1048576 ? `${(m.context_length / 1048576).toFixed(0)}M` : `${(m.context_length / 1024).toFixed(0)}K`}
-                                                                    </span>
-                                                                ) : null}
-                                                                {m.capabilities.map(cap => (
-                                                                    <span key={cap} className="text-[9px] font-bold text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded uppercase">
-                                                                        {cap}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
+                                                    <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                                                        {m.description}
+                                                    </p>
+
+                                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {m.context_length > 0 ? (
+                                                                <span className="text-[9.5px] font-semibold text-gray-500 dark:text-gray-400 bg-black/[0.05] dark:bg-white/[0.08] px-2 py-0.5 rounded-full">
+                                                                    Context: {m.context_length >= 1048576 ? `${(m.context_length / 1048576).toFixed(0)}M` : `${(m.context_length / 1024).toFixed(0)}K`}
+                                                                </span>
+                                                            ) : null}
+                                                            {m.capabilities.map(cap => (
+                                                                <span key={cap} className="text-[9.5px] font-semibold text-purple-500 dark:text-blue-400 bg-purple-500/10 px-2 py-0.5 rounded-full uppercase">
+                                                                    {cap}
+                                                                </span>
+                                                            ))}
                                                         </div>
 
                                                         <button
                                                             onClick={() => setAiModel(m.id)}
-                                                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                                                                isSelected ? 'bg-purple-600 text-white shadow-md' : 'bg-[var(--ios-card-bg)] text-gray-500 hover:text-purple-600'
+                                                            className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors active:scale-95 shrink-0 ${
+                                                                isSelected
+                                                                    ? 'bg-[#2600FD] text-white'
+                                                                    : 'border border-black/[0.14] dark:border-white/[0.15] text-gray-500 dark:text-gray-400 hover:text-[#2600FD]'
                                                             }`}
-                                                            style={!isSelected ? {
-                                                                boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
-                                                            } : {}}
                                                         >
                                                             {isSelected ? 'Active' : 'Select'}
                                                         </button>
@@ -1065,7 +986,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                                             );
                                         })
                                     ) : (
-                                        <div className="col-span-full py-8 text-center text-gray-400 text-sm">
+                                        <div className="py-8 text-center text-gray-400 text-sm">
                                             No models match your search/filter parameters.
                                         </div>
                                     )}
@@ -1073,74 +994,46 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             </div>
                         )}
                     </div>
-                </div>
+                </section>
 
 
-                {/* Backup Card */}
-                <div
-                    className="ios-card p-6 sm:p-8 animate-scale-in"
-                    style={{
-                        background: "var(--ios-card-bg)",
-                        boxShadow: "var(--ios-card-shadow)"
-                    }}
-                >
-                    <div className="flex items-center gap-3 mb-8">
-                        <div
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600"
-                            style={{
-                                background: "var(--ios-card-bg)",
-                                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
-                            }}
-                        >
-                            <Database size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-700">Data Management</h2>
-                            <p className="text-sm text-gray-500 font-medium">Backup applies to MyWealth, GetNote & Settings</p>
-                        </div>
-                    </div>
+                {/* Data management — rows on hairlines, no card walls */}
+                <section>
+                    <SectionHead
+                        label={currentLang === 'zh' ? '数据' : 'DATA'}
+                        title={currentLang === 'zh' ? '数据管理' : 'Data Management'}
+                    />
+                    <p className="text-xs text-[var(--ios-label-secondary)] -mt-1 mb-2">
+                        Backup applies to MyWealth, GetNote &amp; Settings
+                    </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="divide-y divide-black/[0.08] dark:divide-white/[0.09]">
                         <button
                             onClick={handleFullBackup}
-                            className="p-6 rounded-[24px] transition-all active:scale-95 group text-left relative overflow-hidden text-gray-600 hover:text-blue-600"
-                            style={{
-                                background: "var(--ios-card-bg)",
-                                boxShadow: "var(--ios-card-shadow)"
-                            }}
+                            className="w-full flex items-center gap-3.5 py-4 text-left active:opacity-70 transition-opacity"
                         >
-                            <div
-                                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:-translate-y-1 text-gray-500 group-hover:text-blue-500"
-                                style={{
-                                    background: "var(--ios-card-bg)",
-                                    boxShadow: "none"
-                                }}
-                            >
-                                <Download size={22} />
-                            </div>
-                            <h3 className="font-bold text-xl mb-1">Export Backup</h3>
-                            <p className="text-xs text-gray-400 font-medium">Save all app data to a single JSON.</p>
+                            <span className="w-10 h-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-gray-500 shrink-0">
+                                <Download size={18} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block text-[14px] font-semibold">{currentLang === 'zh' ? '导出备份' : 'Export Backup'}</span>
+                                <span className="block text-xs text-[var(--ios-label-secondary)] mt-0.5">Save all app data to a single JSON.</span>
+                            </span>
+                            <ChevronRight size={16} className="text-gray-400 shrink-0" />
                         </button>
 
                         <button
                             onClick={() => document.getElementById('global-restore')?.click()}
-                            className="p-6 rounded-[24px] transition-all active:scale-95 group text-left relative overflow-hidden text-gray-600 hover:text-blue-600"
-                            style={{
-                                background: "var(--ios-card-bg)",
-                                boxShadow: "var(--ios-card-shadow)"
-                            }}
+                            className="w-full flex items-center gap-3.5 py-4 text-left active:opacity-70 transition-opacity"
                         >
-                            <div
-                                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:-translate-y-1 text-gray-500 group-hover:text-blue-500"
-                                style={{
-                                    background: "var(--ios-card-bg)",
-                                    boxShadow: "none"
-                                }}
-                            >
-                                <Upload size={22} />
-                            </div>
-                            <h3 className="font-bold text-xl mb-1">Restore Data</h3>
-                            <p className="text-xs text-gray-400 font-medium">Restore from a backup file.</p>
+                            <span className="w-10 h-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-gray-500 shrink-0">
+                                <Upload size={18} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block text-[14px] font-semibold">{currentLang === 'zh' ? '恢复数据' : 'Restore Data'}</span>
+                                <span className="block text-xs text-[var(--ios-label-secondary)] mt-0.5">Restore from a backup file.</span>
+                            </span>
+                            <ChevronRight size={16} className="text-gray-400 shrink-0" />
                             <input
                                 id="global-restore"
                                 type="file"
@@ -1151,7 +1044,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                             />
                         </button>
                     </div>
-                </div>
+                </section>
 
             </div>
             <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />

@@ -299,54 +299,54 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
 
   return (
     <div className="min-h-screen pt-16 sm:pt-20 pb-28 px-4 sm:px-6 max-w-4xl mx-auto selection:bg-blue-500/20">
-      {/* Top Breadcrumb & Segmented Control */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      {/* Page header — module identity, then the system segmented control */}
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider mb-1.5 backdrop-blur-md">
-            <Sparkles size={12} className="animate-pulse" />
-            <span>{lang === 'zh' ? '日常笔记 · 工作待办 · 沉浸专注' : 'Notes · Tasks · Focus'}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <span className="signal-label block text-black/40 dark:text-white/40">
+            {lang === 'zh' ? '模块' : 'MODULE'}
+          </span>
+          <h1 className="text-[27px] font-semibold tracking-[-0.038em] leading-[1.05] mt-1.5 text-gray-900 dark:text-white">
             NoteDown
           </h1>
         </div>
+        <span className="signal-label text-black/40 dark:text-white/40 mt-1 text-right">INK &amp; SIGNAL</span>
+      </div>
 
-        {/* Liquid Glass Segmented Pills */}
-        <div className="flex items-center p-1 rounded-2xl bg-white/60 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-sm self-start sm:self-auto">
-          <button
-            onClick={() => setActiveTab('notes')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeTab === 'notes'
-                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
-                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <FileText size={15} />
-            <span>{lang === 'zh' ? `笔记 (${notes.length})` : `Notes (${notes.length})`}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeTab === 'tasks'
-                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
-                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <CheckSquare size={15} />
-            <span>{lang === 'zh' ? `待办 (${pendingCount})` : `Tasks (${pendingCount})`}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('focus')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeTab === 'focus'
-                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
-                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <Clock size={15} />
-            <span>{lang === 'zh' ? '专注' : 'Focus'}</span>
-          </button>
-        </div>
+      {/* Capsule segmented control — items flex equally */}
+      <div className="seg mt-5 mb-6" role="tablist" aria-label={lang === 'zh' ? '模块视图' : 'Module views'}>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'notes'}
+          onClick={() => setActiveTab('notes')}
+          className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 !px-2 ${
+            activeTab === 'notes' ? 'is-on' : ''
+          }`}
+        >
+          <FileText size={13} />
+          <span className="truncate">{lang === 'zh' ? `笔记 (${notes.length})` : `Notes (${notes.length})`}</span>
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'tasks'}
+          onClick={() => setActiveTab('tasks')}
+          className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 !px-2 ${
+            activeTab === 'tasks' ? 'is-on' : ''
+          }`}
+        >
+          <CheckSquare size={13} />
+          <span className="truncate">{lang === 'zh' ? `待办 (${pendingCount})` : `Tasks (${pendingCount})`}</span>
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'focus'}
+          onClick={() => setActiveTab('focus')}
+          className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 !px-2 ${
+            activeTab === 'focus' ? 'is-on' : ''
+          }`}
+        >
+          <Clock size={13} />
+          <span className="truncate">{lang === 'zh' ? '专注' : 'Focus'}</span>
+        </button>
       </div>
 
       {/* =========================================================================
@@ -363,7 +363,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 placeholder={lang === 'zh' ? "搜索笔记标题或内容..." : "Search notes..."}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/70 dark:bg-[#141416]/70 backdrop-blur-2xl border border-white/60 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-blue-500 transition-colors shadow-sm"
+                className="ios-input w-full pl-10 pr-4 py-2.5 text-sm placeholder-gray-400"
               />
             </div>
             <button
@@ -374,21 +374,21 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 setNoteCategory('work');
                 setIsCreatingNote(true);
               }}
-              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-600 hover:to-blue-600 active:scale-95 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all whitespace-nowrap"
+              className="px-5 py-2.5 rounded-full bg-[#2600FD] hover:bg-[#1F00D6] active:scale-95 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all whitespace-nowrap"
             >
               <Plus size={18} strokeWidth={2.5} />
               <span>{lang === 'zh' ? '新建笔记' : 'New Note'}</span>
             </button>
           </div>
 
-          {/* Category Filter Pills */}
+          {/* Category filter chips — horizontal rail, ink marks the active chip */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 selectedCategory === 'all'
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm'
-                  : 'bg-white/60 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-white/80'
+                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >
               {lang === 'zh' ? '全部笔记' : 'All Notes'}
@@ -397,10 +397,10 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               <button
                 key={key}
                 onClick={() => setSelectedCategory(key)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
+                className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                   selectedCategory === key
-                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm'
-                    : 'bg-white/60 dark:bg-white/10 text-gray-600 dark:text-gray-300 border-transparent hover:bg-white/80'
+                    ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                    : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
                 }`}
               >
                 {lang === 'zh' ? info.labelZh : info.labelEn}
@@ -502,7 +502,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               <div className="h-3 w-full bg-black/5 dark:bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/20">
                 <div
                   style={{ width: `${taskProgress}%` }}
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-500 rounded-full transition-all duration-500"
+                  className="h-full bg-[#2600FD] rounded-full transition-all duration-500"
                 />
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 font-bold">
@@ -543,34 +543,34 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
             </div>
           </form>
 
-          {/* Task Filter Pills */}
+          {/* Task filter chips */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setTaskFilter('all')}
-              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 taskFilter === 'all'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'bg-white/50 dark:bg-white/5 text-gray-500'
+                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >
               {lang === 'zh' ? `全部 (${tasks.length})` : `All (${tasks.length})`}
             </button>
             <button
               onClick={() => setTaskFilter('pending')}
-              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 taskFilter === 'pending'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'bg-white/50 dark:bg-white/5 text-gray-500'
+                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >
               {lang === 'zh' ? `待处理 (${pendingCount})` : `Pending (${pendingCount})`}
             </button>
             <button
               onClick={() => setTaskFilter('completed')}
-              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 taskFilter === 'completed'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'bg-white/50 dark:bg-white/5 text-gray-500'
+                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >
               {lang === 'zh' ? `已完成 (${completedCount})` : `Completed (${completedCount})`}
@@ -790,11 +790,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               <button
                 type="button"
                 onClick={handleSaveNote}
-                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-500 text-white font-bold text-sm shadow-md shadow-blue-500/25 active:scale-95 transition-all"
+                className="flex-1 py-3 rounded-full bg-[#2600FD] hover:bg-[#1F00D6] text-white font-semibold text-sm active:scale-95 transition-all"
               >
                 {lang === 'zh' ? '保存笔记' : 'Save Note'}
               </button>
             </div>
+
+            {/* Clearance for the fixed bottom navigation dock (mobile sheet only) */}
+            <div className="h-[92px] sm:hidden" aria-hidden="true" />
           </div>
         </div>
       )}

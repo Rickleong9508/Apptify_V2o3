@@ -46,7 +46,7 @@ const PRESET_SOURCES_CN: Source[] = [
     { id: 'my_stocks', name: '马股要闻', icon: TrendingUp, type: 'rss', url: 'https://www.orientaldaily.com.my/feeds/rss/business', category: '商业' },
 ];
 
-const NewsCard: React.FC<{ item: NewsItem; lang: 'en' | 'cn' }> = ({ item, lang }) => {
+const NewsCard: React.FC<{ item: NewsItem; lang: 'en' | 'cn'; lead?: boolean }> = ({ item, lang, lead = false }) => {
     const [translatedTitle, setTranslatedTitle] = useState(item.title);
     const [translatedMeta, setTranslatedMeta] = useState(item.metadata);
     const [isTranslating, setIsTranslating] = useState(false);
@@ -131,123 +131,186 @@ const NewsCard: React.FC<{ item: NewsItem; lang: 'en' | 'cn' }> = ({ item, lang 
         }
     };
 
-    return (
-        <div className="ios-glass p-4 sm:p-5 rounded-3xl border border-white/60 dark:border-white/10 flex flex-col justify-between transition-all group shadow-md hover:shadow-2xl hover:border-blue-500/40 hover:scale-[1.01] duration-300 relative overflow-hidden bg-white/75 dark:bg-[#141416]/80 backdrop-blur-3xl">
-            {/* Top glass reflection specular line */}
-            <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/70 dark:via-white/20 to-transparent pointer-events-none" />
+    /** Row of per-article actions — the same three handlers in both layouts. */
+    const actions = (onInk: boolean) => (
+        <div className="flex items-center gap-1">
+            <button
+                onClick={handleGetAiSummary}
+                disabled={isSummarizing}
+                className={`p-2 rounded-full tap-scale transition-colors ${
+                    showSummary
+                        ? onInk
+                            ? 'bg-white/15 text-white'
+                            : 'bg-blue-500/15 text-blue-500 dark:text-blue-400'
+                        : onInk
+                            ? 'text-white/60 hover:text-white hover:bg-white/10'
+                            : 'text-gray-400 hover:text-blue-500 hover:bg-black/5 dark:hover:bg-white/10'
+                }`}
+                title="AI Insight Summary"
+            >
+                <Sparkles size={15} />
+            </button>
 
-            <div>
-                {/* Media Image Thumbnail or Placeholder */}
-                <div className="w-full h-36 sm:h-40 rounded-2xl overflow-hidden mb-3.5 relative bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-white/5 dark:to-white/10">
-                    {item.image ? (
-                        <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            loading="lazy"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5">
-                            <ImageIcon size={30} className="opacity-40" />
+            <button
+                onClick={handleTranslate}
+                disabled={isTranslating}
+                className={`p-2 rounded-full tap-scale transition-colors ${
+                    hasTranslated
+                        ? onInk
+                            ? 'bg-white/15 text-white'
+                            : 'bg-blue-500/15 text-blue-500 dark:text-blue-400'
+                        : onInk
+                            ? 'text-white/60 hover:text-white hover:bg-white/10'
+                            : 'text-gray-400 hover:text-blue-500 hover:bg-black/5 dark:hover:bg-white/10'
+                }`}
+                title="Translate"
+            >
+                {isTranslating ? <RefreshCw size={15} className="animate-spin text-blue-500" /> : <Globe size={15} />}
+            </button>
+
+            <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`p-2 rounded-full tap-scale transition-colors ${
+                    onInk
+                        ? 'text-white/60 hover:text-white hover:bg-white/10'
+                        : 'text-gray-400 hover:text-blue-500 hover:bg-black/5 dark:hover:bg-white/10'
+                }`}
+                title="Read Full Story"
+            >
+                <ExternalLink size={15} />
+            </a>
+        </div>
+    );
+
+    /** AI takeaway — rendered on ink for the lead story, on paper for feed rows. */
+    const summaryBlock = (onInk: boolean) => (
+        <div
+            className={`mt-3 p-3.5 rounded-2xl text-xs leading-relaxed space-y-1.5 ${
+                onInk
+                    ? 'bg-white/[0.07] border border-white/10 text-white/85'
+                    : 'bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/10 text-gray-800 dark:text-gray-200'
+            }`}
+        >
+            <span className={`text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${onInk ? 'text-white/70' : 'text-blue-500 dark:text-blue-400'}`}>
+                <Sparkles size={12} />
+                <span>AI 核心提炼 (Takeaway)</span>
+            </span>
+            {isSummarizing ? (
+                <div className={`flex items-center gap-2 py-1 italic font-medium ${onInk ? 'text-white/60' : 'text-gray-500 dark:text-gray-400'}`}>
+                    <RefreshCw size={12} className="animate-spin text-blue-500" />
+                    <span>Distilling real-time insights...</span>
+                </div>
+            ) : (
+                <div className={`whitespace-pre-line font-medium ${onInk ? 'text-white/90' : 'text-gray-800 dark:text-gray-100'}`}>
+                    {aiSummary}
+                </div>
+            )}
+        </div>
+    );
+
+    /* ---- Lead story: an ink mass carrying the editorial headline ---------- */
+    if (lead) {
+        return (
+            <article className="ink-panel p-5 sm:p-6">
+                <div className="relative z-10">
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FFBF00] text-[#0A0A0B] text-[10px] font-semibold uppercase tracking-[0.08em]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0B]" />
+                            {lang === 'cn' ? '头条' : 'Lead'}
+                        </span>
+                        <span className="signal-label text-white/45">{item.time}</span>
+                    </div>
+
+                    {item.image && (
+                        <div className="mt-4 w-full h-40 sm:h-56 rounded-[20px] overflow-hidden bg-white/[0.06]">
+                            <img
+                                src={item.image}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                            />
                         </div>
                     )}
 
-                    {/* Source Pill */}
-                    <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                        <span className="truncate max-w-[120px]">{item.source || 'LIVE'}</span>
-                    </div>
-
-                    {/* Time Pill */}
-                    <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[10px] font-medium text-white/90">
-                        {item.time}
-                    </div>
-                </div>
-
-                {/* Title & Excerpt */}
-                <div className="space-y-1.5">
                     <a
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block font-bold text-sm sm:text-base text-gray-900 dark:text-white hover:text-blue-500 dark:hover:text-blue-400 transition-colors line-clamp-2 leading-snug tracking-tight"
+                        className="block mt-4 text-[19px] sm:text-[21px] font-semibold leading-[1.24] tracking-[-0.022em] text-white hover:text-white/80 transition-colors"
                     >
                         {translatedTitle}
                     </a>
+
                     {translatedMeta && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                        <p className="mt-2.5 text-[13px] text-white/70 line-clamp-3 leading-relaxed">
                             {translatedMeta}
                         </p>
                     )}
-                </div>
 
-                {/* AI Insights Card */}
-                {showSummary && (
-                    <div className="mt-3 p-3.5 rounded-2xl bg-purple-500/10 dark:bg-purple-500/15 border border-purple-500/20 text-xs text-gray-800 dark:text-gray-200 leading-relaxed space-y-1.5 animate-slide-up">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                            <Sparkles size={12} />
-                            <span>AI 核心提炼 (Takeaway)</span>
-                        </span>
-                        {isSummarizing ? (
-                            <div className="flex items-center gap-2 py-1 italic font-medium text-gray-500 dark:text-gray-400">
-                                <RefreshCw size={12} className="animate-spin text-purple-500" />
-                                <span>Distilling real-time insights...</span>
-                            </div>
-                        ) : (
-                            <div className="whitespace-pre-line font-medium text-gray-800 dark:text-gray-100">
-                                {aiSummary}
-                            </div>
-                        )}
+                    {showSummary && summaryBlock(true)}
+
+                    <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+                        <span className="signal-label text-white/45 truncate">{item.source || 'LIVE'}</span>
+                        {actions(true)}
+                    </div>
+                </div>
+            </article>
+        );
+    }
+
+    /* ---- Feed row: hairline separated, never a nested card ---------------- */
+    return (
+        <article className="flex gap-3.5 pt-4 pb-4 border-t border-black/[0.08] dark:border-white/[0.09]">
+            <div className="w-[74px] h-[74px] shrink-0 rounded-2xl overflow-hidden bg-black/[0.04] dark:bg-white/[0.06]">
+                {item.image ? (
+                    <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <ImageIcon size={22} className="opacity-40" />
                     </div>
                 )}
             </div>
 
-            {/* Footer Row */}
-            <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100 dark:border-white/10">
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                    {lang === 'cn' ? '点击可查看原文' : 'Tap to read full article'}
-                </span>
+            <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                    <span className="signal-label text-black/45 dark:text-white/45 truncate">{item.source || 'LIVE'}</span>
+                    <span className="text-[10px] font-mono text-gray-400 shrink-0">{item.time}</span>
+                </div>
 
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={handleGetAiSummary}
-                        disabled={isSummarizing}
-                        className={`p-2 rounded-xl tap-scale transition-colors ${
-                            showSummary
-                                ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400'
-                                : 'text-gray-400 hover:text-purple-500 hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                        title="AI Insight Summary"
-                    >
-                        <Sparkles size={15} />
-                    </button>
+                <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block mt-1 text-[14.5px] font-semibold leading-snug tracking-[-0.012em] text-gray-900 dark:text-white line-clamp-2 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                >
+                    {translatedTitle}
+                </a>
 
-                    <button
-                        onClick={handleTranslate}
-                        disabled={isTranslating}
-                        className={`p-2 rounded-xl tap-scale transition-colors ${
-                            hasTranslated
-                                ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                                : 'text-gray-400 hover:text-blue-500 hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                        title="Translate"
-                    >
-                        {isTranslating ? <RefreshCw size={15} className="animate-spin text-blue-500" /> : <Globe size={15} />}
-                    </button>
+                {translatedMeta && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                        {translatedMeta}
+                    </p>
+                )}
 
-                    <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-400 hover:text-blue-500 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl tap-scale transition-colors"
-                        title="Read Full Story"
-                    >
-                        <ExternalLink size={15} />
-                    </a>
+                {showSummary && summaryBlock(false)}
+
+                <div className="mt-1.5 flex items-center justify-between gap-3">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium truncate">
+                        {lang === 'cn' ? '点击可查看原文' : 'Tap to read full article'}
+                    </span>
+                    {actions(false)}
                 </div>
             </div>
-        </div>
+        </article>
     );
 };
 
@@ -421,58 +484,42 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
         <div className="min-h-screen pb-24 animate-fade-in text-gray-900 dark:text-white">
             <div className="max-w-6xl mx-auto space-y-5 px-3 sm:px-4">
                 
-                {/* Header Navigation & Live Control Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={onExit}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/15 text-blue-600 dark:text-blue-400 font-semibold text-xs sm:text-sm tap-scale transition-all border border-black/5 dark:border-white/10 shadow-sm"
-                        >
-                            <ChevronLeft size={18} />
-                            <span>{lang === 'cn' ? '返回主页' : 'Back to Launcher'}</span>
-                        </button>
-
-                        {/* Live Sync Status Pill */}
+                {/* Page header — module identity + live signal. Navigation belongs to the dock. */}
+                <div className="flex items-start justify-between gap-3 pt-4">
+                    <div className="min-w-0">
                         <button
                             onClick={() => setLiveSync(!liveSync)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all ${
-                                liveSync
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 shadow-sm'
-                                    : 'bg-gray-100 dark:bg-white/5 text-gray-400 border-gray-200 dark:border-white/10'
+                            className={`signal-label flex items-center gap-2 transition-opacity active:opacity-70 ${
+                                liveSync ? 'text-black/50 dark:text-white/50' : 'text-black/30 dark:text-white/30'
                             }`}
                             title="点击切换是否开启实时自动更新"
                         >
-                            <span className={`w-2 h-2 rounded-full ${liveSync ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
-                            <span>{liveSync ? (lang === 'cn' ? '实时动态流' : 'Live Syncing') : (lang === 'cn' ? '已暂停自动流' : 'Paused')}</span>
+                            <span className="signal-dot" />
+                            <span>{liveSync ? (lang === 'cn' ? '实时动态流' : 'STREAMING') : (lang === 'cn' ? '已暂停' : 'PAUSED')}</span>
                         </button>
+                        <h1 className="text-[27px] font-semibold tracking-[-0.038em] leading-[1.05] mt-1.5 text-gray-900 dark:text-white">
+                            NewsHub
+                        </h1>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <div className="flex items-center gap-2 shrink-0">
                         {/* Last updated badge */}
                         <div className="hidden md:flex items-center gap-1 text-[11px] text-gray-400 font-medium">
                             <Clock size={12} />
                             <span>{lang === 'cn' ? '上次刷新' : 'Updated'}: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                         </div>
 
-                        {/* Language Segmented Control */}
-                        <div className="p-1 rounded-full bg-white/60 dark:bg-white/10 backdrop-blur-md border border-black/5 dark:border-white/10 flex items-center shadow-sm">
+                        {/* Language segmented control */}
+                        <div className="seg">
                             <button
                                 onClick={() => setLang('en')}
-                                className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
-                                    lang === 'en'
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
+                                className={`seg__item !px-3 ${lang === 'en' ? 'is-on' : ''}`}
                             >
                                 EN
                             </button>
                             <button
                                 onClick={() => setLang('cn')}
-                                className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
-                                    lang === 'cn'
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
+                                className={`seg__item !px-3 ${lang === 'cn' ? 'is-on' : ''}`}
                             >
                                 中文
                             </button>
@@ -482,38 +529,40 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                         <button
                             onClick={() => fetchNews(activeSourceId, true, false)}
                             disabled={loading}
-                            className="p-2.5 rounded-full bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-black/5 dark:border-white/10 tap-scale shadow-sm"
+                            className="circle-btn w-10 h-10 tap-scale disabled:opacity-50"
                             title={lang === 'cn' ? '强制拉取一手最新动态' : 'Force Refresh News'}
                         >
-                            <RefreshCw size={15} className={loading || isSilentSync ? 'animate-spin text-blue-500' : ''} />
+                            <RefreshCw size={15} className={loading || isSilentSync ? 'animate-spin text-[#2600FD]' : ''} />
                         </button>
                     </div>
                 </div>
 
-                {/* Horizontal Category Carousel */}
-                <div className="flex items-center justify-between gap-3 overflow-x-auto no-scrollbar py-1">
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                {/* Source rail — horizontal chips, ink marks the active source */}
+                <div className="flex items-center gap-3 py-1">
+                    <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar">
                         {sources.map(source => {
                             const isSelected = activeSourceId === source.id;
-                            const Icon = source.icon || Globe;
+                            // Custom sources are persisted through JSON, so their lucide icon
+                            // arrives as a plain object on reload — fall back to a real component.
+                            const Icon = typeof source.icon === 'function' ? source.icon : Globe;
                             return (
                                 <div key={source.id} className="relative group shrink-0">
                                     <button
                                         onClick={() => setActiveSourceId(source.id)}
-                                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all tap-scale ${
+                                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border whitespace-nowrap active:scale-95 transition-transform ${
                                             isSelected
-                                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
-                                                : 'bg-white/70 dark:bg-white/5 hover:bg-white/90 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 border border-black/5 dark:border-white/10'
+                                                ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                                                : 'bg-white border-black/[0.14] text-black/70 hover:border-black/30 dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-white/70'
                                         }`}
                                     >
-                                        <Icon size={14} className={isSelected ? 'text-white' : 'text-blue-500'} />
+                                        <Icon size={14} className={isSelected ? '' : 'text-[#2600FD]'} />
                                         <span>{source.name}</span>
                                     </button>
 
                                     {source.type === 'custom' && (
                                         <button
                                             onClick={(e) => deleteSource(e, source.id)}
-                                            className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            className="absolute -top-1 -right-1 w-4 h-4 bg-[#0A0A0B] dark:bg-white dark:text-[#0A0A0B] text-white rounded-full flex items-center justify-center text-[10px]"
                                         >
                                             <X size={10} />
                                         </button>
@@ -525,7 +574,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
 
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-1 px-3 py-2 rounded-2xl text-xs font-bold border border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:text-blue-500 hover:border-blue-500 shrink-0 tap-scale bg-white/40 dark:bg-white/5"
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-semibold border border-dashed border-black/[0.18] dark:border-white/[0.2] text-black/45 dark:text-white/45 hover:text-[#2600FD] hover:border-[#2600FD] shrink-0 active:scale-95 transition-transform"
                     >
                         <Plus size={14} />
                         <span>{lang === 'cn' ? '添加订阅' : 'Add Feed'}</span>
@@ -559,10 +608,26 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 animate-fade-in">
-                        {news.map((item, idx) => (
-                            <NewsCard key={item.id || idx} item={item} lang={lang} />
-                        ))}
+                    <div className="animate-fade-in">
+                        {/* Lead story — an ink mass, editorial scale */}
+                        <NewsCard item={news[0]} lang={lang} lead />
+
+                        {/* Following — hairline separated rows, never nested cards */}
+                        {news.length > 1 && (
+                            <div className="mt-7">
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <span className="signal-label text-black/45 dark:text-white/45">
+                                        {lang === 'cn' ? '后续报道' : 'FOLLOWING'}
+                                    </span>
+                                    <span className="signal-label text-black/45 dark:text-white/45">{news.length - 1}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                                    {news.slice(1).map((item, idx) => (
+                                        <NewsCard key={item.id || idx} item={item} lang={lang} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -588,7 +653,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                         {lang === 'cn' ? '媒体名称' : 'Source Name'}
                                     </label>
                                     <input
-                                        className="ios-input"
+                                        className="ios-input w-full px-3.5 py-3 text-sm"
                                         placeholder="e.g. 华尔街见闻 / Bloomberg"
                                         value={newSourceName}
                                         onChange={e => setNewSourceName(e.target.value)}
@@ -600,7 +665,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                         {lang === 'cn' ? 'RSS 订阅链接' : 'RSS Endpoint URL'}
                                     </label>
                                     <input
-                                        className="ios-input"
+                                        className="ios-input w-full px-3.5 py-3 text-sm"
                                         placeholder="https://example.com/rss.xml"
                                         value={newSourceUrl}
                                         onChange={e => setNewSourceUrl(e.target.value)}
@@ -615,6 +680,9 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                     {lang === 'cn' ? '立即添加' : 'Add RSS Source'}
                                 </button>
                             </div>
+
+                            {/* Clearance for the fixed bottom navigation dock (mobile sheet only) */}
+                            <div className="h-[92px] sm:hidden" aria-hidden="true" />
                         </div>
                     </div>
                 )}

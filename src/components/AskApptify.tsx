@@ -59,7 +59,9 @@ export const AskApptify: React.FC<AskApptifyProps> = ({ currentApp, setCurrentAp
   // Draggable button coordinates state (supports X & Y adjustment, default right-docked)
   const [btnPos, setBtnPos] = useState<{ x: number | null; y: number }>({
     x: null, // null means auto-docked against right edge
-    y: typeof window !== 'undefined' ? Math.round(window.innerHeight * 0.52) : 380,
+    // Docked just above the bottom navigation so it never covers content.
+    // Still fully draggable; a stored position always wins.
+    y: typeof window !== 'undefined' ? Math.round(window.innerHeight - 212) : 380,
   });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{

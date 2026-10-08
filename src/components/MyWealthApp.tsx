@@ -184,9 +184,10 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
       startX: e.clientX,
       hasMoved: false,
     };
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {}
+    // NOTE: pointer capture is deliberately NOT taken here. Capturing on press
+    // retargets the following click to the <nav> container, so a plain tap on a
+    // tab would never reach the button's onClick. Capture happens in
+    // handlePointerMove, and only once a real drag has begun.
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
@@ -200,9 +201,14 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     }
 
     const deltaX = e.clientX - dragStartRef.current.startX;
-    if (!dragStartRef.current.hasMoved && Math.abs(deltaX) > 3) {
+    if (!dragStartRef.current.hasMoved && Math.abs(deltaX) > 6) {
       dragStartRef.current.hasMoved = true;
       setIsDragging(true);
+      // Now that this is a drag and not a tap, take the pointer so the gesture
+      // keeps tracking even if the finger leaves the nav.
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {}
     }
 
     if (!dragStartRef.current.hasMoved) return;
@@ -888,6 +894,47 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
             </div>
           </div>
 
+          {/* Segmented capsule — the Ink & Signal navigation unit.
+              Drag horizontally across it to switch views; taps still work. */}
+          <div
+            className="w-full max-w-md mb-6 rounded-full bg-black/5 dark:bg-white/[0.07] p-1 select-none self-start"
+            style={{ touchAction: 'none' }}
+          >
+            <nav
+              ref={navRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
+              className={`relative flex items-center gap-0.5 w-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            >
+              {getNavItems(lang).map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    ref={(el) => { tabRefs.current[item.id] = el; }}
+                    onClick={() => handleTabClick(item.id)}
+                    title={item.label}
+                    className={`relative z-10 flex items-center justify-center gap-1.5 h-9 rounded-full shrink-0
+                                transition-all duration-300 active:scale-95 ${
+                      isActive
+                        ? 'bg-[#0A0A0B] text-white dark:bg-white dark:text-[#0A0A0B] px-3.5'
+                        : 'w-11 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    <TabIcon tabId={item.id} isActive={isActive} />
+                    {isActive && (
+                      <span className="text-[12.5px] font-medium tracking-tight whitespace-nowrap animate-fade-in">
+                        {item.label}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
           {/* Smooth Zero-Lag Tab Views (Persisted for instantaneous 60fps switching) */}
           <div className="w-full">
             <div className={activeTab === 'dashboard' ? 'block animate-fade-in' : 'hidden'}>
@@ -908,76 +955,6 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
           </div>
         </div>
       </main>
-
-      {/* AVANT-GARDE TACTICAL FLOATING DOCK */}
-      <div className="fixed bottom-3 sm:bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none pb-safe">
-        <nav
-          ref={navRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          style={{ touchAction: 'none' }}
-          className={`bg-zinc-950/90 dark:bg-[#0A0A0B]/95 backdrop-blur-2xl rounded-2xl p-1.5 flex items-center gap-1 sm:gap-1.5 border border-zinc-800/80 dark:border-zinc-800 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.5)] pointer-events-auto relative overflow-hidden select-none transition-shadow ${
-            isDragging ? 'cursor-grabbing ring-2 ring-[#2600FD]/40' : 'cursor-grab'
-          }`}
-        >
-          {/* Tactical Indicator Pill */}
-          {pillStyle.width > 0 && (
-            <div
-              className={`absolute rounded-xl pointer-events-none overflow-hidden ${
-                isDragging ? 'z-20' : ''
-              }`}
-              style={{
-                left: `${(isDragging && dragOffsetLeft !== null) ? dragOffsetLeft : pillStyle.left}px`,
-                width: `${pillStyle.width}px`,
-                height: `${pillStyle.height}px`,
-                top: '6px',
-                transform: isDragging ? 'scale(1.04) translateZ(0)' : 'scale(1) translateZ(0)',
-                willChange: 'left, width, transform',
-                transition: isDragging
-                  ? 'width 180ms ease, transform 150ms cubic-bezier(0.2, 0.8, 0.4, 1.2)'
-                  : 'left 280ms cubic-bezier(0.25, 1.25, 0.5, 1), width 260ms cubic-bezier(0.25, 1.25, 0.5, 1), transform 200ms ease',
-              }}
-            >
-              {/* Tactical active pill interior */}
-              <div
-                className={`absolute inset-0 rounded-xl transition-all duration-200 ${
-                  isDragging
-                    ? 'bg-zinc-800 dark:bg-zinc-800/90 border border-[#2600FD]/60 shadow-none'
-                    : 'bg-zinc-800 dark:bg-zinc-800/80 border border-zinc-700/80 dark:border-zinc-700'
-                }`}
-              />
-              {/* Specular hairline */}
-              <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-[#2600FD]/40 to-transparent pointer-events-none" />
-            </div>
-          )}
-
-          {getNavItems(lang).map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                ref={(el) => { tabRefs.current[item.id] = el; }}
-                onClick={() => handleTabClick(item.id)}
-                className={`relative z-10 flex items-center justify-center shrink-0 h-9.5 rounded-xl select-none cursor-pointer group active:scale-95 transition-transform duration-100 ${
-                  isActive
-                    ? 'pl-3.5 pr-4 text-white'
-                    : 'w-10 text-zinc-400 hover:text-zinc-200'
-                }`}
-                title={item.label}
-              >
-                <TabIcon tabId={item.id} isActive={isActive} />
-                {isActive && (
-                  <span className="text-xs font-mono font-black uppercase tracking-wider text-white ml-2 whitespace-nowrap select-none animate-fade-in">
-                    {item.label}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
 
       {/* Google Drive Cloud Connect Modal */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />

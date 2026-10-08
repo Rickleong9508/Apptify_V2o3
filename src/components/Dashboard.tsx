@@ -111,81 +111,78 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Hero Section: Net Worth Card (Avant-Garde Capital Cockpit) */}
-      <div className="avant-card rounded-3xl p-6 sm:p-8 relative overflow-hidden group">
-        {/* Ambient Specular Accent */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-[#2600FD]/10 dark:bg-[#2600FD]/15 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-        <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-950/20 dark:via-white/30 to-transparent pointer-events-none" />
+      {/* Hero: Net Worth — an ink mass carrying the figure */}
+      <div className="relative overflow-hidden rounded-[30px] bg-[#0A0A0B] dark:bg-[#141416] text-white p-6 sm:p-8 group
+                      shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(10,10,11,0.35)]">
+        {/* Specular edge refraction — the system has no outer glow */}
+        <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]" />
 
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-300">
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="signal-dot shrink-0"></span>
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-white/55 leading-snug">
                 {lang === 'zh' ? '总资产净值 (现金 + 目前投资数额 · 不扣减借贷)' : 'TOTAL NET WORTH (CASH + INVESTMENTS · EXCL. LOANS)'}
               </span>
             </div>
 
-            <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
+            <span className="font-mono text-[10px] font-medium px-2.5 py-1 rounded-full bg-white/10 text-white/60 whitespace-nowrap shrink-0">
               LIVE COCKPIT
             </span>
           </div>
 
           <div className="flex items-baseline gap-2 mb-6">
-            <span className="font-mono text-lg sm:text-2xl text-zinc-400 dark:text-zinc-500 font-bold uppercase">
+            <span className="font-mono text-lg sm:text-2xl text-white/45 font-medium uppercase">
               RM
             </span>
-            <span className="font-mono font-black text-4xl sm:text-6xl lg:text-7xl tracking-tight text-zinc-950 dark:text-white font-mono-numbers">
+            <span className="font-mono font-semibold text-4xl sm:text-6xl lg:text-7xl tracking-[-0.05em] text-white font-mono-numbers">
               {netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
 
-          {/* Quick Metrics Breakdown (High-Tactile Modular Tiles) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-zinc-200/60 dark:border-zinc-800/60 pt-5">
-            <div className="p-3.5 rounded-2xl bg-zinc-100/70 dark:bg-zinc-800/50 border border-zinc-200/70 dark:border-zinc-700/60">
+          {/* Metric breakdown — hairlines on ink rather than nested cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 border-t border-white/10">
+            <div className="p-3.5 rounded-2xl bg-white/[0.06] border border-white/10">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase">
+                <span className="font-mono text-[10px] text-white/50 font-medium uppercase tracking-[0.06em]">
                   {lang === 'zh' ? '现金钱包' : 'CASH WALLETS'}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2600FD]"></span>
               </div>
-              <p className="font-mono text-base sm:text-xl font-bold text-zinc-950 dark:text-white truncate font-mono-numbers">
+              <p className="font-mono text-base sm:text-xl font-semibold text-white truncate font-mono-numbers">
                 +RM {totalCash.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
-              <p className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 mt-0.5">
+              <p className="text-[10px] font-mono text-white/40 mt-0.5">
                 {lang === 'zh' ? '多币种钱包与银行账户' : 'Multi-currency & bank accounts'}
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-zinc-100/70 dark:bg-zinc-800/50 border border-zinc-200/70 dark:border-zinc-700/60">
+            <div className="p-3.5 rounded-2xl bg-white/[0.06] border border-white/10">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase">
+                <span className="font-mono text-[10px] text-white/50 font-medium uppercase tracking-[0.06em]">
                   {lang === 'zh' ? '目前投资数额' : 'ACTIVE INVESTMENTS'}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#5B3BFF]"></span>
               </div>
-              <p className="font-mono text-base sm:text-xl font-bold text-zinc-950 dark:text-white truncate font-mono-numbers">
+              <p className="font-mono text-base sm:text-xl font-semibold text-white truncate font-mono-numbers">
                 +RM {totalStockValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
-              <p className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 mt-0.5">
+              <p className="text-[10px] font-mono text-white/40 mt-0.5">
                 {lang === 'zh' ? '持仓市值与券商闲置本金' : 'Securities & broker cash'}
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-zinc-100/70 dark:bg-zinc-800/50 border border-zinc-200/70 dark:border-zinc-700/60" title={lang === 'zh' ? "贷款为独立履约跟踪，不从总数中扣减" : "Tracked independently, excluded from net worth"}>
+            <div className="p-3.5 rounded-2xl bg-white/[0.06] border border-white/10" title={lang === 'zh' ? "贷款为独立履约跟踪，不从总数中扣减" : "Tracked independently, excluded from net worth"}>
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase">
+                <span className="font-mono text-[10px] text-white/50 font-medium uppercase tracking-[0.06em]">
                   {lang === 'zh' ? '履约借贷 (独立跟踪)' : 'TOTAL LIABILITIES (INDEP.)'}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FFBF00]"></span>
               </div>
-              <p className="font-mono text-base sm:text-xl font-bold text-rose-600 dark:text-rose-400 truncate font-mono-numbers">
+              <p className="font-mono text-base sm:text-xl font-semibold text-[#FFBF00] truncate font-mono-numbers">
                 RM {totalLiabilities.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
-              <p className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 mt-0.5">
+              <p className="text-[10px] font-mono text-white/40 mt-0.5">
                 {lang === 'zh' ? '进行中负债分期总额' : 'Active loans & installments'}
               </p>
             </div>
