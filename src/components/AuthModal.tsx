@@ -23,6 +23,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const handleDismissGuest = () => {
         try {
             sessionStorage.setItem('apptify_welcome_dismissed', 'true');
+            localStorage.setItem('apptify_welcome_dismissed', 'true');
         } catch (e) {}
         onClose();
     };

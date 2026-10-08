@@ -9,7 +9,8 @@ export const STORAGE_KEYS = {
     EXPIRY: 'app_google_drive_expiry',
     PROFILE: 'app_google_drive_profile',
     CLIENT_ID: 'app_google_client_id',
-    LAST_SYNC: 'app_google_last_synced'
+    LAST_SYNC: 'app_google_last_synced',
+    ACCOUNT_LINKED: 'app_google_account_linked'
 };
 
 export interface GoogleUserProfile {
@@ -48,17 +49,23 @@ export const setGoogleClientId = (clientId: string) => {
 };
 
 // 2. Token helpers
-export const getStoredToken = (): string | null => {
+export const getStoredToken = (checkExpiry: boolean = true): string | null => {
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     const expiryStr = localStorage.getItem(STORAGE_KEYS.EXPIRY);
-    if (!token || !expiryStr) return null;
+    if (!token) return null;
 
-    const expiry = parseInt(expiryStr, 10);
-    // 60s buffer for safety
-    if (Date.now() >= expiry - 60000) {
-        return null;
+    if (checkExpiry && expiryStr) {
+        const expiry = parseInt(expiryStr, 10);
+        // 60s buffer for safety
+        if (Date.now() >= expiry - 60000) {
+            return null;
+        }
     }
     return token;
+};
+
+export const isTokenValid = (): boolean => {
+    return !!getStoredToken(true);
 };
 
 export const getStoredProfile = (): GoogleUserProfile | null => {
@@ -71,8 +78,10 @@ export const getStoredProfile = (): GoogleUserProfile | null => {
     }
 };
 
+// Returns whether the user has linked a Google Drive account.
+// Persists across browser sessions even if short-lived access token needs refreshing.
 export const isDriveConnected = (): boolean => {
-    return !!getStoredToken() && !!getStoredProfile();
+    return !!getStoredProfile();
 };
 
 // 3. Ensure Google Identity Services (GIS) Script is Loaded
@@ -94,26 +103,45 @@ export const ensureGsiLoaded = (): Promise<void> => {
         script.async = true;
         script.defer = true;
         script.onload = () => resolve();
-        script.onerror = (e) => reject(new Error('Failed to load Google Identity Services SDK'));
+        script.onerror = () => reject(new Error('Failed to load Google Identity Services SDK'));
         document.head.appendChild(script);
     });
 };
 
-// 4. Request Google Login & Authorization Popup
-export const requestGoogleLogin = async (customClientId?: string): Promise<{ token: string; profile: GoogleUserProfile }> => {
+// 4. Token request handler with silent refresh support
+let activeTokenRefreshPromise: Promise<{ token: string; profile: GoogleUserProfile }> | null = null;
+
+export const requestGoogleToken = async (options: {
+    interactive?: boolean;
+    customClientId?: string;
+    hint?: string;
+} = {}): Promise<{ token: string; profile: GoogleUserProfile }> => {
     await ensureGsiLoaded();
 
-    const clientId = customClientId || getGoogleClientId();
+    const clientId = options.customClientId || getGoogleClientId();
     if (!clientId) {
         throw new Error("MISSING_CLIENT_ID");
     }
 
     return new Promise((resolve, reject) => {
         try {
+            let settled = false;
+            const timeoutMs = options.interactive ? 120000 : 15000;
+            const timer = setTimeout(() => {
+                if (!settled) {
+                    settled = true;
+                    reject(new Error(options.interactive ? 'Google OAuth Popup Timeout' : 'SILENT_REFRESH_TIMEOUT'));
+                }
+            }, timeoutMs);
+
             const client = (window as any).google.accounts.oauth2.initTokenClient({
                 client_id: clientId,
                 scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
                 callback: async (tokenResponse: any) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+
                     if (tokenResponse.error) {
                         return reject(new Error(tokenResponse.error_description || tokenResponse.error));
                     }
@@ -122,45 +150,135 @@ export const requestGoogleLogin = async (customClientId?: string): Promise<{ tok
                     const expiresIn = parseInt(tokenResponse.expires_in, 10) || 3599;
                     const expiry = Date.now() + expiresIn * 1000;
 
-                    // Fetch user info
+                    let profile = getStoredProfile();
                     try {
                         const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                             headers: { Authorization: `Bearer ${token}` }
                         });
-                        const userInfo = await userRes.json();
-                        const profile: GoogleUserProfile = {
-                            id: userInfo.sub || userInfo.email,
-                            email: userInfo.email,
-                            name: userInfo.name || userInfo.email.split('@')[0],
-                            picture: userInfo.picture
-                        };
-
-                        // Store in localStorage
-                        localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-                        localStorage.setItem(STORAGE_KEYS.EXPIRY, expiry.toString());
-                        localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
-
-                        window.dispatchEvent(new CustomEvent('apptify_drive_auth_changed', { detail: { connected: true, profile } }));
-
-                        resolve({ token, profile });
-                    } catch (err: any) {
-                        reject(new Error(`Failed to retrieve Google profile: ${err.message}`));
+                        if (userRes.ok) {
+                            const userInfo = await userRes.json();
+                            profile = {
+                                id: userInfo.sub || userInfo.email,
+                                email: userInfo.email,
+                                name: userInfo.name || userInfo.email.split('@')[0],
+                                picture: userInfo.picture
+                            };
+                        }
+                    } catch (userErr) {
+                        console.warn("Userinfo fetch error during token refresh (reusing stored profile):", userErr);
                     }
+
+                    if (!profile) {
+                        return reject(new Error("Failed to retrieve Google profile."));
+                    }
+
+                    // Store in localStorage
+                    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+                    localStorage.setItem(STORAGE_KEYS.EXPIRY, expiry.toString());
+                    localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
+                    localStorage.setItem(STORAGE_KEYS.ACCOUNT_LINKED, 'true');
+
+                    window.dispatchEvent(new CustomEvent('apptify_drive_auth_changed', { 
+                        detail: { connected: true, profile, tokenValid: true } 
+                    }));
+
+                    resolve({ token, profile });
                 },
                 error_callback: (err: any) => {
-                    reject(new Error(err?.message || 'Google OAuth Popup Error'));
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    reject(new Error(err?.message || (options.interactive ? 'Google OAuth Popup Error' : 'SILENT_REFRESH_FAILED')));
                 }
             });
 
-            // Do not force 'consent' prompt to avoid Google internal server 500 error during configuration propagation
-            client.requestAccessToken();
+            if (options.interactive) {
+                // Interactive login (popup)
+                client.requestAccessToken({ prompt: '' });
+            } else {
+                // Silent refresh: prompt='' and hint with user's email so Google knows which account
+                const requestOpts: any = { prompt: '' };
+                if (options.hint) {
+                    requestOpts.hint = options.hint;
+                }
+                client.requestAccessToken(requestOpts);
+            }
         } catch (err: any) {
             reject(err);
         }
     });
 };
 
-// Clear all user-specific data from browser storage on logout or account switch
+// Interactive Google Login popup
+export const requestGoogleLogin = async (customClientId?: string): Promise<{ token: string; profile: GoogleUserProfile }> => {
+    return requestGoogleToken({ interactive: true, customClientId });
+};
+
+// Ensure a valid, non-expired access token. Automatically performs silent refresh if needed.
+export const getValidToken = async (forceRefresh: boolean = false): Promise<string> => {
+    if (!forceRefresh) {
+        const token = getStoredToken(true);
+        if (token) return token;
+    }
+
+    const profile = getStoredProfile();
+    if (!profile) {
+        throw new Error("NOT_AUTHENTICATED");
+    }
+
+    if (activeTokenRefreshPromise) {
+        const res = await activeTokenRefreshPromise;
+        return res.token;
+    }
+
+    activeTokenRefreshPromise = requestGoogleToken({
+        interactive: false,
+        hint: profile.email
+    });
+
+    try {
+        const res = await activeTokenRefreshPromise;
+        return res.token;
+    } catch (err) {
+        console.warn("Silent token refresh failed:", err);
+        throw err;
+    } finally {
+        activeTokenRefreshPromise = null;
+    }
+};
+
+// Safe Authenticated Fetch with auto-refresh on 401
+export const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    let token: string;
+    try {
+        token = await getValidToken(false);
+    } catch (err) {
+        throw new Error("NOT_AUTHENTICATED");
+    }
+
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', `Bearer ${token}`);
+
+    let res = await fetch(url, { ...options, headers });
+
+    // If 401 Unauthorized, token might be expired on Google's side
+    if (res.status === 401) {
+        console.log("Token expired during API call (401). Retrying with silent refresh...");
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        try {
+            const freshToken = await getValidToken(true);
+            headers.set('Authorization', `Bearer ${freshToken}`);
+            res = await fetch(url, { ...options, headers });
+        } catch (refreshErr) {
+            console.warn("Silent token refresh on 401 failed:", refreshErr);
+            throw new Error("TOKEN_EXPIRED");
+        }
+    }
+
+    return res;
+};
+
+// Clear all user-specific data from browser storage on explicit wipe
 export const clearAllUserData = () => {
     // 1. MyWealth data
     localStorage.removeItem('mw_data_main');
@@ -180,8 +298,8 @@ export const clearAllUserData = () => {
     window.dispatchEvent(new CustomEvent('apptify_tasks_changed'));
 };
 
-// 5. Logout / Disconnect
-export const disconnectGoogleDrive = () => {
+// 5. Explicit Logout / Disconnect (User initiated)
+export const disconnectGoogleDrive = (wipeLocalData: boolean = false) => {
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     if (token && (window as any).google?.accounts?.oauth2?.revoke) {
         try {
@@ -195,21 +313,21 @@ export const disconnectGoogleDrive = () => {
     localStorage.removeItem(STORAGE_KEYS.EXPIRY);
     localStorage.removeItem(STORAGE_KEYS.PROFILE);
     localStorage.removeItem(STORAGE_KEYS.LAST_SYNC);
+    localStorage.removeItem(STORAGE_KEYS.ACCOUNT_LINKED);
 
-    // Clear all user data so next account or logged-out guest starts completely clean
-    clearAllUserData();
+    if (wipeLocalData) {
+        clearAllUserData();
+    }
 
-    window.dispatchEvent(new CustomEvent('apptify_drive_auth_changed', { detail: { connected: false } }));
+    window.dispatchEvent(new CustomEvent('apptify_drive_auth_changed', { detail: { connected: false, profile: null, tokenValid: false } }));
 };
 
 // 6. Find Cloud File Helper
-const findDriveFile = async (token: string, filename = CLOUD_FILENAME): Promise<DriveFileInfo | null> => {
+const findDriveFile = async (filename = CLOUD_FILENAME): Promise<DriveFileInfo | null> => {
     const q = `name = '${filename}' and trashed = false`;
     const fields = "files(id, name, modifiedTime)";
 
-    const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=${encodeURIComponent(fields)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await fetchWithAuth(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=${encodeURIComponent(fields)}`);
 
     if (!response.ok) {
         if (response.status === 401) {
@@ -225,7 +343,7 @@ const findDriveFile = async (token: string, filename = CLOUD_FILENAME): Promise<
 
     // Fallback to legacy file name if searching for primary
     if (filename === CLOUD_FILENAME) {
-        return await findDriveFile(token, LEGACY_FILENAME);
+        return await findDriveFile(LEGACY_FILENAME);
     }
 
     return null;
@@ -233,34 +351,27 @@ const findDriveFile = async (token: string, filename = CLOUD_FILENAME): Promise<
 
 // 7. Check Cloud Metadata (Modified Time)
 export const checkCloudMetadata = async (): Promise<DriveFileInfo | null> => {
-    const token = getStoredToken();
-    if (!token) return null;
+    if (!isDriveConnected()) return null;
     try {
-        return await findDriveFile(token);
+        return await findDriveFile(CLOUD_FILENAME);
     } catch (err: any) {
-        if (err.message === 'TOKEN_EXPIRED') {
-            disconnectGoogleDrive();
-        }
+        console.warn("Check cloud metadata notice:", err?.message || err);
         return null;
     }
 };
 
 // 8. Upload / Save All App Data to Google Drive
 export const saveAllDataToDrive = async (customPayload?: any): Promise<{ fileId: string; modifiedTime: string }> => {
-    const token = getStoredToken();
-    if (!token) {
+    if (!isDriveConnected()) {
         throw new Error("NOT_AUTHENTICATED");
     }
 
     // Find existing file
     let existingFile: DriveFileInfo | null = null;
     try {
-        existingFile = await findDriveFile(token, CLOUD_FILENAME);
+        existingFile = await findDriveFile(CLOUD_FILENAME);
     } catch (e: any) {
-        if (e.message === 'TOKEN_EXPIRED') {
-            disconnectGoogleDrive();
-            throw e;
-        }
+        console.warn("Could not find existing drive file:", e?.message || e);
     }
 
     // Build Payload Bundle
@@ -318,62 +429,36 @@ export const saveAllDataToDrive = async (customPayload?: any): Promise<{ fileId:
         fileContent +
         closeDelim;
 
-    const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': `multipart/related; boundary=${boundary}`
-    };
+    const url = existingFile
+        ? `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart&fields=id,modifiedTime`
+        : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime`;
+    const method = existingFile ? 'PATCH' : 'POST';
 
-    let resultJson: any;
+    const res = await fetchWithAuth(url, {
+        method,
+        headers: {
+            'Content-Type': `multipart/related; boundary=${boundary}`
+        },
+        body
+    });
 
-    if (existingFile) {
-        // PATCH
-        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart&fields=id,modifiedTime`, {
-            method: 'PATCH',
-            headers,
-            body
-        });
-        if (!res.ok) {
-            let detail = '';
-            try {
-                const errData = await res.json();
-                detail = errData.error?.message || JSON.stringify(errData);
-            } catch {}
+    if (!res.ok) {
+        let detail = '';
+        try {
+            const errData = await res.json();
+            detail = errData.error?.message || JSON.stringify(errData);
+        } catch {}
 
-            if (res.status === 401) {
-                disconnectGoogleDrive();
-                throw new Error("TOKEN_EXPIRED");
-            }
-            if (res.status === 403) {
-                throw new Error(`权限受限 (403): 请确保已在 Google Cloud Console 中启用了 "Google Drive API"服务。${detail ? ' (' + detail + ')' : ''}`);
-            }
-            throw new Error(`更新网盘文件失败 (${res.status}): ${detail}`);
+        if (res.status === 401) {
+            throw new Error("TOKEN_EXPIRED");
         }
-        resultJson = await res.json();
-    } else {
-        // POST
-        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime`, {
-            method: 'POST',
-            headers,
-            body
-        });
-        if (!res.ok) {
-            let detail = '';
-            try {
-                const errData = await res.json();
-                detail = errData.error?.message || JSON.stringify(errData);
-            } catch {}
-
-            if (res.status === 401) {
-                disconnectGoogleDrive();
-                throw new Error("TOKEN_EXPIRED");
-            }
-            if (res.status === 403) {
-                throw new Error(`权限受限 (403): 请确保已在 Google Cloud Console 中启用了 "Google Drive API"服务。${detail ? ' (' + detail + ')' : ''}`);
-            }
-            throw new Error(`创建网盘文件失败 (${res.status}): ${detail}`);
+        if (res.status === 403) {
+            throw new Error(`权限受限 (403): 请确保已在 Google Cloud Console 中启用了 "Google Drive API"服务。${detail ? ' (' + detail + ')' : ''}`);
         }
-        resultJson = await res.json();
+        throw new Error(`同步网盘文件失败 (${res.status}): ${detail}`);
     }
+
+    const resultJson = await res.json();
 
     localStorage.setItem(STORAGE_KEYS.LAST_SYNC, resultJson.modifiedTime || nowIso);
     window.dispatchEvent(new CustomEvent('apptify_drive_synced', { detail: { lastUpdated: resultJson.modifiedTime || nowIso } }));
@@ -386,23 +471,19 @@ export const saveAllDataToDrive = async (customPayload?: any): Promise<{ fileId:
 
 // 9. Load All App Data from Google Drive
 export const loadAllDataFromDrive = async (): Promise<any> => {
-    const token = getStoredToken();
-    if (!token) {
+    if (!isDriveConnected()) {
         throw new Error("NOT_AUTHENTICATED");
     }
 
-    const file = await findDriveFile(token, CLOUD_FILENAME);
+    const file = await findDriveFile(CLOUD_FILENAME);
     if (!file) {
         return null; // First time user without remote data
     }
 
-    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await fetchWithAuth(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`);
 
     if (!response.ok) {
         if (response.status === 401) {
-            disconnectGoogleDrive();
             throw new Error("TOKEN_EXPIRED");
         }
         throw new Error(`Failed to download Drive file (${response.status})`);
@@ -443,3 +524,4 @@ export const loadAllDataFromDrive = async (): Promise<any> => {
 
     return cloudData;
 };
+

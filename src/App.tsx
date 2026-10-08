@@ -45,22 +45,23 @@ const getAppFromHash = (): AppMode => {
 };
 
 const App: React.FC = () => {
-  const { isConnected, user } = useAuth();
+  const { isConnected, user, needsReauth } = useAuth();
   const [currentApp, setCurrentAppState] = useState<AppMode>(getAppFromHash);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Auto-prompt welcome/login modal for new or unauthenticated users (defaults to English, toggleable to Chinese)
+  // Auto-prompt welcome/login modal only for truly new first-time users who have never connected a Google account
   useEffect(() => {
     try {
-      const isDismissed = sessionStorage.getItem('apptify_welcome_dismissed');
-      if (!isConnected && !isDismissed) {
+      const isDismissed = sessionStorage.getItem('apptify_welcome_dismissed') || localStorage.getItem('apptify_welcome_dismissed');
+      // If user has already linked Google Drive or is currently connected, NEVER auto-prompt login modal
+      if (!isConnected && !user && !isDismissed) {
         const timer = setTimeout(() => {
           setShowAuthModal(true);
         }, 700);
         return () => clearTimeout(timer);
       }
     } catch (e) {}
-  }, [isConnected]);
+  }, [isConnected, user]);
 
   const setCurrentApp = (mode: AppMode) => {
     setCurrentAppState(mode);
@@ -473,14 +474,16 @@ const App: React.FC = () => {
               onClick={() => setShowAuthModal(true)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-xl border shadow-sm text-xs font-semibold active:scale-95 transition-all cursor-pointer ${
                 isConnected
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                  ? (needsReauth
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
+                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400')
                   : 'bg-black/5 dark:bg-white/10 border-black/10 dark:border-white/10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
               }`}
-              title={isConnected ? `Google Drive: ${user?.email || ''}` : (lang === 'zh' ? '连接 Google Drive 云同步' : 'Connect Google Drive')}
+              title={isConnected ? (needsReauth ? (lang === 'zh' ? 'Google 授权已过期，点击重新连接' : 'Google authorization expired. Click to reconnect') : `Google Drive: ${user?.email || ''}`) : (lang === 'zh' ? '连接 Google Drive 云同步' : 'Connect Google Drive')}
             >
-              <Cloud size={12} className={isConnected ? "fill-emerald-500/20" : ""} />
+              <Cloud size={12} className={isConnected ? (needsReauth ? "text-amber-500" : "fill-emerald-500/20") : ""} />
               <span className="text-[11px] font-mono font-medium hidden xs:inline">
-                {isConnected ? (user?.name?.split(' ')[0] || 'DRIVE // OK') : 'SYNC // OFF'}
+                {isConnected ? (needsReauth ? (lang === 'zh' ? '需重新授权' : 'REAUTH // REQ') : (user?.name?.split(' ')[0] || 'DRIVE // OK')) : 'SYNC // OFF'}
               </span>
             </button>
           </div>
@@ -886,12 +889,12 @@ const App: React.FC = () => {
                 onClick={() => setShowAuthModal(true)}
                 className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center active:scale-90 transition-all cursor-pointer ${
                   isConnected
-                    ? 'text-blue-500 bg-blue-500/10'
+                    ? (needsReauth ? 'text-amber-500 bg-amber-500/10' : 'text-blue-500 bg-blue-500/10')
                     : 'text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10'
                 }`}
-                title={isConnected ? `Google Drive: ${user?.email || ''}` : "Connect Google Drive"}
+                title={isConnected ? (needsReauth ? (lang === 'zh' ? 'Google 授权已过期，点击重新连接' : 'Google authorization expired. Click to reconnect') : `Google Drive: ${user?.email || ''}`) : "Connect Google Drive"}
               >
-                <Cloud size={16} className={isConnected ? "fill-blue-500/20" : ""} />
+                <Cloud size={16} className={isConnected ? (needsReauth ? "text-amber-500" : "fill-blue-500/20") : ""} />
               </button>
 
               {/* Theme Toggle */}

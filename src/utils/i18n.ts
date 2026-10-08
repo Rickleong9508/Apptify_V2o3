@@ -1,4 +1,5 @@
 export type Language = 'en' | 'zh';
+export type SupportedLanguage = Language;
 
 export interface Translations {
   launcher: {

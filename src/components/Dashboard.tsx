@@ -12,7 +12,7 @@ import {
   Sparkles, 
   ChevronDown 
 } from 'lucide-react';
-import { Language, getStoredLanguage } from '../utils/i18n';
+import { Language, SupportedLanguage, getStoredLanguage } from '../utils/i18n';
 
 interface DashboardProps {
   accounts: Account[];

@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import {
     getStoredProfile,
     isDriveConnected,
+    isTokenValid,
+    getValidToken,
     requestGoogleLogin,
     disconnectGoogleDrive,
     clearAllUserData,
@@ -28,6 +30,7 @@ interface AuthContextType {
     isSyncing: boolean;
     lastSyncedTime: string | null;
     loading: boolean;
+    needsReauth: boolean;
     googleClientId: string;
     connectGoogleDrive: (customClientId?: string) => Promise<GoogleUserProfile>;
     disconnectGoogleDrive: () => void;
@@ -42,7 +45,8 @@ const AuthContext = createContext<AuthContextType>({
     isConnected: false,
     isSyncing: false,
     lastSyncedTime: null,
-    loading: true,
+    loading: false,
+    needsReauth: false,
     googleClientId: '',
     connectGoogleDrive: async () => { throw new Error('Not initialized'); },
     disconnectGoogleDrive: () => {},
@@ -57,6 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isSyncing, setIsSyncing] = useState<boolean>(false);
     const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.LAST_SYNC));
     const [loading, setLoading] = useState<boolean>(false);
+    const [needsReauth, setNeedsReauth] = useState<boolean>(false);
     const [googleClientId, setGoogleClientIdState] = useState<string>(() => getGoogleClientId());
 
     // Sync state listener
@@ -66,6 +71,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const profile = e.detail?.profile ?? getStoredProfile();
             setIsConnected(connected);
             setUser(profile);
+            if (e.detail?.tokenValid) {
+                setNeedsReauth(false);
+            }
         };
 
         const handleSyncEvent = (e: any) => {
@@ -82,15 +90,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
     }, []);
 
-    // Auto-check remote updates when app opens or becomes visible
+    // Proactive background silent refresh & Auto-sync on app open or tab visibility
     useEffect(() => {
         if (!isConnected) return;
 
         const syncWithCloudIfNewer = async () => {
             try {
+                // Ensure token is fresh silently without popping windows
+                await getValidToken(false).catch((e) => {
+                    console.warn("Background silent token check note:", e?.message);
+                    if (e?.message === 'TOKEN_EXPIRED' || e?.message === 'SILENT_REFRESH_FAILED') {
+                        setNeedsReauth(true);
+                    }
+                });
+
                 const remoteMeta = await checkCloudMetadata();
                 if (!remoteMeta) return;
 
+                setNeedsReauth(false);
                 const remoteTime = new Date(remoteMeta.modifiedTime).getTime();
                 const lastLocalSync = lastSyncedTime ? new Date(lastSyncedTime).getTime() : 0;
 
@@ -100,14 +117,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     await loadAllDataFromDrive();
                     setLastSyncedTime(remoteMeta.modifiedTime);
                 }
-            } catch (err) {
-                console.warn("Cloud check error:", err);
+            } catch (err: any) {
+                console.warn("Cloud sync check error:", err);
             } finally {
                 setIsSyncing(false);
             }
         };
 
         syncWithCloudIfNewer();
+
+        // Keep-alive timer: check token freshness every 20 minutes
+        const keepAliveTimer = setInterval(() => {
+            if (isDriveConnected()) {
+                getValidToken(false).then(() => setNeedsReauth(false)).catch((err) => {
+                    console.warn("Keep-alive silent refresh note:", err?.message);
+                });
+            }
+        }, 20 * 60 * 1000);
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && isDriveConnected()) {
@@ -117,6 +143,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
+            clearInterval(keepAliveTimer);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [isConnected, lastSyncedTime]);
@@ -140,8 +167,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (!isDriveConnected()) return;
                 try {
                     await saveAllDataToDrive();
-                } catch (e) {
+                    setNeedsReauth(false);
+                } catch (e: any) {
                     console.warn("Global background auto-sync skipped/failed:", e);
+                    if (e?.message === 'TOKEN_EXPIRED') {
+                        setNeedsReauth(true);
+                    }
                 }
             }, 2000);
         };
@@ -156,21 +187,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
     }, [isConnected]);
 
-    // Connect Action
+    // Connect Action (Interactive login)
     const connectGoogleDrive = useCallback(async (customClientId?: string) => {
         setIsSyncing(true);
         try {
-            // Wipe any stale data so the newly connected account starts strictly with its own data
-            clearAllUserData();
+            // When connecting a new account explicitly, start fresh for that account
+            const existingProfile = getStoredProfile();
             const { profile } = await requestGoogleLogin(customClientId);
+            
+            // If it's a completely different account, clean stale local data
+            if (existingProfile && existingProfile.email !== profile.email) {
+                clearAllUserData();
+            }
+
             setUser(profile);
             setIsConnected(true);
+            setNeedsReauth(false);
 
             // Immediately attempt initial pull from Drive
             try {
                 const cloudData = await loadAllDataFromDrive();
                 if (!cloudData) {
-                    console.log("No existing cloud backup for this account. Clean start.");
+                    console.log("No existing cloud backup for this account. Clean start / initial save.");
+                    await saveAllDataToDrive();
                 }
             } catch (loadErr) {
                 console.warn("No existing cloud backup found for this account:", loadErr);
@@ -182,11 +221,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, []);
 
-    // Disconnect Action
+    // Disconnect Action (User initiated)
     const disconnect = useCallback(() => {
-        disconnectGoogleDrive();
+        disconnectGoogleDrive(false);
         setUser(null);
         setIsConnected(false);
+        setNeedsReauth(false);
         setLastSyncedTime(null);
     }, []);
 
@@ -196,10 +236,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsSyncing(true);
         try {
             await saveAllDataToDrive();
+            setNeedsReauth(false);
             const now = new Date().toISOString();
             setLastSyncedTime(now);
         } catch (err: any) {
             console.error("Manual sync failed:", err);
+            if (err?.message === 'TOKEN_EXPIRED' || err?.message === 'SILENT_REFRESH_FAILED') {
+                setNeedsReauth(true);
+            }
             throw err;
         } finally {
             setIsSyncing(false);
@@ -222,6 +266,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 isSyncing,
                 lastSyncedTime,
                 loading,
+                needsReauth,
                 googleClientId,
                 connectGoogleDrive,
                 disconnectGoogleDrive: disconnect,
@@ -236,3 +281,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+

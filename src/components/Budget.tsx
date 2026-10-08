@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MonthlyData, Expense, ExpenseCategory, BudgetHistoryItem, Account } from '../types';
+import { SupportedLanguage } from '../utils/i18n';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { 
   Plus, 
