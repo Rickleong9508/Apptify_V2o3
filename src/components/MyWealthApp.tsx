@@ -277,28 +277,20 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
     setActiveTab(tabId);
   };
 
-  // --- Theme State ---
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light';
-  });
-
   // --- Language State (Default English, toggleable to Chinese) ---
   const [lang, setLang] = useState<Language>(getStoredLanguage);
 
+  // Theme state lived here too, but it was never read by the render — the
+  // module inherits its colours from the document. Removed with dark mode.
   useEffect(() => {
-    const syncTheme = () => {
-      setThemeState((localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light');
-    };
     const syncLang = () => {
       setLang(getStoredLanguage());
     };
-    window.addEventListener('apptify_theme_change', syncTheme);
     window.addEventListener('apptify_language_change', syncLang);
-    window.addEventListener('storage', syncTheme);
+    window.addEventListener('storage', syncLang);
     return () => {
-      window.removeEventListener('apptify_theme_change', syncTheme);
       window.removeEventListener('apptify_language_change', syncLang);
-      window.removeEventListener('storage', syncTheme);
+      window.removeEventListener('storage', syncLang);
     };
   }, []);
 
@@ -836,7 +828,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
 
       {/* Main Content Area */}
       <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
-        <div className="max-w-5xl mx-auto px-3 sm:px-8 pt-4 pb-36">
+        <div className="max-w-5xl mx-auto px-gutter pt-4 pb-36">
 
           {/* Minimal Header Sync Status */}
           <div className="flex items-center justify-between mb-4 sm:mb-6 animate-fade-in-down">

@@ -102,12 +102,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
     // --- Language & Theme State ---
     const [currentLang, setCurrentLang] = useState<Language>(getStoredLanguage);
-    const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'auto'>(() => {
-        const manual = localStorage.getItem('mw_theme_manual');
-        if (!manual) return 'auto';
-        return (localStorage.getItem('mw_theme') as 'light' | 'dark') || 'light';
-    });
-
     useEffect(() => {
         const handleLang = () => setCurrentLang(getStoredLanguage());
         window.addEventListener('apptify_language_change', handleLang);
@@ -117,46 +111,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
     const handleLanguageChange = (newLang: Language) => {
         setCurrentLang(newLang);
         setStoredLanguage(newLang);
-    };
-
-    const handleThemeChange = (mode: 'light' | 'dark' | 'auto') => {
-        setThemeMode(mode);
-        if (mode === 'auto') {
-            localStorage.removeItem('mw_theme_manual');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const target = prefersDark ? 'dark' : 'light';
-            localStorage.setItem('mw_theme', target);
-            const root = window.document.documentElement;
-            const body = window.document.body;
-            if (target === 'dark') {
-                root.classList.add('dark');
-                root.classList.remove('light');
-                body?.classList.add('dark');
-                body?.classList.remove('light');
-            } else {
-                root.classList.remove('dark');
-                root.classList.add('light');
-                body?.classList.remove('dark');
-                body?.classList.add('light');
-            }
-        } else {
-            localStorage.setItem('mw_theme_manual', 'true');
-            localStorage.setItem('mw_theme', mode);
-            const root = window.document.documentElement;
-            const body = window.document.body;
-            if (mode === 'dark') {
-                root.classList.add('dark');
-                root.classList.remove('light');
-                body?.classList.add('dark');
-                body?.classList.remove('light');
-            } else {
-                root.classList.remove('dark');
-                root.classList.add('light');
-                body?.classList.remove('dark');
-                body?.classList.add('light');
-            }
-        }
-        window.dispatchEvent(new Event('apptify_theme_change'));
     };
 
     // --- Backup State ---
@@ -340,7 +294,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                 gn_notes: localStorage.getItem('gn_notes'),
                 gn_todos: localStorage.getItem('gn_todos'),
                 mw_data_main: localStorage.getItem('mw_data_main'),
-                mw_theme: localStorage.getItem('mw_theme'),
             }
         };
 
@@ -402,7 +355,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
 
     return (
         <div className="min-h-screen pb-28 text-[var(--ios-label-primary)] animate-fade-in font-sans">
-            <div className="max-w-3xl mx-auto w-full px-5 sm:px-6 space-y-9 pb-20">
+            <div className="max-w-3xl mx-auto w-full px-gutter space-y-9 pb-20">
                 {/* Page header — module identity, no back-to-launcher affordance (the dock navigates) */}
                 <div className="flex items-start justify-between gap-4 pt-4">
                     <div>
@@ -551,39 +504,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ onExit }) => {
                         </div>
                     </div>
 
-                    <div className="hairline my-4" />
-
-                    {/* Theme */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="min-w-0">
-                            <span className="block text-[14px] font-semibold">{currentLang === 'zh' ? '外观主题' : 'Appearance Theme'}</span>
-                            <span className="block text-xs text-[var(--ios-label-secondary)] mt-0.5">
-                                {currentLang === 'zh' ? '跟随系统或手动指定' : 'Follow the system, or set it manually'}
-                            </span>
-                        </div>
-                        <div className="seg w-full sm:w-[250px] shrink-0">
-                            <button
-                                onClick={() => handleThemeChange('auto')}
-                                className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1 !px-2 ${themeMode === 'auto' ? 'is-on' : ''}`}
-                            >
-                                <span className="truncate">{currentLang === 'zh' ? '系统跟随' : 'Auto'}</span>
-                            </button>
-                            <button
-                                onClick={() => handleThemeChange('light')}
-                                className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1 !px-2 ${themeMode === 'light' ? 'is-on' : ''}`}
-                            >
-                                <Sun size={13} />
-                                <span className="truncate">{currentLang === 'zh' ? '浅色' : 'Light'}</span>
-                            </button>
-                            <button
-                                onClick={() => handleThemeChange('dark')}
-                                className={`seg__item flex-1 min-w-0 inline-flex items-center justify-center gap-1 !px-2 ${themeMode === 'dark' ? 'is-on' : ''}`}
-                            >
-                                <Moon size={13} />
-                                <span className="truncate">{currentLang === 'zh' ? '深色' : 'Dark'}</span>
-                            </button>
-                        </div>
-                    </div>
                 </section>
 
                 {/* AI Intelligence */}

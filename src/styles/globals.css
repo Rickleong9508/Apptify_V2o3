@@ -99,86 +99,17 @@
   --t-mid: 0.32s;
 }
 
-/* --- Dark mode: the canvas becomes the ink itself ---------------------- */
-.dark,
-html.dark {
-  --color-primary: 91 59 255;         /* #5B3BFF — brand blue lifted for ink contrast */
-  --color-primary-hover: 122 95 255;
-  --color-secondary: 244 244 245;
-  --color-accent: 255 191 0;
+/* --------------------------------------------------------------------------
+   DARK MODE — RETIRED
 
-  --color-background: 10 10 11;       /* #0A0A0B */
-  --color-surface: 20 20 22;          /* #141416 */
-  --color-text-main: 250 250 250;
-  --color-text-muted: 160 160 166;
-  --color-border: 42 42 46;
-  --color-input-bg: 20 20 22;
+   Ink & Signal is a single-palette system. A real dark theme needs its own
+   ink-ladder and contrast pass rather than a mechanical inversion of these
+   four pigments, so the dark token set, the class override and the
+   prefers-color-scheme auto-switch have all been removed.
 
-  --ios-label-primary: #fafafa;
-  --ios-label-secondary: #a0a0a6;
-  --ios-card-bg: #141416;
-  --ios-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 40px -24px rgba(0, 0, 0, 0.75);
-
-  --glass-card-bg: #141416;
-  --glass-card-border: rgba(255, 255, 255, 0.09);
-  --glass-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 40px -24px rgba(0, 0, 0, 0.75);
-
-  --glass-btn-bg: #141416;
-  --glass-btn-border: rgba(255, 255, 255, 0.1);
-  --glass-btn-shadow: none;
-
-  --glass-input-bg: #141416;
-  --glass-input-border: rgba(255, 255, 255, 0.1);
-  --glass-input-shadow: none;
-  --glass-input-focus-border: #5b3bff;
-
-  --app-bg-gradient: none;
-
-  --lift-1: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --lift-2: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
-  --lift-3: 0 24px 60px -28px rgba(0, 0, 0, 0.9);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --color-primary: 91 59 255;
-    --color-primary-hover: 122 95 255;
-    --color-secondary: 244 244 245;
-    --color-accent: 255 191 0;
-    --color-background: 10 10 11;
-    --color-surface: 20 20 22;
-    --color-text-main: 250 250 250;
-    --color-text-muted: 160 160 166;
-    --color-border: 42 42 46;
-    --color-input-bg: 20 20 22;
-
-    --glass-card-bg: #141416;
-    --glass-card-border: rgba(255, 255, 255, 0.09);
-    --glass-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 40px -24px rgba(0, 0, 0, 0.75);
-    --glass-btn-bg: #141416;
-    --glass-btn-border: rgba(255, 255, 255, 0.1);
-    --glass-btn-shadow: none;
-    --glass-input-bg: #141416;
-    --glass-input-border: rgba(255, 255, 255, 0.1);
-    --glass-input-shadow: none;
-    --glass-input-focus-border: #5b3bff;
-    --app-bg-gradient: none;
-  }
-}
-
-/* Explicit class-based dark override */
-html.dark {
-  --color-primary: 91 59 255;
-  --color-secondary: 244 244 245;
-  --color-accent: 255 191 0;
-  --color-background: 10 10 11;
-  --color-surface: 20 20 22;
-  --color-text-main: 250 250 250;
-  --color-text-muted: 160 160 166;
-  --color-border: 42 42 46;
-  --color-input-bg: 20 20 22;
-  --app-bg-gradient: none;
-}
+   The canvas is always white. Any leftover `.dark` utility variants inside
+   components are inert because the class is never applied.
+   -------------------------------------------------------------------------- */
 
 /* ==========================================================================
    2. BASE
@@ -237,7 +168,41 @@ body {
 }
 
 /* ==========================================================================
-   3. SAFE AREA UTILITIES (iOS Dynamic Island & Home Indicator)
+   3. SAFE AREA & CONTENT GUTTER
+   ==========================================================================
+
+   Target device: iPhone 17 Pro Max — 440 x 956 pt logical, regular width.
+   Its portrait safe-area insets are top 62pt / bottom 34pt / left 0 / right 0,
+   and 62pt horizontally in landscape.
+
+   iOS lays out regular-width content on a 20pt margin. We use a slightly more
+   generous 24px so the four-pigment panels breathe, and we ADD the real
+   hardware insets on top — so the layout clears the rounded corners and the
+   sensor housing when the device is rotated, instead of hugging them.
+
+   Every page's outer container uses .px-gutter so the whole app shares one
+   horizontal rhythm, and the top bar uses it too so titles line up with the
+   content below them.
+   ========================================================================== */
+
+:root {
+  --gutter-x: 24px;
+}
+
+.px-gutter {
+  padding-left: calc(var(--gutter-x) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--gutter-x) + env(safe-area-inset-right, 0px));
+}
+
+/* Narrow phones still get a comfortable, if slightly tighter, margin. */
+@media (max-width: 380px) {
+  :root {
+    --gutter-x: 20px;
+  }
+}
+
+/* ==========================================================================
+   3b. LEGACY SAFE AREA HELPERS (iOS Dynamic Island & Home Indicator)
    ========================================================================== */
 
 .pt-safe { padding-top: env(safe-area-inset-top, 0px); }

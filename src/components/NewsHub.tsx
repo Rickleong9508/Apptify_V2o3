@@ -482,7 +482,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
 
     return (
         <div className="min-h-screen pb-24 animate-fade-in text-gray-900 dark:text-white">
-            <div className="max-w-6xl mx-auto space-y-5 px-3 sm:px-4">
+            <div className="max-w-6xl mx-auto space-y-5 px-gutter">
                 
                 {/* Page header — module identity + live signal. Navigation belongs to the dock. */}
                 <div className="flex items-start justify-between gap-3 pt-4">

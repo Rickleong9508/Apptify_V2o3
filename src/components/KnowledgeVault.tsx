@@ -298,7 +298,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
   };
 
   return (
-    <div className="min-h-screen pt-16 sm:pt-20 pb-28 px-4 sm:px-6 max-w-4xl mx-auto selection:bg-blue-500/20">
+    <div className="min-h-screen pt-16 sm:pt-20 pb-28 px-gutter max-w-4xl mx-auto selection:bg-blue-500/20">
       {/* Page header — module identity, then the system segmented control */}
       <div className="flex items-start justify-between gap-4">
         <div>

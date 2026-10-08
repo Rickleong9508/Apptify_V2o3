@@ -79,49 +79,25 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Global theme state with auto-detection of device preferences
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('mw_theme') as 'light' | 'dark' | null;
-    if (saved) return saved;
-    // Follow phone / OS system preference by default
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  });
-
-  // Listen to phone/system light & dark mode changes automatically
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemChange = (e: MediaQueryListEvent) => {
-      // If user hasn't manually overridden with the button, auto-adapt to phone system
-      const hasManualOverride = localStorage.getItem('mw_theme_manual');
-      if (!hasManualOverride) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    mediaQuery.addEventListener('change', handleSystemChange);
-    return () => mediaQuery.removeEventListener('change', handleSystemChange);
-  }, []);
-
+  // Appearance is permanently the light canvas.
+  //
+  // Dark mode has been retired: Ink & Signal is a single-palette system, and a
+  // genuine dark theme needs its own ink-ladder pass rather than a mechanical
+  // inversion of these four pigments. We still pin the `light` class and clear
+  // any stale theme keys so an old value in localStorage cannot resurrect it.
   useEffect(() => {
     const root = window.document.documentElement;
     const body = window.document.body;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-      body?.classList.add('dark');
-      body?.classList.remove('light');
-    } else {
-      root.classList.remove('dark');
-      root.classList.add('light');
-      body?.classList.remove('dark');
-      body?.classList.add('light');
-    }
-    localStorage.setItem('mw_theme', theme);
+    root.classList.remove('dark');
+    root.classList.add('light');
+    body?.classList.remove('dark');
+    body?.classList.add('light');
+    try {
+      localStorage.removeItem('mw_theme');
+      localStorage.removeItem('mw_theme_manual');
+    } catch {}
     window.dispatchEvent(new Event('apptify_theme_change'));
-  }, [theme]);
+  }, []);
 
   // Language State (Defaults to English, supports Chinese)
   const [lang, setLang] = useState<Language>(getStoredLanguage);
@@ -454,7 +430,7 @@ const App: React.FC = () => {
 
     // Avant-Garde Kinetic Modular Launcher
     return (
-      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-3.5 sm:px-6 py-3.5 sm:py-6 max-w-2xl mx-auto space-y-4 sm:space-y-5 selection:bg-[#2600FD] selection:text-black animate-fade-in font-sans">
+      <div className="min-h-screen-safe w-full flex flex-col items-center justify-start px-gutter py-3.5 sm:py-6 max-w-2xl mx-auto space-y-4 sm:space-y-5 selection:bg-[#2600FD] selection:text-black animate-fade-in font-sans">
         
         {/* 1. Tactical Micro Status Bar */}
         <div className="w-full flex items-center justify-between py-1 relative z-30">
@@ -501,19 +477,6 @@ const App: React.FC = () => {
               <span>{lang === 'en' ? 'EN' : '中'}</span>
             </button>
 
-            {/* Theme Toggle Button */}
-            <button
-              onClick={() => {
-                const nextTheme = theme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('mw_theme_manual', 'true');
-                localStorage.setItem('mw_theme', nextTheme);
-                setTheme(nextTheme);
-              }}
-              className="w-8.5 h-8.5 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/10 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-sm text-zinc-800 dark:text-zinc-200 active:scale-90 hover:border-black/20 dark:hover:border-white/25 transition-all cursor-pointer"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun size={15} className="text-[#FFBF00]" /> : <Moon size={15} className="text-zinc-900" />}
-            </button>
           </div>
         </div>
 
@@ -829,7 +792,7 @@ const App: React.FC = () => {
       {/* Universal Floating Top Bar for Sub-Apps (iOS Safe Area Ready) */}
       {currentApp !== 'launcher' && (
         <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/85 dark:bg-[#0A0A0B]/90 backdrop-blur-xl border-b border-black/5 dark:border-white/10 transition-colors">
-          <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+          <div className="max-w-5xl mx-auto px-gutter h-14 sm:h-16 flex items-center justify-between">
             {/* Active App Title — navigation now lives in the bottom dock */}
             <h2 className="font-semibold text-[15px] sm:text-base tracking-tight text-gray-900 dark:text-white truncate">
               {getAppTitle()}
@@ -859,19 +822,6 @@ const App: React.FC = () => {
                 <Cloud size={16} className={isConnected ? (needsReauth ? "text-amber-500" : "fill-blue-500/20") : ""} />
               </button>
 
-              {/* Theme Toggle */}
-              <button
-                onClick={() => {
-                  const nextTheme = theme === 'dark' ? 'light' : 'dark';
-                  localStorage.setItem('mw_theme_manual', 'true');
-                  localStorage.setItem('mw_theme', nextTheme);
-                  setTheme(nextTheme);
-                }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer pointer-events-auto"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? <Sun size={16} className="text-blue-400" /> : <Moon size={16} className="text-indigo-600" />}
-              </button>
 
               {/* AI Model Selector Button */}
               <div className="relative">
