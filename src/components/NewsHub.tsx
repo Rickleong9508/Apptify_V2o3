@@ -213,7 +213,7 @@ const NewsCard: React.FC<{ item: NewsItem; lang: 'en' | 'cn'; lead?: boolean }> 
     /* ---- Lead story: an ink mass carrying the editorial headline ---------- */
     if (lead) {
         return (
-            <article className="ink-panel p-5 sm:p-6">
+            <article className="blue-panel p-5 sm:p-6">
                 <div className="relative z-10">
                     <div className="flex items-center justify-between gap-3">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FFBF00] text-[#0A0A0B] text-[10px] font-semibold uppercase tracking-[0.08em]">
@@ -551,7 +551,7 @@ const NewsHub: React.FC<NewsHubProps> = ({ onExit }) => {
                                         onClick={() => setActiveSourceId(source.id)}
                                         className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border whitespace-nowrap active:scale-95 transition-transform ${
                                             isSelected
-                                                ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                                                ? 'bg-[#2600FD] border-transparent text-white'
                                                 : 'bg-white border-black/[0.14] text-black/70 hover:border-black/30 dark:bg-white/[0.06] dark:border-white/[0.15] dark:text-white/70'
                                         }`}
                                     >

@@ -112,15 +112,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Hero: Net Worth — an ink mass carrying the figure */}
-      <div className="relative overflow-hidden rounded-[30px] bg-[#0A0A0B] dark:bg-[#141416] text-white p-6 sm:p-8 group
+      <div className="relative overflow-hidden rounded-[30px] bg-[#2600FD] text-white p-6 sm:p-8 group
                       shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(10,10,11,0.35)]">
         {/* Specular edge refraction — the system has no outer glow */}
-        <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]" />
+        <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
 
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-3 gap-3">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="signal-dot shrink-0"></span>
+              <span className="signal-dot signal-dot--light shrink-0"></span>
               <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-white/55 leading-snug">
                 {lang === 'zh' ? '总资产净值 (现金 + 目前投资数额 · 不扣减借贷)' : 'TOTAL NET WORTH (CASH + INVESTMENTS · EXCL. LOANS)'}
               </span>
@@ -147,7 +147,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <span className="font-mono text-[10px] text-white/50 font-medium uppercase tracking-[0.06em]">
                   {lang === 'zh' ? '现金钱包' : 'CASH WALLETS'}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2600FD]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
               </div>
               <p className="font-mono text-base sm:text-xl font-semibold text-white truncate font-mono-numbers">
                 +RM {totalCash.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -162,7 +162,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <span className="font-mono text-[10px] text-white/50 font-medium uppercase tracking-[0.06em]">
                   {lang === 'zh' ? '目前投资数额' : 'ACTIVE INVESTMENTS'}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#5B3BFF]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-white/55"></span>
               </div>
               <p className="font-mono text-base sm:text-xl font-semibold text-white truncate font-mono-numbers">
                 +RM {totalStockValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}

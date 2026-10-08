@@ -61,7 +61,7 @@ const AppDock: React.FC<AppDockProps> = ({ currentApp, setCurrentApp, lang }) =>
     >
       <Icon size={18} strokeWidth={1.8} />
       <span
-        className={`w-1 h-1 rounded-full bg-[#2600FD] transition-all duration-300 ${
+        className={`w-1 h-1 rounded-full bg-white transition-all duration-300 ${
           isOn(mode) ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
         }`}
       />
@@ -74,8 +74,8 @@ const AppDock: React.FC<AppDockProps> = ({ currentApp, setCurrentApp, lang }) =>
       className="fixed left-1/2 -translate-x-1/2 z-40
                  grid grid-cols-5 items-center
                  w-[calc(100%-40px)] max-w-[288px] h-[56px] px-1.5 rounded-full
-                 bg-[#0A0A0B]
-                 shadow-[0_10px_28px_-12px_rgba(10,10,11,0.55),inset_0_1px_0_rgba(255,255,255,0.1)]"
+                 bg-[#2600FD]
+                 shadow-[0_10px_28px_-14px_rgba(38,0,253,0.65),inset_0_1px_0_rgba(255,255,255,0.22)]"
       style={{ bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}
     >
       {left.map((it) => <DockItem key={it.mode} {...it} />)}
@@ -89,9 +89,9 @@ const AppDock: React.FC<AppDockProps> = ({ currentApp, setCurrentApp, lang }) =>
         aria-label={label('Home', '首页')}
         aria-current={isOn('launcher') ? 'page' : undefined}
         className={`justify-self-center w-[46px] h-[46px] rounded-full
-                    -translate-y-[13px] flex items-center justify-center cursor-pointer
+                    -translate-y-[6px] flex items-center justify-center cursor-pointer
                     transition-all duration-300 active:scale-90
-                    shadow-[0_6px_16px_-6px_rgba(10,10,11,0.5),0_0_0_4px_#0A0A0B] ${
+                    shadow-[0_6px_16px_-6px_rgba(10,10,11,0.5),0_0_0_4px_#2600FD] ${
           isOn('launcher') ? 'bg-[#FFBF00] text-[#0A0A0B]' : 'bg-white text-[#0A0A0B]'
         }`}
       >

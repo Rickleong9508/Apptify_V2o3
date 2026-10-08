@@ -387,7 +387,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               onClick={() => setSelectedCategory('all')}
               className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 selectedCategory === 'all'
-                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  ? 'bg-[#2600FD] border-transparent text-white'
                   : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >
@@ -399,7 +399,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 onClick={() => setSelectedCategory(key)}
                 className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                   selectedCategory === key
-                    ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                    ? 'bg-[#2600FD] border-transparent text-white'
                     : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
                 }`}
               >
@@ -416,7 +416,11 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                 <div
                   key={note.id}
                   onClick={() => handleEditNote(note)}
-                  className="group relative p-5 rounded-3xl liquid-card-blue backdrop-blur-2xl flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 cursor-pointer hover:-translate-y-1 overflow-hidden min-h-[170px]"
+                  className={`group relative p-5 rounded-3xl backdrop-blur-2xl flex flex-col justify-between text-left active:scale-[0.98] transition-all duration-300 cursor-pointer hover:-translate-y-1 overflow-hidden min-h-[170px] ${
+                    note.pinned
+                      ? 'bg-[#FFBF00] border border-[#B07F00]/35'
+                      : 'liquid-card-blue'
+                  }`}
                 >
                   {/* Specular Shimmer */}
                   <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-white/20 dark:bg-white/10 blur-xl pointer-events-none" />
@@ -430,7 +434,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
                       <button
                         onClick={e => handleTogglePin(note.id, e)}
                         className={`p-1.5 rounded-full transition-colors ${
-                          note.pinned ? 'text-blue-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                          note.pinned ? 'text-[#0A0A0B]' : 'text-gray-400 hover:text-[#2600FD]'
                         }`}
                         title={note.pinned ? (lang === 'zh' ? '取消置顶' : 'Unpin note') : (lang === 'zh' ? '置顶笔记' : 'Pin note')}
                       >
@@ -549,7 +553,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               onClick={() => setTaskFilter('all')}
               className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 taskFilter === 'all'
-                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  ? 'bg-[#2600FD] border-transparent text-white'
                   : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >
@@ -559,7 +563,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               onClick={() => setTaskFilter('pending')}
               className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 taskFilter === 'pending'
-                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  ? 'bg-[#2600FD] border-transparent text-white'
                   : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >
@@ -569,7 +573,7 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
               onClick={() => setTaskFilter('completed')}
               className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11.5px] font-medium border whitespace-nowrap active:scale-95 transition-transform ${
                 taskFilter === 'completed'
-                  ? 'bg-[#0A0A0B] border-transparent text-white dark:bg-white dark:text-[#0A0A0B]'
+                  ? 'bg-[#2600FD] border-transparent text-white'
                   : 'bg-white border-black/[0.14] text-black/70 dark:bg-transparent dark:border-white/[0.15] dark:text-white/70'
               }`}
             >

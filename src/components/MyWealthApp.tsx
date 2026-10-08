@@ -47,7 +47,8 @@ interface TabIconProps {
 
 const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
   // Clear visible icon colors: Electric Volt Lime (#2600FD) when active!
-  const outlineClass = "text-zinc-400 dark:text-zinc-400 group-hover:text-zinc-200 transition-colors shrink-0";
+  // Inherits the button's colour so the parent's hover state reaches the glyph.
+  const outlineClass = "text-current opacity-100 transition-colors shrink-0";
   const activeClass = "text-[#2600FD] fill-[#2600FD] drop-shadow-none transition-transform duration-150 scale-105 shrink-0";
 
   if (tabId === 'dashboard') {
@@ -898,7 +899,7 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              className={`relative flex items-center gap-0.5 w-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+              className={`relative flex items-center gap-1 w-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             >
               {getNavItems(lang).map((item) => {
                 const isActive = activeTab === item.id;
@@ -908,11 +909,11 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
                     ref={(el) => { tabRefs.current[item.id] = el; }}
                     onClick={() => handleTabClick(item.id)}
                     title={item.label}
-                    className={`relative z-10 flex items-center justify-center gap-1.5 h-9 rounded-full shrink-0
+                    className={`relative z-10 flex items-center justify-center gap-1.5 h-10 rounded-full min-w-0
                                 transition-all duration-300 active:scale-95 ${
                       isActive
-                        ? 'bg-[#0A0A0B] text-white dark:bg-white dark:text-[#0A0A0B] px-3.5'
-                        : 'w-11 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                        ? 'flex-[1.5] px-2 bg-[#2600FD] text-white'
+                        : 'flex-1 text-black/45 hover:text-[#2600FD]'
                     }`}
                   >
                     <TabIcon tabId={item.id} isActive={isActive} />

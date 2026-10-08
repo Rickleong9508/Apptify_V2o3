@@ -515,9 +515,9 @@ const App: React.FC = () => {
         <div className="w-full flex flex-col gap-3.5 sm:gap-4">
           
           {/* Deck 01: MyWealth Flagship Asset Terminal — ink mass carrying the figure */}
-          <div className="relative overflow-hidden rounded-[30px] bg-[#0A0A0B] dark:bg-[#141416] text-white p-5 sm:p-6.5 group shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(10,10,11,0.35)]">
+          <div className="relative overflow-hidden rounded-[30px] bg-[#2600FD] text-white p-5 sm:p-6.5 group shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(38,0,253,0.45)]">
             {/* Specular edge refraction — the system has no outer glow */}
-            <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]" />
+            <div className="pointer-events-none absolute inset-0 rounded-[30px] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
 
             {/* Card Header Strip: Badge & Interactive Toggle Switch */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full relative z-10 pb-4 border-b border-white/10">
@@ -595,7 +595,7 @@ const App: React.FC = () => {
                 <span>
                   {wealthView === 'total' ? t.launcher.netWorthLabel : wealthView === 'cash' ? (lang === 'zh' ? '流动现金及多币种账户' : 'Liquid Multi-Currency Accounts') : (lang === 'zh' ? '当前持仓市值与投资本金' : 'Securities & Active Holdings')}
                 </span>
-                <span className="signal-dot"></span>
+                <span className="signal-dot signal-dot--light"></span>
               </p>
             </div>
 
@@ -620,12 +620,12 @@ const App: React.FC = () => {
           <div className="grid grid-cols-5 gap-3 w-full">
 
             {/* NoteDown — the wider tile */}
-            <div className="col-span-3 rounded-3xl border border-black/[0.12] dark:border-white/10 bg-white dark:bg-[#141416] p-4 flex flex-col justify-between">
+            <div className="col-span-3 rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl bg-[#2600FD] text-white flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-white/15 text-white flex items-center justify-center shrink-0">
                   <NotebookPen size={18} strokeWidth={2.1} />
                 </div>
-                <span className="font-mono text-[9px] tracking-wider uppercase text-black/45 dark:text-white/45 pt-1">
+                <span className="font-mono text-[9px] tracking-wider uppercase text-white/55 pt-1">
                   {taskCount > 0
                     ? `${taskCount} ${lang === 'zh' ? '待办' : 'TASKS'}`
                     : `${noteCount} ${lang === 'zh' ? '便签' : 'NOTES'}`}
@@ -633,17 +633,17 @@ const App: React.FC = () => {
               </div>
 
               <div>
-                <h2 className="text-[15px] font-semibold tracking-tight text-zinc-950 dark:text-white leading-tight">
+                <h2 className="text-[15px] font-semibold tracking-tight text-white leading-tight">
                   NoteDown
                 </h2>
-                <p className="text-[11px] text-black/45 dark:text-white/45 mt-1 leading-snug">
+                <p className="text-[11px] text-white/55 mt-1 leading-snug">
                   {lang === 'zh' ? '速记 · 待办 · 专注' : 'Notes, tasks & focus'}
                 </p>
               </div>
 
               <button
                 onClick={() => setCurrentApp('knowledgevault')}
-                className="mt-3 flex items-center gap-1 text-[11px] font-medium text-[#2600FD] cursor-pointer active:scale-95 transition-transform self-start"
+                className="mt-3 flex items-center gap-1 text-[11px] font-medium text-[#FFBF00] cursor-pointer active:scale-95 transition-transform self-start"
               >
                 <span>{t.launcher.openVault}</span>
                 <ArrowUpRight size={12} strokeWidth={2.3} />
