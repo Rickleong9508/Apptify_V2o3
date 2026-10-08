@@ -419,8 +419,8 @@ const Accounts: React.FC<AccountsProps> = ({ accounts, setAccounts }) => {
               {/* Top Card Row */}
               <div className="flex justify-between items-start z-10">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-6 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-inner">
-                    <Wifi size={13} className="text-[#2600FD] rotate-90" />
+                  <div className="w-8 h-6 rounded-md bg-[#FFBF00] flex items-center justify-center">
+                    <Wifi size={13} className="text-[#0A0A0B] rotate-90" />
                   </div>
                   <div>
                     <span className="font-black text-base tracking-wide block">{acc.name}</span>

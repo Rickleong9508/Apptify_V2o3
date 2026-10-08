@@ -46,29 +46,38 @@ interface TabIconProps {
 }
 
 const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
-  // Clear visible icon colors: Electric Volt Lime (#2600FD) when active!
-  // Inherits the button's colour so the parent's hover state reaches the glyph.
-  const outlineClass = "text-current opacity-100 transition-colors shrink-0";
-  // White fill: the active pill is brand blue, so a blue glyph vanished into it.
-  const activeClass = "text-white fill-white transition-transform duration-150 scale-105 shrink-0";
+  // The inactive glyphs are 1.8px outlines. A FILLED glyph of the same box has
+  // far more visual mass, which made the active tab read as oversized and
+  // optically off-centre next to its neighbours. So the filled variants are
+  // drawn through a 0.84 scale group: the layout box stays 18px (no size jump
+  // between states) while the ink coverage lands close to an outline's.
+  const FILL_SCALE = "translate(12 12) scale(0.84) translate(-12 -12)";
+
+  const outlineClass = "text-current transition-colors shrink-0";
+  const activeClass = "text-white fill-white shrink-0";
 
   if (tabId === 'dashboard') {
+    // A symmetric 2x2 grid. The previous glyph had unequal block heights
+    // (9px vs 5px), which reads as fine detail in outline form but looks
+    // lopsided the moment it is filled solid.
+    const grid = (
+      <>
+        <rect width="8" height="8" x="2.6" y="2.6" rx="2.2" />
+        <rect width="8" height="8" x="13.4" y="2.6" rx="2.2" />
+        <rect width="8" height="8" x="2.6" y="13.4" rx="2.2" />
+        <rect width="8" height="8" x="13.4" y="13.4" rx="2.2" />
+      </>
+    );
     if (isActive) {
       return (
-        <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
-          <rect width="7" height="9" x="3" y="3" rx="1.5" />
-          <rect width="7" height="5" x="14" y="3" rx="1.5" />
-          <rect width="7" height="9" x="14" y="12" rx="1.5" />
-          <rect width="7" height="5" x="3" y="16" rx="1.5" />
+        <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor" stroke="none">
+          {grid}
         </svg>
       );
     }
     return (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={outlineClass}>
-        <rect width="7" height="9" x="3" y="3" rx="1.5" />
-        <rect width="7" height="5" x="14" y="3" rx="1.5" />
-        <rect width="7" height="9" x="14" y="12" rx="1.5" />
-        <rect width="7" height="5" x="3" y="16" rx="1.5" />
+        {grid}
       </svg>
     );
   }
@@ -77,7 +86,9 @@ const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
     if (isActive) {
       return (
         <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
-          <path fillRule="evenodd" clipRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2h-4a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h4v2a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6zm14 4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h4v-4h-4zm2 2.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
+          <g transform={FILL_SCALE}>
+            <path fillRule="evenodd" clipRule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2h-4a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h4v2a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6zm14 4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h4v-4h-4zm2 2.5a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
+          </g>
         </svg>
       );
     }
@@ -88,8 +99,10 @@ const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
     if (isActive) {
       return (
         <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
-          <path d="M12.5 2.1A10 10 0 0 1 21.9 11.5H12.5V2.1z" />
-          <path d="M10.5 3.1A10 10 0 1 0 20.9 13.5H10.5V3.1z" />
+          <g transform={FILL_SCALE}>
+            <path d="M12.5 2.1A10 10 0 0 1 21.9 11.5H12.5V2.1z" />
+            <path d="M10.5 3.1A10 10 0 1 0 20.9 13.5H10.5V3.1z" />
+          </g>
         </svg>
       );
     }
@@ -100,7 +113,9 @@ const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
     if (isActive) {
       return (
         <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass} fill="currentColor">
-          <path fillRule="evenodd" clipRule="evenodd" d="M2 7a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v1H2V7zm0 3h20v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7zm4 4a1 1 0 0 0 0 2h3a1 1 0 1 0 0-2H6z" />
+          <g transform={FILL_SCALE}>
+            <path fillRule="evenodd" clipRule="evenodd" d="M2 7a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v1H2V7zm0 3h20v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7zm4 4a1 1 0 0 0 0 2h3a1 1 0 1 0 0-2H6z" />
+          </g>
         </svg>
       );
     }
@@ -111,8 +126,10 @@ const TabIcon: React.FC<TabIconProps> = ({ tabId, isActive }) => {
     if (isActive) {
       return (
         <svg width="18" height="18" viewBox="0 0 24 24" className={activeClass}>
-          <path d="M2 17l6.5-6.5 5 5L19 9" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-          <polygon points="15,5 22,5 22,12" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+          <g transform={FILL_SCALE}>
+            <path d="M2 17l6.5-6.5 5 5L19 9" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+            <polygon points="15,5 22,5 22,12" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+          </g>
         </svg>
       );
     }

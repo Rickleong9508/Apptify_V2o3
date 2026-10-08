@@ -196,13 +196,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         {/* Asset Structure Card */}
         <div className="avant-card p-6 sm:p-7 rounded-3xl lg:col-span-2 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-6 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-6 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold shrink-0">
                   <PieChart size={16} />
                 </div>
-                <div>
-                  <h3 className="font-black text-base sm:text-lg text-zinc-950 dark:text-white uppercase tracking-tight">
+                <div className="min-w-0">
+                  <h3 className="font-black text-base sm:text-lg leading-8 text-zinc-950 dark:text-white uppercase tracking-tight whitespace-nowrap">
                     {lang === 'zh' ? '资产构成配比' : 'Asset Allocation'}
                   </h3>
                   <span className="font-mono text-[9px] text-zinc-400 uppercase">ASSET ALLOCATION RATIO</span>
@@ -273,13 +273,13 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Monthly Pulse / Budget Health */}
         <div className="avant-card p-6 sm:p-7 rounded-3xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold shrink-0">
                 <Layers size={16} />
               </div>
-              <div>
-                <h3 className="font-black text-base sm:text-lg text-zinc-950 dark:text-white uppercase tracking-tight">
+              <div className="min-w-0">
+                <h3 className="font-black text-base sm:text-lg leading-8 text-zinc-950 dark:text-white uppercase tracking-tight whitespace-nowrap">
                   {lang === 'zh' ? '本月现金脉搏' : 'Monthly Cash Pulse'}
                 </h3>
                 <span className="font-mono text-[9px] text-zinc-400 uppercase">MONTHLY CASH PULSE</span>
@@ -291,7 +291,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* Income */}
             <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 font-mono">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold shrink-0">
                   <ArrowDownLeft size={16} />
                 </div>
                 <div>
@@ -305,7 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 space-y-2 font-mono">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold shrink-0">
                     <ArrowUpRight size={16} />
                   </div>
                   <div>
@@ -478,12 +478,12 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
   return (
     <div className="w-full space-y-4 font-sans">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
+        <div className="flex items-start gap-2">
+          <div className="w-8 h-8 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold shrink-0">
             <Activity size={16} />
           </div>
           <div>
-            <h3 className="font-black text-base sm:text-lg text-zinc-950 dark:text-white uppercase tracking-tight">
+            <h3 className="font-black text-base sm:text-lg leading-8 text-zinc-950 dark:text-white uppercase tracking-tight whitespace-nowrap">
               {lang === 'zh' ? '历史月度对账账目表' : 'Monthly Reconciliation'}
             </h3>
             <span className="font-mono text-[9px] text-zinc-400 uppercase">MONTHLY RECONCILIATION LEDGER</span>

@@ -291,7 +291,7 @@ const Budget: React.FC<BudgetProps> = ({
             <div className="p-5 border-b border-zinc-200/60 dark:border-zinc-800/60">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-800 text-[#2600FD] flex items-center justify-center font-bold">
+                  <div className="w-7 h-7 rounded-lg bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
                     <Plus size={15} strokeWidth={2.5} />
                   </div>
                   <h3 className="font-black text-sm text-zinc-950 dark:text-white uppercase tracking-tight">
@@ -407,7 +407,7 @@ const Budget: React.FC<BudgetProps> = ({
           {/* Projected Savings Card */}
           <div className="p-6 rounded-3xl avant-card">
             <div className="flex items-center gap-2 mb-2">
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold ${balance >= 0 ? 'bg-zinc-950 dark:bg-zinc-800 text-[#2600FD]' : 'bg-rose-500/10 text-rose-500'}`}>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold ${balance >= 0 ? 'bg-[#FFBF00] text-[#0A0A0B]' : 'bg-rose-500/10 text-rose-500'}`}>
                 <Calculator size={16} />
               </div>
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
@@ -430,7 +430,7 @@ const Budget: React.FC<BudgetProps> = ({
           {/* Savings Allocation (60% Invest / 40% Backup) */}
           <div className="p-6 rounded-3xl avant-card space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-zinc-950 dark:bg-zinc-800 text-[#2600FD] flex items-center justify-center font-bold">
+              <div className="w-7 h-7 rounded-lg bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center font-bold">
                 <TrendingUp size={15} />
               </div>
               <h3 className="font-mono font-black text-xs text-zinc-900 dark:text-zinc-200 uppercase tracking-wider">{lang === 'zh' ? '结余资金科学分配 (60/40)' : 'SURPLUS ALLOCATION (60/40)'}</h3>
