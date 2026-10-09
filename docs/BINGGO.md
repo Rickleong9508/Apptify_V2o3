@@ -369,3 +369,56 @@ if (reasoning && content) {
 ## 顺带简化
 
 思考指示器去掉了骨架条，改为 `Thinking...` + 三点，文案也改成 `Thinking...` / `思考中...`。
+
+
+---
+
+# 第十六轮：手机上（Vercel 部署）无法 Google 登录
+
+**症状**：手机把网页加到桌面后打开，点 Google 登录报
+「Google Client ID is missing. Please enter it in Advanced Settings below」。
+
+## 根因：构建时拿不到这个值
+
+`getGoogleClientId()` 的解析顺序是：
+
+```
+1. localStorage 里用户自己配的  →  手机上全新浏览器，空的
+2. import.meta.env.VITE_GOOGLE_CLIENT_ID  →  Vercel 从 GitHub 构建，而 .env 被 gitignore
+3. ''                            →  报「Client ID is missing」
+```
+
+本地 dev server 是好的（我验证过服务出去的模块里确实带着这个值），但**线上不是**。
+手机用户在这个状态下**什么都做不了**——被要求去「高级设置」粘贴一个开发者才知道的字符串。
+
+## 修法：内置默认值
+
+Google OAuth 的 **client ID 按设计就是公开的**——它随前端 bundle 下发给每个浏览器，Google 官方文档也明确说明它不是密钥（这个流程里真正的密钥是 client secret，浏览器端应用根本不持有）。
+
+所以把它作为**内置默认值**写进 `driveService.ts`，优先级变成：
+
+```
+1. 用户在本设备「高级设置」里配置的（覆盖一切）
+2. 部署环境变量 VITE_GOOGLE_CLIENT_ID（多环境用）
+3. 内置默认值（保证全新设备开箱可用）
+```
+
+## 验证
+
+**把 `.env` 移开**（完整模拟 Vercel 的构建环境），重新构建，确认产物里仍然有这个值：
+
+```
+✅ 有 —— 无 .env 也能登录
+```
+
+运行时也确认：清空 localStorage 后 `getGoogleClientId()` 返回 73 字符的内置值。
+
+## ⚠️ 还需要你做一个手动步骤：授权来源
+
+即使 client ID 有了，**Google 还会检查来源**。你需要到
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials) → 你的 OAuth 2.0 客户端 → 「已获授权的 JavaScript 来源」，加入：
+
+- `https://<你的 Vercel 域名>` （例如 `https://apptify-v2o3.vercel.app`）
+- `http://localhost:3001` （本地开发）
+
+否则会看到 `origin_mismatch`（就是之前 `127.0.0.1` 那次的问题，同一个原因）。

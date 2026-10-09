@@ -27,17 +27,39 @@ export interface DriveFileInfo {
 }
 
 // 1. Google Client ID Resolver
+/**
+ * Built-in OAuth client ID.
+ *
+ * A Google OAuth *client* ID is public by design — it is shipped inside the
+ * frontend bundle of every web app that offers Google Sign-In, and Google's own
+ * documentation states it is not a secret. The secret in this flow is the
+ * client *secret*, which a browser app never holds.
+ *
+ * It is baked in because the project's .env is gitignored, so a hosted build
+ * (Vercel) and any fresh clone had no value at build time. On a phone that had
+ * never visited the app there was no localStorage override either, and sign-in
+ * failed with "Google Client ID is missing" — on a device where the user could
+ * do nothing about it.
+ *
+ * Precedence below: a value the user set in Advanced Settings wins, then the
+ * deployment's env var, then this.
+ */
+const DEFAULT_GOOGLE_CLIENT_ID =
+    '1020134435743-ab1qfuja6ajds5p5b1me7lmbt48v5ib4.apps.googleusercontent.com';
+
 export const getGoogleClientId = (): string => {
+    // 1. Explicitly configured in Advanced Settings on this device
     const userConfigured = localStorage.getItem(STORAGE_KEYS.CLIENT_ID);
     if (userConfigured && userConfigured.trim()) {
         return userConfigured.trim();
     }
-    // Default fallback from Vite env or fallback placeholder
+    // 2. Deployment-provided (Vite inlines VITE_* at build time)
     const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
     if (envClientId && envClientId.trim()) {
         return envClientId.trim();
     }
-    return '';
+    // 3. Built-in, so sign-in works on a fresh device with no configuration
+    return DEFAULT_GOOGLE_CLIENT_ID;
 };
 
 export const setGoogleClientId = (clientId: string) => {
