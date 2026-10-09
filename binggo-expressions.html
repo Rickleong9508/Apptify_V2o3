@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BingGo — expression sheet</title>
+<link rel="stylesheet" href="/src/components/BingGo.css" />
+<style>
+  :root {
+    --blue: #2600fd;
+    --ink: #0a0a0b;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 24px 64px;
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: #fff; color: var(--ink);
+    display: flex; flex-direction: column; align-items: center; gap: 40px;
+  }
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.03em; margin: 0; }
+  .sub { font-size: 12px; color: rgba(10,10,11,.5); font-family: ui-monospace, monospace; }
+  .grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 34px 30px; justify-items: center;
+  }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .cap {
+    font-family: ui-monospace, monospace; font-size: 10px;
+    letter-spacing: .1em; text-transform: uppercase; color: rgba(10,10,11,.45);
+  }
+  /* Sizes the component must survive */
+  .row { display: flex; align-items: center; gap: 26px; }
+  .on-ink { background: var(--ink); padding: 26px 30px; border-radius: 24px; display: flex; gap: 22px; align-items: center; }
+</style>
+</head>
+<body>
+
+  <div style="text-align:center">
+    <h1>BingGo — expression sheet</h1>
+    <p class="sub">source mark 462x444 &middot; body radius 21.6% &middot; eye pair 46.5% &middot; eye 17.3% x 43.9%</p>
+  </div>
+
+  <div class="grid">
+    <div class="cell"><div class="binggo" data-mood="idle"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div><span class="cap">idle</span></div>
+
+    <div class="cell"><div class="binggo" data-mood="blink"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div><span class="cap">blink</span></div>
+
+    <div class="cell"><div class="binggo" data-mood="think"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div><span class="cap">think</span></div>
+
+    <div class="cell"><div class="binggo" data-mood="happy"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div><span class="cap">happy</span></div>
+
+    <div class="cell"><div class="binggo" data-mood="sad"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div><span class="cap">sad</span></div>
+
+    <div class="cell"><div class="binggo" data-mood="listen"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div><span class="cap">listen</span></div>
+
+    <div class="cell"><div class="binggo" data-mood="speak"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div><span class="cap">speak</span></div>
+  </div>
+
+  <div class="row">
+    <div class="binggo" data-mood="idle" style="--binggo-size:28px"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div>
+    <div class="binggo" data-mood="idle" style="--binggo-size:48px"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div>
+    <div class="binggo" data-mood="happy" style="--binggo-size:96px"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div>
+    <div class="binggo" data-mood="think" style="--binggo-size:160px"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div>
+  </div>
+
+  <div class="on-ink">
+    <div class="binggo" data-mood="listen" style="--binggo-size:72px"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div>
+    <div class="binggo" data-mood="speak" style="--binggo-size:72px"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div>
+    <div class="binggo" data-mood="idle" style="--binggo-size:72px"><span class="binggo__ring"></span><span class="binggo__halo"><i></i><i></i><i></i></span><div class="binggo__body"><div class="binggo__eyes"><i class="binggo__eye binggo__eye--l"></i><i class="binggo__eye binggo__eye--r"></i></div></div></div>
+  </div>
+
+</body>
+</html>
