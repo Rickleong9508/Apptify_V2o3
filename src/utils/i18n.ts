@@ -41,6 +41,38 @@ export interface Translations {
     quickTasks: string;
     welcomeMsg: string;
   };
+  binggo: {
+    name: string;
+    tagline: string;
+    ready: string;
+    thinking: string;
+    listening: string;
+    speaking: string;
+    errorState: string;
+    emptyTitle: string;
+    emptyBody: string;
+    inputPlaceholder: string;
+    send: string;
+    call: string;
+    endCall: string;
+    hold: string;
+    resume: string;
+    attachImage: string;
+    voiceOn: string;
+    voiceOff: string;
+    clear: string;
+    back: string;
+    confirm: string;
+    cancel: string;
+    you: string;
+    quickExpense: string;
+    quickNote: string;
+    quickStory: string;
+    quickNetWorth: string;
+    thinkingLabel: string;
+    memoryNote: string;
+    unsupportedVoice: string;
+  };
   invest: {
     moveUp: string;
     moveDown: string;
@@ -89,6 +121,38 @@ export const translations: Record<Language, Translations> = {
       quickTasks: '📋 Todo Checklist',
       welcomeMsg: `Hello! I am your **Ask Apptify Personal AI**.\n\nI have complete awareness of your workspace. You can ask me questions or give me direct commands to **update your data** in real time:\n\n• 💳 **Expense & Income**: e.g. *"Record RM25 lunch"*, *"Deposit RM1000 into Maybank"*\n• 📝 **Quick Notes**: e.g. *"Create note: Ideas for Apptify redesign"*\n• 🎯 **Tasks & Todos**: e.g. *"Add task: Submit report by Friday"*, *"Complete task: Submit report"*\n• 📊 **Wealth Status**: e.g. *"Check my net worth and wallet balances"*`,
     },
+    binggo: {
+      name: 'BingGo',
+      tagline: 'Your assistant across Apptify',
+      ready: 'Ready when you are',
+      thinking: 'Working on it',
+      listening: 'Listening',
+      speaking: 'Speaking',
+      errorState: 'That did not go through',
+      emptyTitle: 'Nothing here yet',
+      emptyBody: 'Ask in plain words. BingGo can move money, write notes, set tasks and read the news for you.',
+      inputPlaceholder: 'Ask BingGo anything',
+      send: 'Send',
+      call: 'Start a voice session',
+      endCall: 'End',
+      hold: 'Hold',
+      resume: 'Resume',
+      attachImage: 'Attach an image',
+      voiceOn: 'Voice replies on',
+      voiceOff: 'Voice replies off',
+      clear: 'Clear this conversation',
+      back: 'Close',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      you: 'You',
+      quickExpense: 'Log an expense',
+      quickNote: 'Write a note',
+      quickStory: 'Tell me a story',
+      quickNetWorth: 'How am I doing',
+      thinkingLabel: 'BingGo is thinking',
+      memoryNote: 'Remembers earlier conversations',
+      unsupportedVoice: 'This browser cannot speak or listen',
+    },
     invest: {
       moveUp: 'Move Up',
       moveDown: 'Move Down',
@@ -134,6 +198,38 @@ export const translations: Record<Language, Translations> = {
       quickWealth: '📊 查总资产',
       quickTasks: '📋 查待办清单',
       welcomeMsg: `你好！我是你的 **Apptify 专属私人 AI 助手**。\n\n我精通当前 App 的全部功能，你可以随时向我咨询或直接下达命令来**更新 App 的数据**：\n\n• 💳 **财务记账**：如 *“记一笔午餐 28 块”*、*“存入 1000 到 Maybank”*\n• 📝 **灵感随手记**：如 *“记录笔记：明天下午讨论 Apptify UI 优化”*\n• 🎯 **任务待办**：如 *“新建待办：周五前提交财务周报”*、*“完成待办 提交财务周报”*\n• 📊 **资产查询**：如 *“查一下我的净资产和钱包余额”*`,
+    },
+    binggo: {
+      name: 'BingGo',
+      tagline: '贯穿整个 Apptify 的助理',
+      ready: '随时可以开始',
+      thinking: '正在处理',
+      listening: '正在听',
+      speaking: '正在说',
+      errorState: '这次没成功',
+      emptyTitle: '这里还是空的',
+      emptyBody: '用日常话告诉我就行。BingGo 可以帮你记账、写笔记、建任务、读新闻。',
+      inputPlaceholder: '问 BingGo 任何事',
+      send: '发送',
+      call: '开始语音会话',
+      endCall: '结束',
+      hold: '暂停',
+      resume: '继续',
+      attachImage: '附上一张图',
+      voiceOn: '语音回复已开',
+      voiceOff: '语音回复已关',
+      clear: '清空这段对话',
+      back: '关闭',
+      confirm: '确认',
+      cancel: '取消',
+      you: '你',
+      quickExpense: '记一笔支出',
+      quickNote: '写条笔记',
+      quickStory: '讲个故事',
+      quickNetWorth: '我现在怎么样',
+      thinkingLabel: 'BingGo 正在想',
+      memoryNote: '记得之前聊过的内容',
+      unsupportedVoice: '这个浏览器不支持说话或收音',
     },
     invest: {
       moveUp: '上移',

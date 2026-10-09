@@ -1,0 +1,465 @@
+/* ==========================================================================
+   BINGGO — assistant surfaces
+   ==========================================================================
+
+   The FAB, the launcher entry and the assistant overlay.
+
+   Everything here stays inside the existing Ink & Signal system: white canvas,
+   ink mass, brand blue for anything live or selected, yellow reserved for
+   emphasis. There is deliberately no dark surface anywhere — the assistant is
+   a normal part of this app, not a separate dark product bolted onto it.
+
+   Motion rule for this file: animate `transform` and `opacity` only. Nothing
+   here touches top/left/width/height, so no frame does layout.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   FLOATING SUMMON BUTTON
+   Sits clear of the dock (56px tall, 16px from the bottom), so 88px clears it
+   with room to spare. Right-aligned, matching the reference.
+   -------------------------------------------------------------------------- */
+
+.binggo-fab {
+  position: fixed;
+  right: calc(var(--gutter-x, 24px) + env(safe-area-inset-right, 0px));
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid rgba(10, 10, 11, 0.1);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.05), 0 10px 24px -14px rgba(10, 10, 11, 0.4);
+  cursor: pointer;
+  animation: binggo-fab-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes binggo-fab-in {
+  from { opacity: 0; transform: scale(0.6) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.binggo-fab:hover {
+  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.06), 0 16px 32px -14px rgba(38, 0, 253, 0.42);
+}
+
+/* Tactile push, per the interaction-state rule */
+.binggo-fab:active {
+  transform: scale(0.92);
+  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.08);
+}
+
+.binggo-fab:focus-visible {
+  outline: 2px solid #2600fd;
+  outline-offset: 3px;
+}
+
+/* A hairline ring that expands on hover — cheap, and signals "I am awake" */
+.binggo-fab::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(38, 0, 253, 0.5);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.binggo-fab:hover::after {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+/* --------------------------------------------------------------------------
+   LAUNCHER ENTRY
+   Asymmetric on purpose: the character sits left, the copy and the affordance
+   right. No centred hero, no card inside a card.
+   -------------------------------------------------------------------------- */
+
+.binggo-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px;
+  text-align: left;
+  border: 1px solid rgba(10, 10, 11, 0.1);
+  border-radius: 30px;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 18px 40px -26px rgba(10, 10, 11, 0.35);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 300ms ease;
+}
+
+.binggo-card:hover {
+  border-color: rgba(38, 0, 253, 0.32);
+  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 22px 46px -26px rgba(38, 0, 253, 0.42);
+}
+
+.binggo-card:active {
+  transform: scale(0.985);
+}
+
+.binggo-card:focus-visible {
+  outline: 2px solid #2600fd;
+  outline-offset: 3px;
+}
+
+/* A slow blue wash that drifts across the card — the "alive" cue. Only
+   transform/opacity, and it is isolated to a pseudo-element so it can never
+   trigger a repaint of the card's contents. */
+.binggo-card__wash {
+  position: absolute;
+  top: -60%;
+  left: -30%;
+  width: 60%;
+  height: 220%;
+  background: linear-gradient(90deg, rgba(38, 0, 253, 0) 0%, rgba(38, 0, 253, 0.07) 50%, rgba(38, 0, 253, 0) 100%);
+  transform: rotate(14deg) translateX(-40%);
+  animation: binggo-wash 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes binggo-wash {
+  0%   { transform: rotate(14deg) translateX(-60%); opacity: 0; }
+  12%  { opacity: 1; }
+  55%  { transform: rotate(14deg) translateX(340%); opacity: 1; }
+  70%  { transform: rotate(14deg) translateX(340%); opacity: 0; }
+  100% { transform: rotate(14deg) translateX(340%); opacity: 0; }
+}
+
+.binggo-card__body {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   ASSISTANT OVERLAY
+   Full-bleed white sheet. No dark chrome.
+   -------------------------------------------------------------------------- */
+
+.binggo-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  animation: binggo-sheet-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes binggo-sheet-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.binggo-sheet--closing {
+  animation: binggo-sheet-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes binggo-sheet-out {
+  to { opacity: 0; transform: translateY(10px) scale(0.99); }
+}
+
+/* Live status: a breathing dot, the same signal language the rest of the app
+   uses for "this is happening now". */
+.binggo-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(10, 10, 11, 0.45);
+}
+
+.binggo-live__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #2600fd;
+  animation: binggo-pulse 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes binggo-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(0.72); }
+}
+
+/* Message bubbles. User turns get ink mass, assistant turns stay on the
+   canvas as plain type — so a long reply does not become a wall of boxes. */
+.binggo-msg {
+  animation: binggo-msg-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes binggo-msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.binggo-msg--user {
+  background: #0a0a0b;
+  color: #fff;
+  border-radius: 20px 20px 6px 20px;
+  padding: 11px 15px;
+  max-width: 82%;
+  margin-left: auto;
+}
+
+.binggo-msg--assistant {
+  background: transparent;
+  color: #0a0a0b;
+  padding: 2px 0;
+  max-width: 94%;
+}
+
+/* Thinking indicator: three dots on a stagger, no spinner */
+.binggo-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.binggo-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2600fd;
+  animation: binggo-dot 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.binggo-dots i:nth-child(2) { animation-delay: 160ms; }
+.binggo-dots i:nth-child(3) { animation-delay: 320ms; }
+
+@keyframes binggo-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  40%      { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Skeleton shimmer for the loading state — sized to the reply it replaces */
+.binggo-skel {
+  height: 11px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(10,10,11,0.06) 0%, rgba(10,10,11,0.11) 50%, rgba(10,10,11,0.06) 100%);
+  background-size: 200% 100%;
+  animation: binggo-shimmer 1.5s linear infinite;
+}
+
+@keyframes binggo-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Composer */
+.binggo-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 10px 10px 16px;
+  border: 1px solid rgba(10, 10, 11, 0.12);
+  border-radius: 26px;
+  background: #fff;
+  transition: border-color 240ms ease, box-shadow 240ms ease;
+}
+
+.binggo-composer:focus-within {
+  border-color: rgba(38, 0, 253, 0.55);
+  box-shadow: 0 0 0 3px rgba(38, 0, 253, 0.1);
+}
+
+.binggo-composer textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 132px;
+  padding: 6px 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #0a0a0b;
+}
+
+.binggo-composer textarea::placeholder {
+  color: rgba(10, 10, 11, 0.34);
+}
+
+/* Round icon button, matching the app's existing .circle-btn language */
+.binggo-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: rgba(10, 10, 11, 0.5);
+  cursor: pointer;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 200ms ease, color 200ms ease;
+}
+
+.binggo-iconbtn:hover {
+  background: rgba(10, 10, 11, 0.05);
+  color: #0a0a0b;
+}
+
+.binggo-iconbtn:active { transform: scale(0.9); }
+
+.binggo-iconbtn:focus-visible {
+  outline: 2px solid #2600fd;
+  outline-offset: 2px;
+}
+
+.binggo-iconbtn--send {
+  background: #2600fd;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+}
+
+.binggo-iconbtn--send:hover { background: #1f00d6; color: #fff; }
+
+.binggo-iconbtn--send:disabled {
+  background: rgba(10, 10, 11, 0.1);
+  color: rgba(10, 10, 11, 0.3);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.binggo-iconbtn--on {
+  background: #ffbf00;
+  color: #0a0a0b;
+}
+
+.binggo-iconbtn--on:hover { background: #f0b400; color: #0a0a0b; }
+
+/* Quick-action chips */
+.binggo-chip {
+  flex: none;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(10, 10, 11, 0.12);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0a0a0b;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              border-color 200ms ease, background-color 200ms ease;
+}
+
+.binggo-chip:hover {
+  border-color: rgba(38, 0, 253, 0.42);
+  background: rgba(38, 0, 253, 0.04);
+}
+
+.binggo-chip:active { transform: scale(0.95); }
+
+/* --------------------------------------------------------------------------
+   CALL MODE — light, not dark. The character is the whole screen, and the
+   halo expands behind it as the app listens.
+   -------------------------------------------------------------------------- */
+
+.binggo-call__halo {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 1px solid rgba(38, 0, 253, 0.28);
+  pointer-events: none;
+  animation: binggo-call-halo 3.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.binggo-call__halo:nth-child(2) { animation-delay: 1.05s; }
+.binggo-call__halo:nth-child(3) { animation-delay: 2.1s; }
+
+@keyframes binggo-call-halo {
+  0%   { opacity: 0.55; transform: scale(0.62); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+.binggo-call__btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(10, 10, 11, 0.45);
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.binggo-call__btn:active { transform: scale(0.94); }
+
+.binggo-call__btn i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0a0a0b;
+  color: #fff;
+  transition: background-color 200ms ease;
+}
+
+.binggo-call__btn--end i { background: #2600fd; }
+.binggo-call__btn--end { color: rgba(38, 0, 253, 0.75); }
+
+/* Microphone level ring — driven by a CSS var the component updates */
+.binggo-call__mic {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(38, 0, 253, 0.35);
+  transform: scale(calc(1 + var(--level, 0) * 0.16));
+  transition: transform 90ms linear;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   REDUCED MOTION — every loop stops, every state still readable
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .binggo-fab,
+  .binggo-card,
+  .binggo-sheet,
+  .binggo-msg,
+  .binggo-card__wash,
+  .binggo-live__dot,
+  .binggo-dots i,
+  .binggo-skel,
+  .binggo-call__halo {
+    animation: none !important;
+    transition: none !important;
+  }
+  .binggo-card__wash { opacity: 0; }
+  .binggo-call__halo { opacity: 0.3; transform: scale(0.8); }
+}

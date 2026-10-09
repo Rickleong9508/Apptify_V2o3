@@ -31,7 +31,9 @@ import KnowledgeVault from './components/KnowledgeVault';
 import GlobalSettings from './components/GlobalSettings';
 import NewsHub from './components/NewsHub';
 import AuthModal from './components/AuthModal';
-import AskApptify from './components/AskApptify';
+import BingGoAssistant from './components/BingGoAssistant';
+import BingGoHomeCard from './components/BingGoHomeCard';
+import BingGoFab from './components/BingGoFab';
 import AppDock from './components/AppDock';
 import { useAuth } from './components/AuthProvider';
 import { Language, translations, getStoredLanguage, setStoredLanguage } from './utils/i18n';
@@ -48,6 +50,11 @@ const getAppFromHash = (): AppMode => {
 const App: React.FC = () => {
   const { isConnected, user, needsReauth } = useAuth();
   const [currentApp, setCurrentAppState] = useState<AppMode>(getAppFromHash);
+
+  // BingGo: the assistant sheet, plus an optional request handed to it by a
+  // launcher chip so tapping "Log an expense" opens it already working.
+  const [binggoOpen, setBinggoOpen] = useState(false);
+  const [binggoSeed, setBinggoSeed] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Auto-prompt welcome/login modal only for truly new first-time users who have never connected a Google account
@@ -513,7 +520,14 @@ const App: React.FC = () => {
 
         {/* 3. Modular Tactical Deck */}
         <div className="w-full flex flex-col gap-3.5 sm:gap-4">
-          
+
+          {/* Deck 00: BingGo — the assistant, first thing on the launcher.
+              Asymmetric by design: character left, copy and affordance right. */}
+          <BingGoHomeCard
+            t={t.binggo}
+            onOpen={(seed) => { setBinggoSeed(seed ?? null); setBinggoOpen(true); }}
+          />
+
           {/* Deck 01: MyWealth Flagship Asset Terminal — ink mass carrying the figure */}
           <div className="relative overflow-hidden rounded-[30px] bg-[#0A0A0B] text-white p-5 sm:p-6.5 group shadow-[0_1px_2px_rgba(10,10,11,0.04),0_18px_44px_-24px_rgba(10,10,11,0.42)]">
             {/* Specular edge refraction — the system has no outer glow */}
@@ -919,7 +933,25 @@ const App: React.FC = () => {
 
       {/* Global AI Floating Copilot Drawer */}
       <AppDock currentApp={currentApp} setCurrentApp={setCurrentApp} lang={lang} />
-      <AskApptify currentApp={currentApp} setCurrentApp={setCurrentApp} />
+
+      {/* AskApptify is retired, not deleted: BingGo replaces it above. Deleting
+          the file is a separate call once this branch is accepted. */}
+
+      {/* BingGo — available from every screen, hidden while its own sheet is open */}
+      <BingGoFab
+        onOpen={() => { setBinggoSeed(null); setBinggoOpen(true); }}
+        hidden={binggoOpen}
+        label={t.binggo.name}
+      />
+      <BingGoAssistant
+        open={binggoOpen}
+        onClose={() => setBinggoOpen(false)}
+        t={t.binggo}
+        lang={lang}
+        seed={binggoSeed}
+        onSeedConsumed={() => setBinggoSeed(null)}
+        onNavigate={(target) => setCurrentApp(target as AppMode)}
+      />
 
       {/* Google Drive Auth & Welcome Modal */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
