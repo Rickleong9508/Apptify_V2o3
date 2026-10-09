@@ -637,11 +637,12 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Bento: module tiles — asymmetric grid, the Ink & Signal unit */}
-          <div className="grid grid-cols-5 gap-3 w-full">
+          {/* Module tiles — equal halves, so neither module reads as the
+              lesser one just because it carries less text. */}
+          <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* NoteDown — the wider tile */}
-            <div className="col-span-3 rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between">
+            {/* NoteDown */}
+            <div className="rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center shrink-0">
                   <NotebookPen size={18} strokeWidth={2.1} />
@@ -674,7 +675,7 @@ const App: React.FC = () => {
             {/* NewsHub — the narrower tile, carrying the attention colour */}
             <button
               onClick={() => setCurrentApp('newshub')}
-              className="col-span-2 rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between text-left cursor-pointer active:scale-[0.98] transition-transform"
+              className="rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between text-left cursor-pointer active:scale-[0.98] transition-transform"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center shrink-0">
