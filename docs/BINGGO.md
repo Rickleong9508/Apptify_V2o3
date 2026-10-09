@@ -29,7 +29,7 @@
 | 6 | **说话 / 看图片 / 听声音** | 语音服务进行中 |
 | 7 | 多语言（英/中） | 复用现有 i18n |
 | 8 | 其他页面**悬浮带眨眼的 BingGo** | 待做 |
-| 9 | 能操作 APPTIFY 的**每一项任务** | 引擎已有，待扩展 |
+| 9 | 能操作 APPTIFY 的**每一项任务** | 引擎已抽成服务，待扩展覆盖面 |
 
 ---
 
@@ -104,9 +104,9 @@
 新增
   src/components/BingGo.tsx          ✅ 形象组件（表情状态机 + 自动眨眼）
   src/components/BingGo.css          ✅ 形象样式
-  src/services/voiceService.ts       ⏳ 语音（TTS + STT，浏览器原生）
-  src/services/memoryService.ts      ⏳ 记忆（持久化 + 向量召回）
-  src/services/skillExecutor.ts      ⬜ 从 AskApptify 抽出的技能引擎
+  src/services/voiceService.ts       ✅ 语音（TTS + STT，浏览器原生）
+  src/services/memoryService.ts      ✅ 记忆（持久化 + 向量召回）
+  src/services/skillExecutor.ts      ✅ 从 AskApptify 抽出的技能引擎（606 行）
   src/components/BingGoAssistant.tsx ⬜ 助理（文字对话 + 通话式界面）
   src/components/BingGoHomeCard.tsx  ⬜ 主页入口
   src/components/BingGoFab.tsx       ⬜ 悬浮召唤按钮（带眨眼）
@@ -115,10 +115,23 @@
   src/services/skillRegistry.ts      ⬜ 扩展到覆盖每一项任务
   src/App.tsx                        ⬜ 挂载主页入口 + 悬浮按钮
   src/utils/i18n.ts                  ⬜ BingGo 文案（英/中）
+  src/components/AskApptify.tsx      ✅ 1164 → 610 行，改为委托给 skillExecutor
 
 退役
-  src/components/AskApptify.tsx      ⬜ 逻辑迁走后由 BingGoAssistant 取代
+  src/components/AskApptify.tsx      ⬜ 由 BingGoAssistant 完全取代后再移除
 ```
+
+### 已完成部分的验证记录
+
+| 项 | 验证方式 | 结果 |
+|---|---|---|
+| 形象 7 种表情 | 28/48/72/96/160px 截图核对 | 全部通过 |
+| 语音服务 | 强制删除浏览器 API 后加载（模拟不支持的浏览器） | 探针返回 false、speak/listen 各报一次 onError、**不抛异常** |
+| 记忆服务 | 路由一个假 embeddings 端点，检查请求批次 | 第二次搜索**只发了查询向量**，证明每条记忆的向量确实被缓存 |
+| 记忆上限 | 灌入 420 条 | 保留 400 条、恰好 12 条带图、其余图片已剥离 |
+| 技能引擎 | 在页面内直接调用并读取 localStorage | ADD_MONEY 500→750、TRANSFER 正确、笔记/任务落盘、导航回调收到目标 |
+| 规则解析器 | 7 个句式 | 6/7（未命中的是英文收入句，**本就不在其设计范围内**） |
+| 抽取未伤及 UI | 对比 diff 范围 + 真实指针序列开抽屉 | 只有一处 hunk 替换引擎；抽屉正常打开（body 429→1341） |
 
 ---
 
