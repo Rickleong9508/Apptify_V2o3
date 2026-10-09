@@ -381,7 +381,7 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
 
     return (
       <div className="binggo-call" role="dialog" aria-modal="true" aria-label={t.name}>
-        <header className="shrink-0 px-gutter pt-4 pb-2 flex items-center gap-3">
+        <header className="shrink-0 px-gutter pt-[calc(16px+env(safe-area-inset-top,0px))] pb-2 flex items-center gap-3">
           <button
             type="button"
             className="binggo-call__btn"
@@ -441,7 +441,7 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
 
           <button
             type="button"
-            className={`binggo-call__btn ${phase === 'listening' ? '' : 'binggo-call__btn--end'}`}
+            className="binggo-call__btn binggo-call__btn--speak"
             onClick={toggleMic}
           >
             <i>{phase === 'listening' ? <MicOff size={21} strokeWidth={2.2} /> : <Mic size={21} strokeWidth={2.2} />}</i>
@@ -463,7 +463,7 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
   return (
     <div className={`binggo-sheet ${closing ? 'binggo-sheet--closing' : ''}`} role="dialog" aria-modal="true" aria-label={t.name}>
       {/* ------------------------------------------------------------ head */}
-      <header className="shrink-0 px-gutter pt-3 pb-3 flex items-center gap-3 border-b border-black/[0.08]">
+      <header className="shrink-0 px-gutter pt-[calc(12px+env(safe-area-inset-top,0px))] pb-3 flex items-center gap-3 border-b border-black/[0.08]">
         <button type="button" className="binggo-iconbtn" onClick={close} aria-label={t.back}>
           <X size={18} strokeWidth={2.2} />
         </button>

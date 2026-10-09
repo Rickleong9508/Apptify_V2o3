@@ -406,9 +406,18 @@
 
 .binggo-call__btn:hover i { background: rgba(255, 255, 255, 0.24); }
 
-/* End is the only solid element on the page, so it reads as the exit */
-.binggo-call__btn--end i { background: #fff; color: #2600fd; }
-.binggo-call__btn--end:hover i { background: #f0f0f2; }
+/* Three buttons, three distinct treatments, using only the four pigments:
+     Hold   translucent white — a secondary control
+     Speak  yellow            — the primary action on a blue surface
+     End    ink               — the exit, and the only mass on the page
+   Speak and End previously shared one white-filled style, which made the
+   primary action and the hang-up action look identical. */
+.binggo-call__btn--speak i { background: #ffbf00; color: #0a0a0b; }
+.binggo-call__btn--speak:hover i { background: #f0b400; }
+.binggo-call__btn--speak { color: #fff; }
+
+.binggo-call__btn--end i { background: #0a0a0b; color: #fff; }
+.binggo-call__btn--end:hover i { background: #1a1a1d; }
 .binggo-call__btn--end { color: #fff; }
 
 /* Expanding rings in white, since the page is already blue */

@@ -276,3 +276,50 @@
 ## 验证
 
 **9/9 回归 + 11 项交互专项**全部通过，零页面错误、零控制台错误。专项覆盖：拖动生效、拖动时不误触打开、位置持久化、刷新后位置保留、轻点仍能打开、四角极限钳制。
+
+
+---
+
+# 第十四轮：两个上线后发现的 bug
+
+## Bug 1：通话页 / 面板在刘海手机上**出不来**
+
+**症状**：进了通话页，点不到左上角的关闭按钮。
+
+**根因**：顶部安全区**从未处理**。站点其实早就有 `.pt-safe` 工具类（`env(safe-area-inset-top)`），但我的 BingGo 组件没用它——通话页顶栏是 `pt-4`(16px)、面板是 `pt-3`(12px)。iPhone 顶部安全区约 59px，所以关闭按钮**整个落在状态栏 / Dynamic Island 里面**。
+
+底部我处理了（`pb-[calc(...+env(safe-area-inset-bottom))]`），顶部漏了。
+
+**修法**：两处改为 `calc(Npx + env(safe-area-inset-top,0px))`。`env=0` 时与原值完全相同，所以无刘海设备上是零变化。
+
+**验证方式**：用 CDP `Emulation.setSafeAreaInsetsOverride` 真实注入 59px 刘海，确认关闭按钮从 `top:16` 移到 **`top:75`**。不是"看代码写对了"，是**模拟真机确认了**。
+
+## Bug 2：`Speak` 和 `End` 长得一模一样
+
+**根因**：通话页底部两个按钮共用同一个类 `binggo-call__btn--end`（`Speak` 的类名里字面写着 "end"），都是白色实心。一个要开始说话、一个要挂断电话，视觉上无法区分。这个混淆会让用户以为"点不动/出不去"。
+
+**修法**：三个按钮改成三种明确样式，且只用四个色：
+- **Hold** 半透明白——次要控制
+- **Speak** 黄色——蓝色表面上的主行动
+- **End** 墨黑——出口，也是页面上唯一的实体色块
+
+---
+
+# ⚠️ 本地地址：必须用 localhost，不要用 127.0.0.1
+
+**Google 登入失败的原因是地址不对，不是代码问题。**
+
+用 `http://127.0.0.1:3001` 打开时，Google OAuth 返回：
+
+```
+accounts.google.com/signin/oauth/error?authError=Cg9vcmlnaW5fbWlzbWF0Y2g...
+                                          └─ base64 = "origin_mismatch"
+```
+
+`.env.example` 里写明授权来源是 **`http://localhost:3001`**，而 OAuth 客户端也是按这个注册的。`127.0.0.1` 与 `localhost` 在 Google 看来是**两个不同的来源**。
+
+**正确地址：`http://localhost:3001`**
+
+（用 localhost 打开时，OAuth 弹窗正常进入 `accounts.google.com/v3/signin/identifier`，无错误。）
+
+如果你更习惯用 `127.0.0.1`，需要到 Google Cloud Console 把 `http://127.0.0.1:3001` **也**加入「已获授权的 JavaScript 来源」。
