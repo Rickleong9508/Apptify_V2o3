@@ -424,7 +424,13 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
               {phase === 'listening' ? t.listening : phase === 'speaking' ? t.speaking : phase === 'thinking' ? t.thinking : t.ready}
             </div>
             <p className="text-[13px] text-[#0A0A0B]/55 max-w-[30ch] mx-auto leading-relaxed">
-              {messages.length ? plain(messages[messages.length - 1].content).slice(0, 140) : t.emptyBody}
+              {messages.length ? (() => {
+                const full = plain(messages[messages.length - 1].content);
+                if (full.length <= 140) return full;
+                const cut = full.slice(0, 140);
+                const gap = Math.max(cut.lastIndexOf(' '), cut.lastIndexOf('，'), cut.lastIndexOf('。'));
+                return `${(gap > 80 ? cut.slice(0, gap) : cut).trimEnd()}…`;
+              })() : t.emptyBody}
             </p>
           </div>
 
