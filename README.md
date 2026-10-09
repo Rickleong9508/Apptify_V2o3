@@ -1,8 +1,8 @@
 <div align="center">
 
-<img width="1200" height="475" alt="Apptify Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="110" height="110" alt="Apptify Logo" src="./docs/logo.png" />
 
-# Apptify
+# APPTIFY
 
 **A Privacy-First Personal Finance OS & Productivity Cockpit**  
 *一款以隐私为核心的个人资产管理中枢与生产力工作台*
@@ -14,8 +14,39 @@
 [![Storage](https://img.shields.io/badge/Storage-Google%20Drive%20(BYOS)-4285F4.svg?logo=google-drive)](https://www.google.com/drive/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+<br/>
+
 [English](#english) • [简体中文](#简体中文)
 
+</div>
+
+---
+
+## 📱 Interface Preview / 产品界面预览
+
+<div align="center">
+  <table>
+    <tr>
+      <th align="center"><b>01. Cockpit 控制台</b></th>
+      <th align="center"><b>02. Net Worth 资产大盘</b></th>
+      <th align="center"><b>03. Wallets 账户流水</b></th>
+    </tr>
+    <tr>
+      <td align="center"><img src="./docs/screenshots/launcher.png" width="260" alt="Apptify Launcher" /></td>
+      <td align="center"><img src="./docs/screenshots/mywealth.png" width="260" alt="MyWealth Cockpit" /></td>
+      <td align="center"><img src="./docs/screenshots/wallets.png" width="260" alt="Wallets & Accounts" /></td>
+    </tr>
+    <tr>
+      <th align="center"><b>04. Budget 预算平衡</b></th>
+      <th align="center"><b>05. NoteDown 笔记待办</b></th>
+      <th align="center"><b>06. NewsHub 实时资讯</b></th>
+    </tr>
+    <tr>
+      <td align="center"><img src="./docs/screenshots/budget.png" width="260" alt="Monthly Budget" /></td>
+      <td align="center"><img src="./docs/screenshots/notedown.png" width="260" alt="NoteDown Workspace" /></td>
+      <td align="center"><img src="./docs/screenshots/newshub.png" width="260" alt="NewsHub Live" /></td>
+    </tr>
+  </table>
 </div>
 
 ---
