@@ -363,7 +363,7 @@ export const executeAction = async (
         title: '待办任务已添加',
         details: [
           `任务项: ${title}`,
-          `优先级: ${newTask.priority === 'high' ? '🔴 高优' : newTask.priority === 'low' ? '🟢 低优' : '🟡 中等'}`,
+          `优先级: ${newTask.priority === 'high' ? '高优' : newTask.priority === 'low' ? '低优' : '中等'}`,
           `截止提醒: ${dueDate}`
         ],
         badge: '任务就绪'
@@ -385,7 +385,7 @@ export const executeAction = async (
     saveTasks(tasks);
 
     return {
-      message: `已将任务 **"${match.title}"** 状态更新为：${match.completed ? '✅ **已完成**' : '⏳ **待处理**'}！`,
+      message: `已将任务 **"${match.title}"** 状态更新为：${match.completed ? '**已完成**' : '**待处理**'}。`,
       result: {
         type: 'task',
         title: match.completed ? '待办任务已标记完成' : '待办任务已重新激活',
@@ -419,7 +419,7 @@ export const executeAction = async (
     const walletLines = mwData.accounts.map((a: any) => `• ${a.name}: RM${Number(a.balance).toFixed(2)}`).join('\n');
 
     return {
-      message: `📊 **MyWealth 财富总数速报**：\n• **总数 (现金 + 目前投资数额)**：**RM${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n  - 钱包现金：RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n  - 目前投资数额：RM${totalInvestment.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 履约中借贷：RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })} (独立跟踪，100%不从总数扣减)\n• 本月累计支出：RM${totalMonthlyExpenses.toFixed(2)}\n\n**各钱包余额分布：**\n${walletLines}`,
+      message: `**MyWealth 财富总数速报**：\n• **总数 (现金 + 目前投资数额)**：**RM${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}**\n  - 钱包现金：RM${totalCash.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n  - 目前投资数额：RM${totalInvestment.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n• 履约中借贷：RM${totalLoan.toLocaleString('en-US', { minimumFractionDigits: 2 })} (独立跟踪，100%不从总数扣减)\n• 本月累计支出：RM${totalMonthlyExpenses.toFixed(2)}\n\n**各钱包余额分布：**\n${walletLines}`,
       result: {
         type: 'wealth',
         title: '现金与目前投资总数',
@@ -446,11 +446,11 @@ export const executeAction = async (
       : '暂无未完成待办事项，太棒了！';
 
     return {
-      message: `📋 **NoteDown 待办任务清单**：\n未完成 (${pending.length}) 项 / 已完成 (${done.length}) 项：\n\n${lines}`,
+      message: `**NoteDown 待办任务清单**：\n未完成 (${pending.length}) 项 / 已完成 (${done.length}) 项：\n\n${lines}`,
       result: {
         type: 'task',
         title: `待办任务进度 (${pending.length} 待处理 / ${done.length} 已达成)`,
-        details: pending.slice(0, 4).map(t => `${t.priority === 'high' ? '🔴' : '🟡'} ${t.title}`),
+        details: pending.slice(0, 4).map(t => `${t.priority === 'high' ? '高优' : '中优'} ${t.title}`),
         badge: '待办汇总'
       }
     };
