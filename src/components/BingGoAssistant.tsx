@@ -95,6 +95,59 @@ const plain = (text: string): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
+/** Strip any reasoning a provider may still inline ahead of the answer. */
+const stripReasoning = (raw: string): string => {
+  let text = raw;
+  // <thinking>…</thinking> and similar wrapper tags
+  text = text.replace(/<(thinking|reasoning|analysis)>[\s\S]*?<\/\1>/gi, '');
+  // A leading markdown blockquote block (the old reasoning format)
+  text = text.replace(/^(?:\s*>.*\n?)+/g, '');
+  // "推理思考过程:" / "Thinking:" style headers on their own line
+  text = text.replace(/^\s*(?:推理思考过程|思考过程|Thinking|Reasoning)\s*[:：]\s*$/gim, '');
+  return text.trim();
+};
+
+/**
+ * Pull the first balanced {…} that actually looks like our action object.
+ *
+ * The model is asked for bare JSON but does not always oblige — it may wrap it
+ * in a fence, introduce it with a sentence, or append commentary. Requiring the
+ * whole string to parse meant any of those fell through to "show the raw text",
+ * which is how the reasoning leaked into the transcript.
+ */
+const extractAction = (
+  raw: string
+): { intent?: string; data?: unknown; message?: string } | null => {
+  const text = raw.replace(/```json/gi, '').replace(/```/g, '');
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === '{') { if (depth === 0) start = i; depth++; continue; }
+    if (ch === '}') {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        const slice = text.slice(start, i + 1);
+        if (/"intent"\s*:/.test(slice)) {
+          try { return JSON.parse(slice); } catch { /* keep scanning */ }
+        }
+        start = -1;
+      }
+    }
+  }
+  return null;
+};
+
 const BingGoAssistant: React.FC<BingGoAssistantProps> = ({
   open, onClose, t, lang, seed, initialMode = 'chat', onSeedConsumed, onNavigate,
 }) => {
@@ -284,9 +337,8 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
 
     try {
       const responseText = await aiService.generate(provider, model, apiKey, text || '(image attached)', system, attached.length ? attached : undefined);
-      const clean = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      let parsed: { intent?: string; data?: unknown; message?: string };
-      try { parsed = JSON.parse(clean); } catch { parsed = { intent: 'CHAT', message: clean }; }
+      const clean = stripReasoning(responseText);
+      const parsed = extractAction(clean) ?? { intent: 'CHAT', message: clean };
 
       const intent = parsed.intent || 'CHAT';
       const message = parsed.message || clean;
@@ -587,16 +639,10 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
             )}
 
             {phase === 'thinking' && (
-              <div className="binggo-msg space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <BingGo size={24} mood="think" still label={undefined} />
-                  <span className="binggo-dots"><i /><i /><i /></span>
-                  <span className="font-mono text-[10px] tracking-wider uppercase text-[#0A0A0B]/40">{t.thinkingLabel}</span>
-                </div>
-                <div className="space-y-1.5 max-w-[70%]">
-                  <div className="binggo-skel w-[92%]" />
-                  <div className="binggo-skel w-[64%]" />
-                </div>
+              <div className="binggo-msg flex items-center gap-2.5">
+                <BingGo size={26} mood="think" still label={undefined} />
+                <span className="text-[14.5px] text-[#0A0A0B]/55">{t.thinking}</span>
+                <span className="binggo-dots"><i /><i /><i /></span>
               </div>
             )}
           </div>

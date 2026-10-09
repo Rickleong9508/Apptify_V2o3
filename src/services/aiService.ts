@@ -231,13 +231,16 @@ export const DeepSeekProvider: AIProviderInstance = {
         const choice = data.choices?.[0];
         const content = choice?.message?.content || "";
         const reasoning = choice?.message?.reasoning_content;
-        
-        if (reasoning && content) {
-            return `> 💭 **推理思考过程**：\n> ${reasoning.split('\n').join('\n> ')}\n\n${content}`;
-        } else if (reasoning && !content) {
-            return `> 💭 **推理思考过程**：\n> ${reasoning.split('\n').join('\n> ')}`;
-        }
-        return content;
+
+        // The reasoning is deliberately NOT folded into the return value. It
+        // used to be prepended as a markdown blockquote, which was fine for a
+        // UI that renders raw markdown and ruinous for every caller that parses
+        // the reply as data: the news summariser printed it into the summary,
+        // and the JSON callers (the BingGo assistant, valuation, auto-count)
+        // failed to parse and fell back to showing the raw text, reasoning and
+        // all. Reasoning is a provider detail; the return value is the answer.
+        // It is only used as a last resort when the model produced no answer.
+        return content || reasoning || "";
     }
 };
 
