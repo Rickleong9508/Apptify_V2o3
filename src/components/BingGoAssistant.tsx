@@ -50,6 +50,8 @@ export interface BingGoAssistantProps {
   lang: Language;
   /** Optional first request, e.g. from a launcher chip. */
   seed?: string | null;
+  /** Open directly in call mode, e.g. from the launcher's mic button. */
+  initialMode?: Mode;
   onSeedConsumed?: () => void;
   /** Called for NAVIGATE intents. */
   onNavigate: (target: string) => void;
@@ -94,12 +96,15 @@ const plain = (text: string): string =>
     .trim();
 
 const BingGoAssistant: React.FC<BingGoAssistantProps> = ({
-  open, onClose, t, lang, seed, onSeedConsumed, onNavigate,
+  open, onClose, t, lang, seed, initialMode = 'chat', onSeedConsumed, onNavigate,
 }) => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
-  const [mode, setMode] = useState<Mode>('chat');
+  const [mode, setMode] = useState<Mode>(initialMode);
+  // Call mode is a different surface, not a view inside the sheet, so it
+  // has to be re-read when the sheet is reopened from a different entry.
+  useEffect(() => { if (open) setMode(initialMode); }, [open, initialMode]);
   const [voiceOut, setVoiceOut] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [flash, setFlash] = useState<'happy' | 'sad' | null>(null);
@@ -362,6 +367,97 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
 
   if (!open) return null;
 
+  /* ------------------------------------------------------------------ call */
+  /* On blue, the character's blue body disappears into the page, so all that
+     remains of it is the two signature white eyes. The call screen is the
+     character at its most reduced and its most recognisable at once, and the
+     eyes emoting is the whole interface — no avatar panel, no waveform. */
+  if (mode === 'call') {
+    const last = messages.length ? plain(messages[messages.length - 1].content) : t.emptyBody;
+    const status = phase === 'listening' ? t.listening
+      : phase === 'speaking' ? t.speaking
+      : phase === 'thinking' ? t.thinking
+      : t.ready;
+
+    return (
+      <div className="binggo-call" role="dialog" aria-modal="true" aria-label={t.name}>
+        <header className="shrink-0 px-gutter pt-4 pb-2 flex items-center gap-3">
+          <button
+            type="button"
+            className="binggo-call__btn"
+            onClick={close}
+            aria-label={t.back}
+            style={{ flexDirection: 'row', gap: 0 }}
+          >
+            <i style={{ width: 42, height: 42, background: 'rgba(255,255,255,0.16)' }}>
+              <X size={17} strokeWidth={2.3} />
+            </i>
+          </button>
+
+          <div className="flex-1 text-center">
+            <div className="text-[15px] font-semibold tracking-tight leading-tight">{t.name}</div>
+            <div className="binggo-call__meta" style={{ color: 'rgba(255,255,255,0.62)' }}>
+              {status}
+            </div>
+          </div>
+
+          {speechOn ? (
+            <button
+              type="button"
+              className="binggo-call__btn"
+              onClick={() => { if (voiceOut) voiceService.stopSpeaking(); setVoiceOut((v) => !v); }}
+              aria-label={voiceOut ? t.voiceOn : t.voiceOff}
+              style={{ flexDirection: 'row', gap: 0 }}
+            >
+              <i style={{ width: 42, height: 42, background: voiceOut ? '#fff' : 'rgba(255,255,255,0.16)', color: voiceOut ? '#2600FD' : '#fff' }}>
+                {voiceOut ? <Volume2 size={17} strokeWidth={2.2} /> : <VolumeX size={17} strokeWidth={2.2} />}
+              </i>
+            </button>
+          ) : <span style={{ width: 42 }} />}
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center gap-9 px-gutter relative">
+          <div className="relative flex items-center justify-center">
+            <span className="binggo-call__halo" />
+            <span className="binggo-call__halo" />
+            <span className="binggo-call__halo" />
+            <BingGo size={190} mood={mood} ghost autoBlink={phase === 'idle'} label={t.name} />
+          </div>
+
+          <p className="binggo-call__said text-center">
+            {last.length > 190 ? `${last.slice(0, 190).trimEnd()}…` : last}
+          </p>
+        </div>
+
+        <div className="shrink-0 px-gutter pb-[calc(28px+env(safe-area-inset-bottom,0px))] pt-2 flex items-center justify-center gap-12">
+          <button
+            type="button"
+            className="binggo-call__btn"
+            onClick={() => { setPaused((p) => !p); voiceService.stopSpeaking(); }}
+          >
+            <i>{paused ? <Play size={21} strokeWidth={2.2} /> : <Pause size={21} strokeWidth={2.2} />}</i>
+            {paused ? t.resume : t.hold}
+          </button>
+
+          <button
+            type="button"
+            className={`binggo-call__btn ${phase === 'listening' ? '' : 'binggo-call__btn--end'}`}
+            onClick={toggleMic}
+          >
+            <i>{phase === 'listening' ? <MicOff size={21} strokeWidth={2.2} /> : <Mic size={21} strokeWidth={2.2} />}</i>
+            {phase === 'listening' ? t.listening : t.speakNow}
+          </button>
+
+          <button type="button" className="binggo-call__btn binggo-call__btn--end" onClick={close}>
+            <i><PhoneOff size={21} strokeWidth={2.2} /></i>
+            {t.endCall}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+
   const empty = messages.length === 0;
 
   return (
@@ -410,51 +506,7 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
       </header>
 
       {/* ------------------------------------------------------------ call */}
-      {mode === 'call' ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-8 px-gutter relative">
-          <div className="relative flex items-center justify-center">
-            <span className="binggo-call__halo" />
-            <span className="binggo-call__halo" />
-            <span className="binggo-call__halo" />
-            <BingGo size={132} mood={mood} autoBlink={phase === 'idle'} label={t.name} />
-          </div>
-
-          <div className="text-center space-y-1">
-            <div className="font-mono text-[11px] tracking-[0.14em] uppercase text-[#0A0A0B]/45">
-              {phase === 'listening' ? t.listening : phase === 'speaking' ? t.speaking : phase === 'thinking' ? t.thinking : t.ready}
-            </div>
-            <p className="text-[13px] text-[#0A0A0B]/55 max-w-[30ch] mx-auto leading-relaxed">
-              {messages.length ? (() => {
-                const full = plain(messages[messages.length - 1].content);
-                if (full.length <= 140) return full;
-                const cut = full.slice(0, 140);
-                const gap = Math.max(cut.lastIndexOf(' '), cut.lastIndexOf('，'), cut.lastIndexOf('。'));
-                return `${(gap > 80 ? cut.slice(0, gap) : cut).trimEnd()}…`;
-              })() : t.emptyBody}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-10">
-            <button type="button" className="binggo-call__btn" onClick={() => { setPaused((p) => !p); voiceService.stopSpeaking(); }}>
-              <i>{paused ? <Play size={20} strokeWidth={2.2} /> : <Pause size={20} strokeWidth={2.2} />}</i>
-              {paused ? t.resume : t.hold}
-            </button>
-            <button
-              type="button"
-              className={`binggo-call__btn ${phase === 'listening' ? '' : 'binggo-call__btn--end'}`}
-              onClick={phase === 'listening' ? toggleMic : close}
-            >
-              <i>{phase === 'listening' ? <MicOff size={20} strokeWidth={2.2} /> : <PhoneOff size={20} strokeWidth={2.2} />}</i>
-              {phase === 'listening' ? t.endCall : t.endCall}
-            </button>
-          </div>
-
-          {!micOn && (
-            <p className="binggo-live text-center">{t.unsupportedVoice}</p>
-          )}
-        </div>
-      ) : (
-        <>
+      <>
           {/* -------------------------------------------------------- body */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-gutter py-4 space-y-4">
             {empty ? (
@@ -613,8 +665,7 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
               </button>
             </form>
           </div>
-        </>
-      )}
+      </>
     </div>
   );
 };

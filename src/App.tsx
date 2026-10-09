@@ -55,6 +55,9 @@ const App: React.FC = () => {
   // launcher chip so tapping "Log an expense" opens it already working.
   const [binggoOpen, setBinggoOpen] = useState(false);
   const [binggoSeed, setBinggoSeed] = useState<string | null>(null);
+  // The launcher can open BingGo straight into a voice call, so the entry
+  // decides which surface appears rather than always landing on the transcript.
+  const [binggoMode, setBinggoMode] = useState<'chat' | 'call'>('chat');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Auto-prompt welcome/login modal only for truly new first-time users who have never connected a Google account
@@ -525,7 +528,11 @@ const App: React.FC = () => {
               Asymmetric by design: character left, copy and affordance right. */}
           <BingGoHomeCard
             t={t.binggo}
-            onOpen={(seed) => { setBinggoSeed(seed ?? null); setBinggoOpen(true); }}
+            onOpen={(opts) => {
+              setBinggoSeed(opts?.seed ?? null);
+              setBinggoMode(opts?.mode ?? 'chat');
+              setBinggoOpen(true);
+            }}
           />
 
           {/* Deck 01: MyWealth Flagship Asset Terminal — ink mass carrying the figure */}
@@ -939,7 +946,7 @@ const App: React.FC = () => {
 
       {/* BingGo — available from every screen, hidden while its own sheet is open */}
       <BingGoFab
-        onOpen={() => { setBinggoSeed(null); setBinggoOpen(true); }}
+        onOpen={() => { setBinggoSeed(null); setBinggoMode('chat'); setBinggoOpen(true); }}
         hidden={binggoOpen}
         label={t.binggo.name}
       />
@@ -949,6 +956,7 @@ const App: React.FC = () => {
         t={t.binggo}
         lang={lang}
         seed={binggoSeed}
+        initialMode={binggoMode}
         onSeedConsumed={() => setBinggoSeed(null)}
         onNavigate={(target) => setCurrentApp(target as AppMode)}
       />

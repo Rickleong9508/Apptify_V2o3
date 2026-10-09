@@ -72,6 +72,19 @@ export interface Translations {
     thinkingLabel: string;
     memoryNote: string;
     unsupportedVoice: string;
+    speakNow: string;
+    yourAssistant: string;
+    runsInside: string;
+    bilingualFact: string;
+    canDo: string;
+    tileMemory: string;
+    tileMemoryLabel: string;
+    tileLanguage: string;
+    tileLanguageLabel: string;
+    tileActions: string;
+    tileActionsLabel: string;
+    tryAsking: string;
+    talkTo: string;
   };
   invest: {
     moveUp: string;
@@ -152,6 +165,19 @@ export const translations: Record<Language, Translations> = {
       thinkingLabel: 'BingGo is thinking',
       memoryNote: 'Remembers earlier conversations',
       unsupportedVoice: 'This browser cannot speak or listen',
+      speakNow: 'Speak',
+      yourAssistant: 'Your assistant',
+      runsInside: 'Runs inside Apptify',
+      bilingualFact: 'English and Chinese — speaks and listens',
+      canDo: 'What it can do',
+      tileMemory: 'Remembers',
+      tileMemoryLabel: 'Memory',
+      tileLanguage: 'EN · 中文',
+      tileLanguageLabel: 'Language',
+      tileActions: 'Real changes',
+      tileActionsLabel: 'Actions',
+      tryAsking: 'Try asking',
+      talkTo: 'Talk to BingGo',
     },
     invest: {
       moveUp: 'Move Up',
@@ -230,6 +256,19 @@ export const translations: Record<Language, Translations> = {
       thinkingLabel: 'BingGo 正在想',
       memoryNote: '记得之前聊过的内容',
       unsupportedVoice: '这个浏览器不支持说话或收音',
+      speakNow: '说话',
+      yourAssistant: '你的助理',
+      runsInside: '运行在 Apptify 里',
+      bilingualFact: '英语与中文——能说也能听',
+      canDo: '它能做什么',
+      tileMemory: '记得住',
+      tileMemoryLabel: '记忆',
+      tileLanguage: '中 · EN',
+      tileLanguageLabel: '语言',
+      tileActions: '真的改数据',
+      tileActionsLabel: '动手',
+      tryAsking: '试着说',
+      talkTo: '跟 BingGo 说话',
     },
     invest: {
       moveUp: '上移',

@@ -6,17 +6,18 @@
 
    Everything here stays inside the existing Ink & Signal system: white canvas,
    ink mass, brand blue for anything live or selected, yellow reserved for
-   emphasis. There is deliberately no dark surface anywhere — the assistant is
-   a normal part of this app, not a separate dark product bolted onto it.
+   emphasis.
 
    Motion rule for this file: animate `transform` and `opacity` only. Nothing
    here touches top/left/width/height, so no frame does layout.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   FLOATING SUMMON BUTTON
-   Sits clear of the dock (56px tall, 16px from the bottom), so 88px clears it
-   with room to spare. Right-aligned, matching the reference.
+   FLOATING SUMMON BUTTON — no border
+   It sits clear of the dock (56px tall, 16px from the bottom), so 88px clears
+   it with room to spare. Separation comes from the shadow alone: a hairline
+   ring was doing the same job twice and made the button read as a chip rather
+   than as a floating surface.
    -------------------------------------------------------------------------- */
 
 .binggo-fab {
@@ -30,10 +31,10 @@
   width: 54px;
   height: 54px;
   padding: 0;
-  border: 1px solid rgba(10, 10, 11, 0.1);
+  border: 0;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.05), 0 10px 24px -14px rgba(10, 10, 11, 0.4);
+  box-shadow: 0 2px 5px rgba(10, 10, 11, 0.05), 0 14px 30px -12px rgba(10, 10, 11, 0.35);
   cursor: pointer;
   animation: binggo-fab-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -46,13 +47,12 @@
 }
 
 .binggo-fab:hover {
-  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.06), 0 16px 32px -14px rgba(38, 0, 253, 0.42);
+  box-shadow: 0 2px 5px rgba(10, 10, 11, 0.06), 0 20px 38px -12px rgba(38, 0, 253, 0.4);
 }
 
-/* Tactile push, per the interaction-state rule */
 .binggo-fab:active {
   transform: scale(0.92);
-  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.08);
+  box-shadow: 0 1px 3px rgba(10, 10, 11, 0.08);
 }
 
 .binggo-fab:focus-visible {
@@ -60,97 +60,228 @@
   outline-offset: 3px;
 }
 
-/* A hairline ring that expands on hover — cheap, and signals "I am awake" */
-.binggo-fab::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(38, 0, 253, 0.5);
-  opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1),
-              transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
-}
-
-.binggo-fab:hover::after {
-  opacity: 1;
-  transform: scale(1.12);
-}
-
 /* --------------------------------------------------------------------------
    LAUNCHER ENTRY
-   Asymmetric on purpose: the character sits left, the copy and the affordance
-   right. No centred hero, no card inside a card.
+   Structured after the profile-card reference: an identity hero, a small set
+   of factual rows, then an inset panel holding capability tiles and a set of
+   selectable request chips, closed by an action bar. Asymmetric throughout —
+   nothing is centred for its own sake.
    -------------------------------------------------------------------------- */
 
 .binggo-card {
   position: relative;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  gap: 16px;
   width: 100%;
-  padding: 18px;
+  padding: 18px 18px 14px;
   text-align: left;
   border: 1px solid rgba(10, 10, 11, 0.1);
   border-radius: 30px;
   background: #fff;
-  cursor: pointer;
   box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 18px 40px -26px rgba(10, 10, 11, 0.35);
-  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 300ms ease;
+  transition: border-color 300ms ease, box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .binggo-card:hover {
-  border-color: rgba(38, 0, 253, 0.32);
-  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 22px 46px -26px rgba(38, 0, 253, 0.42);
+  border-color: rgba(38, 0, 253, 0.28);
+  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 22px 46px -26px rgba(38, 0, 253, 0.4);
 }
 
-.binggo-card:active {
-  transform: scale(0.985);
-}
-
-.binggo-card:focus-visible {
-  outline: 2px solid #2600fd;
-  outline-offset: 3px;
-}
-
-/* A slow blue wash that drifts across the card — the "alive" cue. Only
-   transform/opacity, and it is isolated to a pseudo-element so it can never
-   trigger a repaint of the card's contents. */
+/* A slow blue wash drifting across the card — the "alive" cue. Isolated to a
+   pseudo-element so it can never repaint the card's contents. */
 .binggo-card__wash {
   position: absolute;
   top: -60%;
   left: -30%;
-  width: 60%;
+  width: 55%;
   height: 220%;
-  background: linear-gradient(90deg, rgba(38, 0, 253, 0) 0%, rgba(38, 0, 253, 0.07) 50%, rgba(38, 0, 253, 0) 100%);
-  transform: rotate(14deg) translateX(-40%);
-  animation: binggo-wash 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  background: linear-gradient(90deg, rgba(38, 0, 253, 0) 0%, rgba(38, 0, 253, 0.06) 50%, rgba(38, 0, 253, 0) 100%);
+  transform: rotate(14deg) translateX(-60%);
+  animation: binggo-wash 7.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
   pointer-events: none;
 }
 
 @keyframes binggo-wash {
   0%   { transform: rotate(14deg) translateX(-60%); opacity: 0; }
   12%  { opacity: 1; }
-  55%  { transform: rotate(14deg) translateX(340%); opacity: 1; }
-  70%  { transform: rotate(14deg) translateX(340%); opacity: 0; }
-  100% { transform: rotate(14deg) translateX(340%); opacity: 0; }
+  55%  { transform: rotate(14deg) translateX(360%); opacity: 1; }
+  70%  { transform: rotate(14deg) translateX(360%); opacity: 0; }
+  100% { transform: rotate(14deg) translateX(360%); opacity: 0; }
 }
 
-.binggo-card__body {
+/* The inset panel — same idea as the reference's inner sheet: a slightly
+   recessed surface that groups secondary information without a second border. */
+.binggo-card__panel {
   position: relative;
   z-index: 1;
-  min-width: 0;
-  flex: 1;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(10, 10, 11, 0.035);
 }
 
+/* Factual tiles. Fixed three-up, hairline separated, no per-tile border. */
+.binggo-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.binggo-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 6px 10px;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+}
+
+.binggo-tile__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #ffbf00;
+  color: #0a0a0b;
+}
+
+.binggo-tile__value {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #0a0a0b;
+  line-height: 1.2;
+}
+
+.binggo-tile__label {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(10, 10, 11, 0.42);
+}
+
+/* Section label inside the card */
+.binggo-card__label {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(10, 10, 11, 0.42);
+}
+
+/* The big name, set tight the way the reference sets a person's name */
+.binggo-card__name {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: #0a0a0b;
+}
+
+/* A factual row: small glyph, then the fact */
+.binggo-card__fact {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: rgba(10, 10, 11, 0.6);
+}
+
+.binggo-card__fact svg { color: rgba(10, 10, 11, 0.38); flex: none; }
+
+/* Request chips. One is pre-selected in blue, echoing the reference's chosen
+   time slot — it signals that these are choices, not decoration. */
+.binggo-chip {
+  flex: none;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(10, 10, 11, 0.13);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0a0a0b;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              border-color 200ms ease, background-color 200ms ease, color 200ms ease;
+}
+
+.binggo-chip:hover {
+  border-color: rgba(38, 0, 253, 0.42);
+  background: rgba(38, 0, 253, 0.05);
+}
+
+.binggo-chip:active { transform: scale(0.95); }
+
+.binggo-chip--on {
+  background: #2600fd;
+  border-color: #2600fd;
+  color: #fff;
+}
+
+.binggo-chip--on:hover {
+  background: #1f00d6;
+  border-color: #1f00d6;
+  color: #fff;
+}
+
+/* Action bar: one circular secondary, one wide primary — the reference's
+   chat-icon + "Book now" pairing. */
+.binggo-card__bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.binggo-card__cta {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: #2600fd;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 220ms ease;
+}
+
+.binggo-card__cta:hover { background: #1f00d6; }
+.binggo-card__cta:active { transform: scale(0.98); }
+.binggo-card__cta:focus-visible { outline: 2px solid #0a0a0b; outline-offset: 3px; }
+
+.binggo-card__ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(10, 10, 11, 0.05);
+  color: #0a0a0b;
+  cursor: pointer;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 220ms ease;
+}
+
+.binggo-card__ghost:hover { background: rgba(10, 10, 11, 0.09); }
+.binggo-card__ghost:active { transform: scale(0.94); }
+
 /* --------------------------------------------------------------------------
-   ASSISTANT OVERLAY
-   Full-bleed white sheet. No dark chrome.
+   ASSISTANT SHEET — chat mode
    -------------------------------------------------------------------------- */
 
 .binggo-sheet {
@@ -168,16 +299,12 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.binggo-sheet--closing {
-  animation: binggo-sheet-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
-}
+.binggo-sheet--closing { animation: binggo-sheet-out 260ms cubic-bezier(0.4, 0, 1, 1) both; }
 
 @keyframes binggo-sheet-out {
   to { opacity: 0; transform: translateY(10px) scale(0.99); }
 }
 
-/* Live status: a breathing dot, the same signal language the rest of the app
-   uses for "this is happening now". */
 .binggo-live {
   display: inline-flex;
   align-items: center;
@@ -202,11 +329,7 @@
   50%      { opacity: 0.35; transform: scale(0.72); }
 }
 
-/* Message bubbles. User turns get ink mass, assistant turns stay on the
-   canvas as plain type — so a long reply does not become a wall of boxes. */
-.binggo-msg {
-  animation: binggo-msg-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
+.binggo-msg { animation: binggo-msg-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
 @keyframes binggo-msg-in {
   from { opacity: 0; transform: translateY(8px); }
@@ -229,12 +352,7 @@
   max-width: 94%;
 }
 
-/* Thinking indicator: three dots on a stagger, no spinner */
-.binggo-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
+.binggo-dots { display: inline-flex; align-items: center; gap: 4px; }
 
 .binggo-dots i {
   width: 6px;
@@ -252,7 +370,6 @@
   40%      { opacity: 1; transform: translateY(-3px); }
 }
 
-/* Skeleton shimmer for the loading state — sized to the reply it replaces */
 .binggo-skel {
   height: 11px;
   border-radius: 999px;
@@ -266,7 +383,6 @@
   to   { background-position: -200% 0; }
 }
 
-/* Composer */
 .binggo-composer {
   display: flex;
   align-items: flex-end;
@@ -298,11 +414,8 @@
   color: #0a0a0b;
 }
 
-.binggo-composer textarea::placeholder {
-  color: rgba(10, 10, 11, 0.34);
-}
+.binggo-composer textarea::placeholder { color: rgba(10, 10, 11, 0.34); }
 
-/* Round icon button, matching the app's existing .circle-btn language */
 .binggo-iconbtn {
   display: inline-flex;
   align-items: center;
@@ -319,25 +432,11 @@
               background-color 200ms ease, color 200ms ease;
 }
 
-.binggo-iconbtn:hover {
-  background: rgba(10, 10, 11, 0.05);
-  color: #0a0a0b;
-}
-
+.binggo-iconbtn:hover { background: rgba(10, 10, 11, 0.05); color: #0a0a0b; }
 .binggo-iconbtn:active { transform: scale(0.9); }
+.binggo-iconbtn:focus-visible { outline: 2px solid #2600fd; outline-offset: 2px; }
 
-.binggo-iconbtn:focus-visible {
-  outline: 2px solid #2600fd;
-  outline-offset: 2px;
-}
-
-.binggo-iconbtn--send {
-  background: #2600fd;
-  color: #fff;
-  width: 36px;
-  height: 36px;
-}
-
+.binggo-iconbtn--send { background: #2600fd; color: #fff; width: 36px; height: 36px; }
 .binggo-iconbtn--send:hover { background: #1f00d6; color: #fff; }
 
 .binggo-iconbtn--send:disabled {
@@ -347,100 +446,117 @@
   transform: none;
 }
 
-.binggo-iconbtn--on {
-  background: #ffbf00;
-  color: #0a0a0b;
-}
-
+.binggo-iconbtn--on { background: #ffbf00; color: #0a0a0b; }
 .binggo-iconbtn--on:hover { background: #f0b400; color: #0a0a0b; }
 
-/* Quick-action chips */
-.binggo-chip {
-  flex: none;
-  padding: 8px 13px;
-  border-radius: 999px;
-  border: 1px solid rgba(10, 10, 11, 0.12);
-  background: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  color: #0a0a0b;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              border-color 200ms ease, background-color 200ms ease;
-}
-
-.binggo-chip:hover {
-  border-color: rgba(38, 0, 253, 0.42);
-  background: rgba(38, 0, 253, 0.04);
-}
-
-.binggo-chip:active { transform: scale(0.95); }
-
 /* --------------------------------------------------------------------------
-   CALL MODE — light, not dark. The character is the whole screen, and the
-   halo expands behind it as the app listens.
+   CALL MODE — the whole screen is the brand blue
+   On blue, the character's blue body disappears into the page, so all that is
+   left of it is the two signature white eyes. The call screen is therefore the
+   character at its most reduced and most recognisable at the same time, and
+   the eyes emoting is the entire interface.
    -------------------------------------------------------------------------- */
 
-.binggo-call__halo {
-  position: absolute;
-  width: 260px;
-  height: 260px;
-  border-radius: 50%;
-  border: 1px solid rgba(38, 0, 253, 0.28);
-  pointer-events: none;
-  animation: binggo-call-halo 3.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+.binggo-call {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: #2600fd;
+  color: #fff;
+  animation: binggo-call-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.binggo-call__halo:nth-child(2) { animation-delay: 1.05s; }
-.binggo-call__halo:nth-child(3) { animation-delay: 2.1s; }
+@keyframes binggo-call-in {
+  from { opacity: 0; transform: scale(1.02); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
-@keyframes binggo-call-halo {
-  0%   { opacity: 0.55; transform: scale(0.62); }
-  100% { opacity: 0; transform: scale(1.5); }
+.binggo-call--closing { animation: binggo-sheet-out 260ms cubic-bezier(0.4, 0, 1, 1) both; }
+
+.binggo-call__meta {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .binggo-call__btn {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   border: 0;
   background: transparent;
   cursor: pointer;
   font-family: "Geist Mono", ui-monospace, monospace;
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(10, 10, 11, 0.45);
+  color: rgba(255, 255, 255, 0.72);
   transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .binggo-call__btn:active { transform: scale(0.94); }
+.binggo-call__btn:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: 12px; }
 
 .binggo-call__btn i {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: #0a0a0b;
+  background: rgba(255, 255, 255, 0.16);
   color: #fff;
-  transition: background-color 200ms ease;
+  transition: background-color 220ms ease;
 }
 
-.binggo-call__btn--end i { background: #2600fd; }
-.binggo-call__btn--end { color: rgba(38, 0, 253, 0.75); }
+.binggo-call__btn:hover i { background: rgba(255, 255, 255, 0.24); }
 
-/* Microphone level ring — driven by a CSS var the component updates */
-.binggo-call__mic {
+/* End is the only solid element on the page, so it reads as the exit */
+.binggo-call__btn--end i { background: #fff; color: #2600fd; }
+.binggo-call__btn--end:hover i { background: #f0f0f2; }
+.binggo-call__btn--end { color: #fff; }
+
+/* Expanding rings in white, since the page is already blue */
+.binggo-call__halo {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: 280px;
+  margin: -140px 0 0 -140px;
   border-radius: 50%;
-  border: 2px solid rgba(38, 0, 253, 0.35);
-  transform: scale(calc(1 + var(--level, 0) * 0.16));
-  transition: transform 90ms linear;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   pointer-events: none;
+  animation: binggo-call-halo 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.binggo-call__halo:nth-child(2) { animation-delay: 1.12s; }
+.binggo-call__halo:nth-child(3) { animation-delay: 2.24s; }
+
+/* The ring must be gone before it reaches the screen edges. At scale 1.55 a
+   280px circle grows to 434px on a 440px screen, so the last visible trace of
+   it was its two widest points — which read as two stray specks at the sides
+   rather than as one expanding ring. It now fades out at 1.18. */
+@keyframes binggo-call-halo {
+  0%   { opacity: 0.5; transform: scale(0.58); }
+  62%  { opacity: 0; }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+/* The blue page needs the ghost character to be large — the eyes are the only
+   thing on screen, so they carry the whole composition. */
+.binggo-call .binggo--ghost { --binggo-size: 190px; }
+
+/* Live transcript strip on the blue page */
+.binggo-call__said {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 32ch;
 }
 
 /* --------------------------------------------------------------------------
@@ -449,10 +565,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .binggo-fab,
-  .binggo-card,
-  .binggo-sheet,
-  .binggo-msg,
   .binggo-card__wash,
+  .binggo-card__cta,
+  .binggo-card__ghost,
+  .binggo-sheet,
+  .binggo-call,
+  .binggo-msg,
   .binggo-live__dot,
   .binggo-dots i,
   .binggo-skel,
@@ -461,5 +579,5 @@
     transition: none !important;
   }
   .binggo-card__wash { opacity: 0; }
-  .binggo-call__halo { opacity: 0.3; transform: scale(0.8); }
+  .binggo-call__halo { opacity: 0.25; transform: scale(0.85); }
 }

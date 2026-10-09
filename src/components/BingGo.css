@@ -216,3 +216,95 @@
   }
   .binggo[data-mood="think"] .binggo__halo { opacity: 0.6; }
 }
+
+/* ==========================================================================
+   IDLE GESTURES
+   ==========================================================================
+
+   Blinking alone still reads as a blinking logo. These are the larger,
+   irregular gestures that make the character feel like it is idling rather
+   than looping: glancing aside, double-blinking, winking, tilting, squashing.
+
+   They only apply while `data-beat` is set, and the component only sets it
+   while the held mood is `idle` — so a real expression always wins. Every
+   gesture animates transform only, and each one is kept shorter than the
+   minimum hold so it can finish rather than getting cut off mid-motion.
+   ========================================================================== */
+
+.binggo[data-beat="look-l"] .binggo__eyes { transform: translateX(-15%); }
+.binggo[data-beat="look-r"] .binggo__eyes { transform: translateX(15%); }
+.binggo[data-beat="look-up"] .binggo__eyes { transform: translateY(-13%) scaleY(1.04); }
+
+.binggo__eyes {
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* A wink: one eye shuts, the other widens slightly to compensate. */
+.binggo[data-beat="wink"] .binggo__eye--l { transform: scaleY(0.07); }
+.binggo[data-beat="wink"] .binggo__eye--r { transform: scaleY(1.06); }
+
+/* A double blink, on its own timeline so the two closures are legible. */
+.binggo[data-beat="blink2"] .binggo__eye {
+  animation: binggo-beat-blink2 460ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes binggo-beat-blink2 {
+  0%        { transform: scaleY(1); }
+  14%       { transform: scaleY(0.07); }
+  30%       { transform: scaleY(1); }
+  46%       { transform: scaleY(0.07); }
+  68%, 100% { transform: scaleY(1); }
+}
+
+/* A curious head-tilt: the whole body tips, the eyes lead the movement. */
+.binggo[data-beat="tilt-l"] .binggo__body { transform: rotate(-7deg); }
+.binggo[data-beat="tilt-r"] .binggo__body { transform: rotate(7deg); }
+.binggo[data-beat="tilt-l"] .binggo__eyes,
+.binggo[data-beat="tilt-r"] .binggo__eyes { transform: translateY(-6%); }
+
+/* A squash-and-stretch, the cheapest way to read as "bouncy" rather than
+   "breathing". Volume is preserved: it widens as it flattens. */
+.binggo[data-beat="squash"] .binggo__body {
+  animation: binggo-beat-squash 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes binggo-beat-squash {
+  0%   { transform: scale(1, 1); }
+  38%  { transform: scale(1.07, 0.9); }
+  70%  { transform: scale(0.97, 1.05); }
+  100% { transform: scale(1, 1); }
+}
+
+/* --------------------------------------------------------------------------
+   GHOST — body removed, eyes only
+   Used on the blue call screen, where the body is the same blue as the page
+   and therefore disappears on its own, leaving the two signature eyes.
+   -------------------------------------------------------------------------- */
+
+.binggo--ghost .binggo__body {
+  background: transparent;
+  box-shadow: none;
+}
+
+.binggo--ghost .binggo__ring { display: none; }
+.binggo--ghost .binggo__halo i { background: rgba(255, 255, 255, 0.5); }
+
+/* --------------------------------------------------------------------------
+   INK — eyes only, drawn in ink. For white surfaces that want the face
+   without the blue plate.
+   -------------------------------------------------------------------------- */
+
+.binggo--ink .binggo__body {
+  background: transparent;
+  box-shadow: none;
+}
+
+.binggo--ink .binggo__eye { background: var(--ink, #0a0a0b); }
+
+.binggo--ink .binggo__halo i { background: var(--ink, #0a0a0b); }
+
+@media (prefers-reduced-motion: reduce) {
+  .binggo__eyes { transition: none !important; }
+  .binggo[data-beat] .binggo__eye,
+  .binggo[data-beat] .binggo__body { animation: none !important; }
+}
