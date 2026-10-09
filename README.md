@@ -11,12 +11,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite 6](https://img.shields.io/badge/Vite-6.2-646CFF.svg?logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg?logo=tailwind-css)](https://tailwindcss.com/)
+[![Version](https://img.shields.io/badge/Version-2.3.0-2600FD.svg)](./CHANGELOG.md)
 [![Storage](https://img.shields.io/badge/Storage-Google%20Drive%20(BYOS)-4285F4.svg?logo=google-drive)](https://www.google.com/drive/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 <br/>
 
-[English](#english) • [简体中文](#简体中文)
+[English](#english) • [简体中文](#简体中文) • [Changelog](./CHANGELOG.md)
 
 </div>
 
@@ -27,24 +28,34 @@
 <div align="center">
   <table>
     <tr>
-      <th align="center"><b>01. Cockpit 控制台</b></th>
-      <th align="center"><b>02. Net Worth 资产大盘</b></th>
-      <th align="center"><b>03. Wallets 账户流水</b></th>
+      <th align="center"><b>01. Cockpit — BingGo</b></th>
+      <th align="center"><b>02. BingGo — Conversation</b></th>
+      <th align="center"><b>03. BingGo — Voice Session</b></th>
     </tr>
     <tr>
-      <td align="center"><img src="./docs/screenshots/launcher.png" width="260" alt="Apptify Launcher" /></td>
-      <td align="center"><img src="./docs/screenshots/mywealth.png" width="260" alt="MyWealth Cockpit" /></td>
-      <td align="center"><img src="./docs/screenshots/wallets.png" width="260" alt="Wallets & Accounts" /></td>
+      <td align="center"><img src="./docs/screenshots/01-launcher.png" width="260" alt="Apptify Launcher with BingGo" /></td>
+      <td align="center"><img src="./docs/screenshots/02-binggo-chat.png" width="260" alt="BingGo conversation" /></td>
+      <td align="center"><img src="./docs/screenshots/03-binggo-call.png" width="260" alt="BingGo voice session" /></td>
     </tr>
     <tr>
-      <th align="center"><b>04. Budget 预算平衡</b></th>
-      <th align="center"><b>05. NoteDown 笔记待办</b></th>
-      <th align="center"><b>06. NewsHub 实时资讯</b></th>
+      <th align="center"><b>04. Net Worth 资产大盘</b></th>
+      <th align="center"><b>05. Wallets 账户流水</b></th>
+      <th align="center"><b>06. Budget 预算平衡</b></th>
     </tr>
     <tr>
-      <td align="center"><img src="./docs/screenshots/budget.png" width="260" alt="Monthly Budget" /></td>
-      <td align="center"><img src="./docs/screenshots/notedown.png" width="260" alt="NoteDown Workspace" /></td>
-      <td align="center"><img src="./docs/screenshots/newshub.png" width="260" alt="NewsHub Live" /></td>
+      <td align="center"><img src="./docs/screenshots/04-mywealth.png" width="260" alt="MyWealth Cockpit" /></td>
+      <td align="center"><img src="./docs/screenshots/05-wallets.png" width="260" alt="Wallets & Accounts" /></td>
+      <td align="center"><img src="./docs/screenshots/06-budget.png" width="260" alt="Monthly Budget" /></td>
+    </tr>
+    <tr>
+      <th align="center"><b>07. NoteDown 笔记待办</b></th>
+      <th align="center"><b>08. NewsHub 实时资讯</b></th>
+      <th align="center"><b>09. Settings 设置</b></th>
+    </tr>
+    <tr>
+      <td align="center"><img src="./docs/screenshots/07-notedown.png" width="260" alt="NoteDown Workspace" /></td>
+      <td align="center"><img src="./docs/screenshots/08-newshub.png" width="260" alt="NewsHub Live" /></td>
+      <td align="center"><img src="./docs/screenshots/09-settings.png" width="260" alt="Global Settings" /></td>
     </tr>
   </table>
 </div>
@@ -54,7 +65,7 @@
 <a name="english"></a>
 ## 🌟 Overview
 
-**Apptify** is an all-in-one personal finance operating system and productivity cockpit designed with the **"Ink & Signal"** editorial visual aesthetic.
+**Apptify** is an all-in-one personal finance operating system and productivity cockpit designed with the **"Ink & Signal"** editorial visual aesthetic, with **BingGo** — a resident assistant that can actually operate the app on your behalf — living in every screen.
 
 Unlike traditional personal finance trackers that rely on centralized databases to harvest and store sensitive user accounts, Apptify adopts a **BYOS (Bring Your Own Storage)** architecture: your financial ledgers and notes are saved directly and exclusively to your personal **Google Drive** (`Apptify_Cloud_Data.json`). No centralized database, no server tracking, 100% private.
 
@@ -70,15 +81,20 @@ Unlike traditional personal finance trackers that rely on centralized databases 
 * **Portfolio & Cash Reserves**: Monitor multi-currency cash holdings (MYR, USD, HKD) and track stock holdings with profit/loss metrics.
 * **AI Valuation Modeling**: Built-in institutional valuation tools including DCF (Discounted Cash Flow), Price-to-Sales, and 5-Year Future Earnings forecasting under conservative and optimistic scenarios.
 
-### 🧠 2. Ask Apptify — Multi-Model AI Financial Advisor
-* **Holistic Context Awareness**: Conversational AI assistant that understands your current accounts, budgets, loan terms, and portfolio to answer ad-hoc financial questions.
-* **BYOK (Bring Your Own Key)**: Choose and switch between top AI providers without server lock-in:
+### 🧠 2. BingGo — The Resident Assistant
+* **It acts on your data, not just talks about it.** BingGo can move money between wallets, log expenses, record income, add loans and repayments, add budget lines, write and search notes, create, complete and delete tasks, and navigate the app. Every write is confirmed before it touches your records.
+* **A face, not an icon.** BingGo is a blue rounded square with two pill eyes, rebuilt as live DOM rather than an image so it can actually emote: blink at random intervals, glance around, look up, double-blink, wink, tilt, and squash. It is pettable — tap it and it is pleased.
+* **Voice in and out.** Speak to it and it answers aloud, using the browser's native speech APIs. No extra key, no extra service. On a browser without them it degrades quietly instead of breaking.
+* **It remembers.** Conversations persist across reloads, recall earlier context semantically by embedding similarity, and sync with your Google Drive alongside everything else.
+* **Sees images.** Attach a photo and ask about it; replies come back through the same multimodal path the rest of the app uses.
+* **Bilingual throughout.** English and Chinese, and it answers in whichever you are using.
+* **BYOK (Bring Your Own Key)**, with no server lock-in:
   * Google Gemini (Gemini 2.5 Flash / Pro)
   * DeepSeek (DeepSeek V3 / R1)
   * OpenAI (GPT-4o / o1 / o3-mini)
   * Anthropic Claude (Claude 3.5 Sonnet)
   * SiliconFlow & OpenRouter
-* **Local Key Storage**: API keys are saved directly in your browser's private local storage and are never uploaded to any intermediary servers.
+* **Local key storage.** API keys live in your browser's private local storage and are never uploaded to an intermediary.
 
 ### 📝 3. NoteDown (KnowledgeVault) — Minimalist Productivity
 * **Quick Notes**: Clean editorial notes with instant tagging (`Work`, `Idea`, `Meeting`, `Life`), pinning, and search.
@@ -104,7 +120,7 @@ Unlike traditional personal finance trackers that rely on centralized databases 
 <a name="简体中文"></a>
 ## 🇨🇳 中文功能介绍
 
-**Apptify** 是一款兼具现代极简美学与顶级隐私保护的个人资产管理中枢与生产力工作台。
+**Apptify** 是一款兼具现代极简美学与顶级隐私保护的个人资产管理中枢与生产力工作台，并内置常驻 AI 助理 **BingGo**——它不只是聊天，而是能真正替你操作这个 App。
 
 ### 核心亮点
 1. **100% 绝对隐私 (BYOS 私有云架构)**：
@@ -118,9 +134,15 @@ Unlike traditional personal finance trackers that rely on centralized databases 
    * **贷款分期追踪**：房贷、车贷、个人贷款本金与月供摊销实时演算。
    * **股票持仓与多币种**：支持 MYR、USD、HKD 多币种现金储备与股票持仓盈亏分析。
    * **AI 估值模型**：内置 DCF 自由现金流折现、市销率（P/S）模型与 5 年盈利估值演算。
-3. **AI 财务决策顾问 (Ask Apptify)**：
-   * 结合您当前的资产状况、收支结余与投资组合，解答财务与理财咨询。
-   * 支持 **BYOK (自备 API Key)**，自由接入 **Google Gemini、DeepSeek、OpenAI、Claude、SiliconFlow、OpenRouter** 等全球主流大模型。
+3. **常驻 AI 助理 (BingGo)**：
+   * **真的会动手，不只是聊天**：在钱包间转账、记账、记录收入、添加贷款与还款、添加固定支出、写笔记与搜索笔记、建待办／完成／删除待办、跳转页面。**每一次写入都先经你确认**，不会擅自改动账本。
+   * **有形象，不是一个图标**：蓝色圆角方块 + 两只白色椭圆眼睛，**用 DOM 重绘而非贴图**，所以能真正做表情——随机眨眼、左右看、抬头、连眨、单眼眨、歪头、挤压弹跳。**可以点它「摸摸头」**，它会高兴。
+   * **能说也能听**：用浏览器原生语音接口说话与收音，**不需要额外密钥、不经过第三方服务**；浏览器不支持时安静降级而不是崩溃。
+   * **有记忆**：对话刷新不丢，用向量相似度召回早期上下文，并随 Google Drive 一起跨设备同步。
+   * **能看图**：附上图片直接问它。
+   * **中英双语**，你用哪种它就答哪种。
+   * 支持 **BYOK (自备 API Key)**，自由接入 **Google Gemini、DeepSeek、OpenAI、Claude、SiliconFlow、OpenRouter**，密钥只存在你本地浏览器。
+
 4. **灵感与任务中枢 (NoteDown)**：
    * 随手速记笔记、标签归类、关键词搜索与置顶。
    * 待办事项管理（支持高/中/低优先级与到期日提醒）。
