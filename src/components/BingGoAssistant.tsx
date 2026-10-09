@@ -262,7 +262,17 @@ Intents:
 7 QUERY_WEALTH {}
 8 QUERY_TASKS {}
 9 NAVIGATE {target:"mywealth"|"knowledgevault"|"newshub"|"launcher"|"settings"}
-10 CHAT {}
+10 ADD_BUDGET {name:string, amount:number, category:string}
+11 ADD_LOAN {name:string, totalAmount:number, monthlyPayment:number, months:number}
+12 REPAY_LOAN {loanName:string, amount:number}
+13 SEARCH_NOTES {query:string}
+14 QUERY_NOTES {}
+15 UPDATE_NOTE {title:string, content?:string, newTitle?:string, category?:string}
+16 DELETE_NOTE {title:string}
+17 DELETE_TASK {taskTitle:string}
+18 CHAT {}
+
+If a request does not map to one of these, use CHAT and say plainly that you cannot do it. Never claim an action succeeded unless you returned its intent.
 
 Shape: {"intent":"...","data":{...},"message":"<reply to show and speak>"}
 Use CHAT for anything conversational, including storytelling. Output JSON only, no markdown fence.`;

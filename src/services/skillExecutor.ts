@@ -304,11 +304,17 @@ export const executeAction = async (
     const tag = data.category || data.tag || 'work';
 
     const notes = loadNotes();
+    const safeTag = ['work', 'idea', 'meeting', 'life'].includes(String(tag).toLowerCase())
+      ? String(tag).toLowerCase()
+      : 'work';
     const newNote = {
       id: Date.now().toString(),
       title,
       content,
-      tag: ['work', 'idea', 'meeting', 'life'].includes(tag.toLowerCase()) ? tag.toLowerCase() : 'work',
+      // `category` is what KnowledgeVault reads; `tag` is kept because older
+      // stored notes and this engine's own message template both use it.
+      category: safeTag,
+      tag: safeTag,
       isPinned: false,
       createdAt: new Date().toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     };
@@ -467,7 +473,127 @@ export const executeAction = async (
     }
   }
 
-  return { message: "命令已处理。" };
+
+  // 11. BUDGET LINE — declared in the registry since the beginning, but this
+  //     engine never handled it: the model could ask for it and the user was
+  //     told "done" while nothing changed. Now implemented.
+  if (intent === 'ADD_BUDGET') {
+    const mwData = loadMyWealthData();
+    const amount = Number(data.amount) || 0;
+    if (amount <= 0) throw new Error("预算金额必须大于 0");
+    const name = data.name || data.description || 'New budget line';
+    const category = data.category || 'Other';
+    mwData.fixedExpenses = [
+      ...(mwData.fixedExpenses || []),
+      { id: `fe${Date.now()}`, name, amount, category, isFixed: true },
+    ];
+    await saveMyWealthData(mwData);
+    const monthly = (mwData.fixedExpenses as any[]).reduce((s, e) => s + (e.amount || 0), 0);
+    return {
+      message: `已添加固定支出「${name}」。\n• 金额：**RM${amount.toFixed(2)}**\n• 类别：${category}\n• 每月固定支出合计：**RM${monthly.toFixed(2)}**`,
+      result: { type: 'finance', title: '已添加固定支出', details: [`${name} · RM${amount.toFixed(2)}`, `类别：${category}`, `每月合计：RM${monthly.toFixed(2)}`], badge: '预算' },
+    };
+  }
+
+  // 12. LOAN
+  if (intent === 'ADD_LOAN') {
+    const mwData = loadMyWealthData();
+    const total = Number(data.totalAmount ?? data.amount) || 0;
+    if (total <= 0) throw new Error("贷款金额必须大于 0");
+    const name = data.name || 'New loan';
+    const months = Number(data.remainingMonths ?? data.months) || 12;
+    const monthly = Number(data.monthlyPayment) || Number((total / months).toFixed(2));
+    mwData.loans = [
+      ...(mwData.loans || []),
+      { id: `ln${Date.now()}`, name, totalAmount: total, monthlyPayment: monthly, remainingAmount: total, remainingMonths: months },
+    ];
+    await saveMyWealthData(mwData);
+    return {
+      message: `已记录贷款「${name}」。\n• 本金：**RM${total.toFixed(2)}**\n• 每月还款：**RM${monthly.toFixed(2)}**\n• 剩余期数：${months}`,
+      result: { type: 'finance', title: '已记录贷款', details: [`${name} · RM${total.toFixed(2)}`, `月供 RM${monthly.toFixed(2)} · ${months} 期`, `待还：RM${total.toFixed(2)}`], badge: '贷款' },
+    };
+  }
+
+  // 13. REPAY LOAN
+  if (intent === 'REPAY_LOAN') {
+    const mwData = loadMyWealthData();
+    const amount = Number(data.amount) || 0;
+    if (amount <= 0) throw new Error("还款金额必须大于 0");
+    const loans = (mwData.loans || []) as any[];
+    if (!loans.length) throw new Error("当前没有贷款记录");
+    const want = (data.loanName || data.name || '').toString().toLowerCase();
+    const target = (want && loans.find((l) => l.name.toLowerCase().includes(want))) || loans[0];
+    const remaining = Math.max(0, (target.remainingAmount || 0) - amount);
+    const months = Math.max(0, (target.remainingMonths || 0) - Math.max(1, Math.round(amount / (target.monthlyPayment || amount))));
+    target.remainingAmount = remaining;
+    target.remainingMonths = months;
+    await saveMyWealthData(mwData);
+    return {
+      message: `已还款 **RM${amount.toFixed(2)}** 到「${target.name}」。\n• 剩余待还：**RM${remaining.toFixed(2)}**\n• 剩余期数：${months}`,
+      result: { type: 'finance', title: '已记录还款', details: [`${target.name} · 还款 RM${amount.toFixed(2)}`, `剩余待还：RM${remaining.toFixed(2)}`, `剩余 ${months} 期`], badge: '贷款' },
+    };
+  }
+
+  // 14. SEARCH NOTES
+  if (intent === 'SEARCH_NOTES') {
+    const q = (data.query || data.keyword || '').toString().toLowerCase().trim();
+    const notes = loadNotes() as any[];
+    const hits = q
+      ? notes.filter((n) => `${n.title || ''} ${n.content || ''}`.toLowerCase().includes(q))
+      : notes.slice(0, 5);
+    if (!hits.length) return { message: `没有找到和「${q}」相关的笔记。`, result: { type: 'note', title: '没有匹配', details: [`关键词：${q}`], badge: '搜索' } };
+    return {
+      message: `找到 ${hits.length} 条相关笔记：\n` + hits.slice(0, 5).map((n) => `• **${n.title || '未命名'}**`).join('\n'),
+      result: { type: 'note', title: `找到 ${hits.length} 条笔记`, details: hits.slice(0, 5).map((n) => n.title || '未命名'), badge: '搜索' },
+    };
+  }
+
+  // 15. QUERY NOTES
+  if (intent === 'QUERY_NOTES') {
+    const notes = loadNotes() as any[];
+    if (!notes.length) return { message: '你还没有任何笔记。', result: { type: 'note', title: '暂无笔记', details: [], badge: '笔记' } };
+    return {
+      message: `你一共有 **${notes.length}** 条笔记，最近的是：\n` + notes.slice(0, 5).map((n) => `• **${n.title || '未命名'}**`).join('\n'),
+      result: { type: 'note', title: `${notes.length} 条笔记`, details: notes.slice(0, 5).map((n) => n.title || '未命名'), badge: '笔记' },
+    };
+  }
+
+  // 16. UPDATE / DELETE NOTE
+  if (intent === 'UPDATE_NOTE' || intent === 'DELETE_NOTE') {
+    const notes = loadNotes() as any[];
+    const want = (data.title || data.noteTitle || '').toString().toLowerCase().trim();
+    const idx = want ? notes.findIndex((n) => (n.title || '').toLowerCase().includes(want)) : -1;
+    if (idx === -1) throw new Error(`没有找到标题包含「${data.title || data.noteTitle || ''}」的笔记`);
+    if (intent === 'DELETE_NOTE') {
+      const [gone] = notes.splice(idx, 1);
+      saveNotes(notes);
+      return { message: `已删除笔记「${gone.title || '未命名'}」。`, result: { type: 'note', title: '已删除笔记', details: [gone.title || '未命名'], badge: '笔记' } };
+    }
+    if (data.content !== undefined) notes[idx].content = data.content;
+    if (data.newTitle) notes[idx].title = data.newTitle;
+    if (data.category) notes[idx].category = data.category;
+    saveNotes(notes);
+    return { message: `已更新笔记「${notes[idx].title || '未命名'}」。`, result: { type: 'note', title: '已更新笔记', details: [notes[idx].title || '未命名'], badge: '笔记' } };
+  }
+
+  // 17. DELETE TASK
+  if (intent === 'DELETE_TASK') {
+    const tasks = loadTasks() as any[];
+    const want = (data.taskTitle || data.title || '').toString().toLowerCase().trim();
+    const idx = want ? tasks.findIndex((t) => (t.title || '').toLowerCase().includes(want)) : -1;
+    if (idx === -1) throw new Error(`没有找到标题包含「${data.taskTitle || data.title || ''}」的待办`);
+    const [gone] = tasks.splice(idx, 1);
+    saveTasks(tasks);
+    return { message: `已删除待办「${gone.title || '未命名'}」。`, result: { type: 'task', title: '已删除待办', details: [gone.title || '未命名'], badge: '待办' } };
+  }
+
+  // Anything the registry declares but this engine does not implement must say
+  // so. The old fallback replied "命令已处理。" to every unrecognised intent,
+  // which told the user their money had moved when nothing had happened.
+  return {
+    message: `我还不能执行「${intent}」这个操作。你可以到对应页面手动完成，或者换个说法告诉我。`,
+    result: { type: 'nav', title: '暂不支持的操作', details: [`意图：${intent}`, '没有对数据做任何修改'], badge: '未执行' },
+  };
 };
 
 // Smart Offline/Rule-based Command Parser (Zero-latency direct execution)

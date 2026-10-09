@@ -411,7 +411,14 @@ const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({ onExit }) => {
           {/* Notes Card Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {filteredNotes.map(note => {
-              const cat = CATEGORY_MAP[note.category];
+              // A note whose category is missing or unrecognised must not take
+              // the screen down. Anything unknown renders as its own neutral
+              // chip rather than throwing on `cat.color`.
+              const cat = CATEGORY_MAP[note.category] ?? {
+                labelZh: note.category || '未分类',
+                labelEn: note.category || 'Unsorted',
+                color: 'bg-black/[0.06] text-zinc-600 dark:text-zinc-300 border-black/[0.12]',
+              };
               return (
                 <div
                   key={note.id}
