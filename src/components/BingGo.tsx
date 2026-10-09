@@ -58,6 +58,10 @@ export interface BingGoProps {
   ghost?: boolean;
   /** Render the eyes solid ink instead of white. For white surfaces. */
   ink?: boolean;
+  /** Let it be tapped. A tap makes it pleased and gives it a shake. */
+  pettable?: boolean;
+  /** Fired on each tap, so a host can react too. */
+  onPet?: () => void;
   className?: string;
   /** Accessible name. Omit to render as decorative. */
   label?: string;
@@ -80,10 +84,14 @@ const BingGo: React.FC<BingGoProps> = ({
   still = false,
   ghost = false,
   ink = false,
+  pettable = false,
+  onPet,
   className = '',
   label,
 }) => {
   const [blinking, setBlinking] = useState(false);
+  const [petting, setPetting] = useState(false);
+  const petTimer = useRef<number | null>(null);
   const [beat, setBeat] = useState<BingGoBeat | null>(null);
   const timers = useRef<number[]>([]);
   const idle = mood === 'idle';
@@ -142,19 +150,36 @@ const BingGo: React.FC<BingGoProps> = ({
     return () => { cancelled = true; clear(); };
   }, [autoBlink, autoBeat, idle]);
 
-  // No annotation needed: `data-mood` is read as a plain attribute string.
-  const resolved = blinking && idle ? 'blink' : mood;
+  /* Being petted. Held long enough for the shake to finish, then released back
+     to whatever the caller was holding. */
+  const pet = () => {
+    if (!pettable) return;
+    onPet?.();
+    setPetting(true);
+    if (petTimer.current) window.clearTimeout(petTimer.current);
+    petTimer.current = window.setTimeout(() => setPetting(false), 900);
+  };
+
+  useEffect(() => () => { if (petTimer.current) window.clearTimeout(petTimer.current); }, []);
+
+  // A pet overrides everything, including a deliberate mood: it is a direct
+  // response to the user touching it and should never be swallowed.
+  const resolved = petting ? 'happy' : (blinking && idle ? 'blink' : mood);
   const dimension = typeof size === 'number' ? `${size}px` : size;
 
   return (
     <div
-      className={`binggo ${still ? 'binggo--still' : ''} ${ghost ? 'binggo--ghost' : ''} ${ink ? 'binggo--ink' : ''} ${className}`.trim()}
+      className={`binggo ${still ? 'binggo--still' : ''} ${ghost ? 'binggo--ghost' : ''} ${ink ? 'binggo--ink' : ''} ${pettable ? 'binggo--pettable' : ''} ${className}`.trim()}
       data-mood={resolved}
-      data-beat={idle && !blinking ? (beat ?? 'none') : 'none'}
+      data-beat={idle && !blinking && !petting ? (beat ?? 'none') : 'none'}
+      data-pet={petting ? 'true' : undefined}
       style={{ ['--binggo-size' as any]: dimension }}
-      role={label ? 'img' : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
+      onClick={pettable ? pet : undefined}
+      onKeyDown={pettable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pet(); } } : undefined}
+      role={pettable ? 'button' : (label ? 'img' : undefined)}
+      tabIndex={pettable ? 0 : undefined}
+      aria-label={label ?? (pettable ? 'BingGo' : undefined)}
+      aria-hidden={!pettable && !label ? true : undefined}
     >
       <span className="binggo__ring" />
       <span className="binggo__halo"><i /><i /><i /></span>

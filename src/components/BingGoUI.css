@@ -28,13 +28,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 5px rgba(10, 10, 11, 0.05), 0 14px 30px -12px rgba(10, 10, 11, 0.35);
+  background: transparent;
   cursor: pointer;
   animation: binggo-fab-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -46,14 +44,24 @@
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.binggo-fab:hover {
-  box-shadow: 0 2px 5px rgba(10, 10, 11, 0.06), 0 20px 38px -12px rgba(38, 0, 253, 0.4);
+/* The lift comes from a filter on the character, so the shadow inherits its
+   rounded-square silhouette instead of being painted as a separate circle. */
+/* Two stacked shadows rather than one: a tight dark one to define the edge,
+   and a wider soft one for lift. With no white plate behind it the button now
+   sits on whatever it overlaps — including the brand-blue module tiles, where
+   blue-on-blue made a single soft shadow too weak to read. */
+.binggo-fab .binggo {
+  filter: drop-shadow(0 2px 5px rgba(10, 10, 11, 0.42))
+          drop-shadow(0 10px 22px rgba(10, 10, 11, 0.26));
+  transition: filter 240ms ease;
 }
 
-.binggo-fab:active {
-  transform: scale(0.92);
-  box-shadow: 0 1px 3px rgba(10, 10, 11, 0.08);
+.binggo-fab:hover .binggo {
+  filter: drop-shadow(0 3px 7px rgba(10, 10, 11, 0.5))
+          drop-shadow(0 14px 28px rgba(38, 0, 253, 0.42));
 }
+.binggo-fab:active { transform: scale(0.9); }
+.binggo-fab:active .binggo { filter: drop-shadow(0 1px 3px rgba(10, 10, 11, 0.45)); }
 
 .binggo-fab:focus-visible {
   outline: 2px solid #2600fd;
@@ -62,29 +70,29 @@
 
 /* --------------------------------------------------------------------------
    LAUNCHER ENTRY
-   Structured after the profile-card reference: an identity hero, a small set
-   of factual rows, then an inset panel holding capability tiles and a set of
-   selectable request chips, closed by an action bar. Asymmetric throughout —
-   nothing is centred for its own sake.
+   Sparse on purpose: a large character, its name, one line, a few requests and
+   a single action. Centred here, because with the character this size the
+   composition is the character.
    -------------------------------------------------------------------------- */
 
 .binggo-card {
   position: relative;
   overflow: hidden;
   width: 100%;
-  padding: 18px 18px 14px;
-  text-align: left;
+  padding: 26px 20px 20px;
   border: 1px solid rgba(10, 10, 11, 0.1);
-  border-radius: 30px;
+  border-radius: 32px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 18px 40px -26px rgba(10, 10, 11, 0.35);
   transition: border-color 300ms ease, box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .binggo-card:hover {
-  border-color: rgba(38, 0, 253, 0.28);
-  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 22px 46px -26px rgba(38, 0, 253, 0.4);
+  border-color: rgba(38, 0, 253, 0.24);
+  box-shadow: 0 1px 2px rgba(10, 10, 11, 0.04), 0 24px 48px -26px rgba(38, 0, 253, 0.4);
 }
+
+.binggo-card > .relative > .binggo { margin: 0 auto; }
 
 /* A slow blue wash drifting across the card — the "alive" cue. Isolated to a
    pseudo-element so it can never repaint the card's contents. */
@@ -108,93 +116,28 @@
   100% { transform: rotate(14deg) translateX(360%); opacity: 0; }
 }
 
-/* The inset panel — same idea as the reference's inner sheet: a slightly
-   recessed surface that groups secondary information without a second border. */
-.binggo-card__panel {
-  position: relative;
-  z-index: 1;
-  margin-top: 14px;
-  padding: 14px;
-  border-radius: 22px;
-  background: rgba(10, 10, 11, 0.035);
-}
-
-/* Factual tiles. Fixed three-up, hairline separated, no per-tile border. */
-.binggo-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.binggo-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  padding: 12px 6px 10px;
-  border-radius: 16px;
-  background: #fff;
-  text-align: center;
-}
-
-.binggo-tile__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  background: #ffbf00;
-  color: #0a0a0b;
-}
-
-.binggo-tile__value {
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #0a0a0b;
-  line-height: 1.2;
-}
-
-.binggo-tile__label {
-  font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 8.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(10, 10, 11, 0.42);
-}
-
-/* Section label inside the card */
-.binggo-card__label {
-  font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(10, 10, 11, 0.42);
-}
-
-/* The big name, set tight the way the reference sets a person's name */
 .binggo-card__name {
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 600;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.04em;
   line-height: 1.05;
   color: #0a0a0b;
 }
 
-/* A factual row: small glyph, then the fact */
-.binggo-card__fact {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  color: rgba(10, 10, 11, 0.6);
+.binggo-card__sub {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(10, 10, 11, 0.5);
 }
 
-.binggo-card__fact svg { color: rgba(10, 10, 11, 0.38); flex: none; }
+.binggo-card__hint {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(38, 0, 253, 0.6);
+}
 
-/* Request chips. One is pre-selected in blue, echoing the reference's chosen
-   time slot — it signals that these are choices, not decoration. */
 .binggo-chip {
   flex: none;
   padding: 8px 13px;
@@ -217,41 +160,19 @@
 
 .binggo-chip:active { transform: scale(0.95); }
 
-.binggo-chip--on {
-  background: #2600fd;
-  border-color: #2600fd;
-  color: #fff;
-}
-
-.binggo-chip--on:hover {
-  background: #1f00d6;
-  border-color: #1f00d6;
-  color: #fff;
-}
-
-/* Action bar: one circular secondary, one wide primary — the reference's
-   chat-icon + "Book now" pairing. */
-.binggo-card__bar {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-}
-
+/* One wide primary, full width — the only button on the card */
 .binggo-card__cta {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 46px;
+  width: 100%;
+  height: 50px;
   border: 0;
   border-radius: 999px;
   background: #2600fd;
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
@@ -261,24 +182,6 @@
 .binggo-card__cta:hover { background: #1f00d6; }
 .binggo-card__cta:active { transform: scale(0.98); }
 .binggo-card__cta:focus-visible { outline: 2px solid #0a0a0b; outline-offset: 3px; }
-
-.binggo-card__ghost {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  flex: none;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(10, 10, 11, 0.05);
-  color: #0a0a0b;
-  cursor: pointer;
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 220ms ease;
-}
-
-.binggo-card__ghost:hover { background: rgba(10, 10, 11, 0.09); }
-.binggo-card__ghost:active { transform: scale(0.94); }
 
 /* --------------------------------------------------------------------------
    ASSISTANT SHEET — chat mode

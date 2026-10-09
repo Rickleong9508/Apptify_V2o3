@@ -308,3 +308,53 @@
   .binggo[data-beat] .binggo__eye,
   .binggo[data-beat] .binggo__body { animation: none !important; }
 }
+
+/* ==========================================================================
+   BEING PETTED
+   ==========================================================================
+
+   A tap is a direct answer to the user touching the thing, so it overrides
+   whatever expression was being held. The face goes pleased and the body does
+   a shake that settles — a short overshoot rather than a smooth return, which
+   is what makes it read as a reaction instead of a transition.
+   ========================================================================== */
+
+.binggo--pettable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.binggo--pettable:hover { transform: scale(1.04); }
+.binggo--pettable:active { transform: scale(0.94); }
+
+.binggo--pettable:focus-visible {
+  outline: 2px solid #2600fd;
+  outline-offset: 6px;
+  border-radius: 26%;
+}
+
+.binggo[data-pet="true"] .binggo__eye {
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  transform: translateY(10%) scaleY(0.58);
+}
+
+.binggo[data-pet="true"] .binggo__body {
+  animation: binggo-pet 900ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes binggo-pet {
+  0%   { transform: scale(1, 1) rotate(0deg); }
+  16%  { transform: scale(1.12, 0.9) rotate(-5deg); }
+  34%  { transform: scale(0.95, 1.07) rotate(4deg); }
+  52%  { transform: scale(1.05, 0.97) rotate(-3deg); }
+  70%  { transform: scale(0.99, 1.01) rotate(2deg); }
+  86%  { transform: scale(1.01, 0.99) rotate(-1deg); }
+  100% { transform: scale(1, 1) rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .binggo[data-pet="true"] .binggo__body { animation: none !important; }
+  .binggo--pettable:hover,
+  .binggo--pettable:active { transform: none; }
+}

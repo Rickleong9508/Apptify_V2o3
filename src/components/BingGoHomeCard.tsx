@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Brain, Languages, Zap, AppWindow, Volume2, Mic } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import BingGo from './BingGo';
 import type { Translations } from '../utils/i18n';
 import './BingGoUI.css';
@@ -7,14 +7,14 @@ import './BingGoUI.css';
 /**
  * The launcher entry.
  *
- * Structured after the reference the user supplied: an identity hero, a couple
- * of factual rows, then an inset panel holding capability tiles and a set of
- * selectable request chips, closed by an action bar with one circular
- * secondary and one wide primary.
+ * Deliberately sparse: a large character, its name, one line, a few request
+ * chips and a single action. The earlier version carried capability tiles and
+ * factual rows, which made the launcher read as documentation rather than as a
+ * character you can talk to.
  *
- * The point of the chips being selectable rather than decorative is that they
- * are real entry points — tapping one opens the assistant already working on
- * that request, and the pre-selected chip shows that these are choices.
+ * The character is pettable. Tapping it makes it pleased and gives it a shake —
+ * the only part of this card that answers back, which is the point of putting it
+ * at this size.
  */
 
 export interface BingGoHomeCardProps {
@@ -23,89 +23,35 @@ export interface BingGoHomeCardProps {
 }
 
 const BingGoHomeCard: React.FC<BingGoHomeCardProps> = ({ t, onOpen }) => {
-  const tiles = [
-    { icon: <Brain size={16} strokeWidth={2.1} />, value: t.tileMemory, label: t.tileMemoryLabel },
-    { icon: <Languages size={16} strokeWidth={2.1} />, value: t.tileLanguage, label: t.tileLanguageLabel },
-    { icon: <Zap size={16} strokeWidth={2.1} />, value: t.tileActions, label: t.tileActionsLabel },
-  ];
-
-  const chips = [t.quickExpense, t.quickNetWorth, t.quickNote, t.quickStory];
+  const chips = [t.quickExpense, t.quickNote, t.quickNetWorth];
 
   return (
     <div className="binggo-card">
       <span className="binggo-card__wash" aria-hidden="true" />
 
-      {/* Identity hero */}
-      <div className="relative z-10 flex items-start gap-3.5">
-        <BingGo size={62} mood="idle" label={undefined} />
+      <div className="relative z-10">
+        <BingGo size={112} mood="idle" pettable label={t.name} />
 
-        <div className="min-w-0 flex-1 pt-0.5">
-          <div className="binggo-card__label">{t.yourAssistant}</div>
-          <div className="binggo-card__name mt-1">{t.name}</div>
-        </div>
+        <h2 className="binggo-card__name mt-3.5 text-center">{t.name}</h2>
+        <p className="binggo-card__sub mt-1 text-center">{t.tagline}</p>
+        <p className="binggo-card__hint mt-2 text-center">{t.tapToPoke}</p>
 
-        <span className="binggo-live pt-1.5">
-          <span className="binggo-live__dot" />
-          {t.ready}
-        </span>
-      </div>
-
-      {/* Facts */}
-      <div className="relative z-10 mt-3 space-y-1.5">
-        <div className="binggo-card__fact">
-          <AppWindow size={13} strokeWidth={2.1} />
-          <span>{t.runsInside}</span>
-        </div>
-        <div className="binggo-card__fact">
-          <Volume2 size={13} strokeWidth={2.1} />
-          <span>{t.bilingualFact}</span>
-        </div>
-      </div>
-
-      {/* Inset panel */}
-      <div className="binggo-card__panel">
-        <div className="binggo-card__label">{t.canDo}</div>
-
-        <div className="binggo-tiles mt-2.5">
-          {tiles.map((x) => (
-            <div key={x.label} className="binggo-tile">
-              <span className="binggo-tile__icon">{x.icon}</span>
-              <span className="binggo-tile__value">{x.value}</span>
-              <span className="binggo-tile__label">{x.label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="binggo-card__label mt-4">{t.tryAsking}</div>
-
-        <div className="flex gap-2 overflow-x-auto no-scrollbar mt-2.5 -mx-0.5 px-0.5">
-          {chips.map((c, i) => (
+        <div className="flex flex-wrap justify-center gap-2 mt-4">
+          {chips.map((c) => (
             <button
               key={c}
               type="button"
-              className={`binggo-chip ${i === 1 ? 'binggo-chip--on' : ''}`}
+              className="binggo-chip"
               onClick={() => onOpen({ seed: c })}
             >
               {c}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Action bar */}
-      <div className="binggo-card__bar">
         <button
           type="button"
-          className="binggo-card__ghost"
-          onClick={() => onOpen({ mode: 'call' })}
-          aria-label={t.call}
-          title={t.call}
-        >
-          <Mic size={17} strokeWidth={2.1} />
-        </button>
-        <button
-          type="button"
-          className="binggo-card__cta"
+          className="binggo-card__cta mt-3.5"
           onClick={() => onOpen()}
         >
           {t.talkTo}

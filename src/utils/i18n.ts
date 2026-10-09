@@ -73,6 +73,7 @@ export interface Translations {
     memoryNote: string;
     unsupportedVoice: string;
     speakNow: string;
+    tapToPoke: string;
     yourAssistant: string;
     runsInside: string;
     bilingualFact: string;
@@ -166,6 +167,7 @@ export const translations: Record<Language, Translations> = {
       memoryNote: 'Remembers earlier conversations',
       unsupportedVoice: 'This browser cannot speak or listen',
       speakNow: 'Speak',
+      tapToPoke: 'Tap to say hi',
       yourAssistant: 'Your assistant',
       runsInside: 'Runs inside Apptify',
       bilingualFact: 'English and Chinese — speaks and listens',
@@ -257,6 +259,7 @@ export const translations: Record<Language, Translations> = {
       memoryNote: '记得之前聊过的内容',
       unsupportedVoice: '这个浏览器不支持说话或收音',
       speakNow: '说话',
+      tapToPoke: '点一下打个招呼',
       yourAssistant: '你的助理',
       runsInside: '运行在 Apptify 里',
       bilingualFact: '英语与中文——能说也能听',
