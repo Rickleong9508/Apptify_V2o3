@@ -641,8 +641,13 @@ const App: React.FC = () => {
               lesser one just because it carries less text. */}
           <div className="grid grid-cols-2 gap-3 w-full">
 
-            {/* NoteDown */}
-            <div className="rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between">
+            {/* NoteDown — the whole card is the target, the same as NewsHub
+                beside it. Having one tile navigate from its footer link and
+                the other from anywhere was an inconsistency, not a design. */}
+            <button
+              onClick={() => setCurrentApp('knowledgevault')}
+              className="rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between text-left cursor-pointer active:scale-[0.98] transition-transform"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-xl bg-[#FFBF00] text-[#0A0A0B] flex items-center justify-center shrink-0">
                   <NotebookPen size={18} strokeWidth={2.1} />
@@ -663,16 +668,13 @@ const App: React.FC = () => {
                 </p>
               </div>
 
-              <button
-                onClick={() => setCurrentApp('knowledgevault')}
-                className="mt-3 flex items-center gap-1 text-[11px] font-medium text-[#FFBF00] cursor-pointer active:scale-95 transition-transform self-start"
-              >
+              <span className="mt-3 flex items-center gap-1 text-[11px] font-medium text-[#FFBF00] self-start">
                 <span>{t.launcher.openVault}</span>
                 <ArrowUpRight size={12} strokeWidth={2.3} />
-              </button>
-            </div>
+              </span>
+            </button>
 
-            {/* NewsHub — the narrower tile, carrying the attention colour */}
+            {/* NewsHub */}
             <button
               onClick={() => setCurrentApp('newshub')}
               className="rounded-3xl bg-[#2600FD] text-white p-4 flex flex-col justify-between text-left cursor-pointer active:scale-[0.98] transition-transform"
@@ -948,7 +950,7 @@ const App: React.FC = () => {
       {/* BingGo — available from every screen, hidden while its own sheet is open */}
       <BingGoFab
         onOpen={() => { setBinggoSeed(null); setBinggoMode('chat'); setBinggoOpen(true); }}
-        hidden={binggoOpen}
+        hidden={binggoOpen || currentApp === 'launcher'}
         label={t.binggo.name}
       />
       <BingGoAssistant
