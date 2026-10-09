@@ -41,8 +41,39 @@ function formatPubDate(pubDateStr) {
     }
 }
 
+function isSafeUrl(urlString) {
+    if (!urlString || typeof urlString !== 'string') return false;
+    try {
+        const parsed = new URL(urlString);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return false;
+        }
+        const hostname = parsed.hostname.toLowerCase();
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '::1' || hostname === '[::1]') {
+            return false;
+        }
+        if (hostname === '169.254.169.254' || hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+            return false;
+        }
+        const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+        if (ipv4Match) {
+            const [ , a, b ] = ipv4Match.map(Number);
+            if (a === 10 || a === 127 || a === 0) return false;
+            if (a === 172 && b >= 16 && b <= 31) return false;
+            if (a === 192 && b === 168) return false;
+            if (a === 169 && b === 254) return false;
+        }
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 // Robust fetch with 8-second timeout & real browser User-Agent
 async function fetchHtml(url) {
+    if (!isSafeUrl(url)) {
+        throw new Error(`Access to private or restricted network address is blocked: ${url}`);
+    }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 

@@ -78,10 +78,6 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:3001',
           changeOrigin: true
         },
-        '/api/obsidian': {
-          target: 'http://localhost:3001',
-          changeOrigin: true
-        },
         '/api/invest_skills': {
           target: 'http://localhost:3001',
           changeOrigin: true
@@ -89,10 +85,6 @@ export default defineConfig(({ mode }) => {
       }
     },
     plugins: [react()],
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

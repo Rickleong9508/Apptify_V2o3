@@ -11,6 +11,34 @@ export const config = {
     },
 };
 
+function isSafeUrl(urlString) {
+    if (!urlString || typeof urlString !== 'string') return false;
+    try {
+        const parsed = new URL(urlString);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return false;
+        }
+        const hostname = parsed.hostname.toLowerCase();
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '::1' || hostname === '[::1]') {
+            return false;
+        }
+        if (hostname === '169.254.169.254' || hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+            return false;
+        }
+        const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+        if (ipv4Match) {
+            const [ , a, b ] = ipv4Match.map(Number);
+            if (a === 10 || a === 127 || a === 0) return false;
+            if (a === 172 && b >= 16 && b <= 31) return false;
+            if (a === 192 && b === 168) return false;
+            if (a === 169 && b === 254) return false;
+        }
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -27,6 +55,9 @@ export default async function handler(req, res) {
         let metadata = {};
 
         if (type === 'url') {
+            if (!isSafeUrl(content)) {
+                return res.status(400).json({ error: 'Invalid or restricted URL target' });
+            }
             const response = await fetch(content, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
