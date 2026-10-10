@@ -159,6 +159,9 @@ const BingGoAssistant: React.FC<BingGoAssistantProps> = ({
   // has to be re-read when the sheet is reopened from a different entry.
   useEffect(() => { if (open) setMode(initialMode); }, [open, initialMode]);
   const [voiceOut, setVoiceOut] = useState(false);
+  // Surfaced in the transcript (and under the eyes in call mode) so a failed
+  // microphone says why instead of just making the character look sad.
+  const [micNotice, setMicNotice] = useState<string | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [flash, setFlash] = useState<'happy' | 'sad' | null>(null);
   const [closing, setClosing] = useState(false);
@@ -390,9 +393,27 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
   }, [push, t, ping]);
 
   /* ------------------------------------------------------------------ mic */
-  const toggleMic = useCallback(() => {
-    if (phase === 'listening') { listenRef.current?.stop(); setPhase('idle'); return; }
-    if (!micOn) { ping('sad'); return; }
+  const startListening = useCallback(async () => {
+    setMicNotice(null);
+
+    if (!micOn) { setMicNotice(t.micUnsupported); setPhase('idle'); ping('sad'); return; }
+
+    // Ask for the microphone first. On iOS, and especially in a home-screen web
+    // app, SpeechRecognition's own prompt often never appears and the session
+    // fails with nothing the user can act on.
+    const failure = await voiceService.requestMicPermission();
+    if (failure) {
+      const msg = failure === 'denied' ? t.micDenied
+        : failure === 'no-device' ? t.micNoDevice
+        : failure === 'insecure' ? t.micInsecure
+        : failure === 'unsupported' ? t.micUnsupported
+        : t.micUnknown;
+      setMicNotice(msg);
+      setPhase('idle');
+      ping('sad');
+      return;
+    }
+
     voiceService.stopSpeaking();
     setPhase('listening');
     listenRef.current = voiceService.listen({
@@ -401,10 +422,32 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
         setInput(text);
         if (isFinal && text.trim()) { setPhase('idle'); void send(text); }
       },
-      onError: () => { setPhase('idle'); ping('sad'); },
+      onError: (err) => {
+        const code = String(err);
+        setMicNotice(code.includes('not-allowed') ? t.micDenied
+          : code.includes('not supported') ? t.micUnsupported
+          : t.micUnknown);
+        setPhase('idle');
+        ping('sad');
+      },
       onEnd: () => setPhase((p) => (p === 'listening' ? 'idle' : p)),
     });
-  }, [phase, micOn, locale, send, ping]);
+  }, [micOn, locale, send, ping, t]);
+
+  const toggleMic = useCallback(() => {
+    if (phase === 'listening') { listenRef.current?.stop(); setPhase('idle'); return; }
+    void startListening();
+  }, [phase, startListening]);
+
+  // A call that starts silent, and whose replies you cannot hear, is not a call.
+  // Entering call mode turns voice replies on and opens the microphone.
+  useEffect(() => {
+    if (!open || mode !== 'call') return;
+    setVoiceOut(true);
+    const timer = window.setTimeout(() => { void startListening(); }, 500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode]);
 
   useEffect(() => { setPhase((p) => (p === 'listening' ? 'idle' : p)); }, [mode]);
 
@@ -432,7 +475,13 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
       : t.ready;
 
     return (
-      <div className="binggo-call" role="dialog" aria-modal="true" aria-label={t.name}>
+      <div
+        className="binggo-call"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.name}
+        data-live={phase === 'listening' || phase === 'speaking' ? 'true' : 'false'}
+      >
         <header className="shrink-0 px-gutter pt-[calc(16px+env(safe-area-inset-top,0px))] pb-2 flex items-center gap-3">
           <button
             type="button"
@@ -475,6 +524,12 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
             <span className="binggo-call__halo" />
             <BingGo size={190} mood={mood} ghost autoBlink={phase === 'idle'} label={t.name} />
           </div>
+
+          {micNotice && (
+            <p className="text-[13px] leading-relaxed text-white/80 text-center max-w-[34ch] px-2">
+              {micNotice}
+            </p>
+          )}
 
           <p className="binggo-call__said text-center">
             {last.length > 190 ? `${last.slice(0, 190).trimEnd()}…` : last}
@@ -638,6 +693,13 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
               ))
             )}
 
+            {micNotice && (
+              <div className="binggo-msg flex items-start gap-2 rounded-2xl border border-black/[0.09] px-3.5 py-3">
+                <AlertCircle size={15} className="mt-0.5 shrink-0 text-[#0A0A0B]/50" strokeWidth={2.2} />
+                <span className="text-[13px] leading-relaxed text-[#0A0A0B]/70">{micNotice}</span>
+              </div>
+            )}
+
             {phase === 'thinking' && (
               <div className="binggo-msg flex items-center gap-2.5">
                 <BingGo size={26} mood="think" still label={undefined} />
@@ -678,7 +740,7 @@ Use CHAT for anything conversational, including storytelling. Output JSON only, 
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); }
                 }}
                 rows={1}
-                placeholder={t.inputPlaceholder}
+                placeholder={phase === 'listening' ? t.listeningHint : t.inputPlaceholder}
                 aria-label={t.inputPlaceholder}
               />
               <input

@@ -74,6 +74,12 @@ export interface Translations {
     unsupportedVoice: string;
     speakNow: string;
     tapToPoke: string;
+    micDenied: string;
+    micNoDevice: string;
+    micInsecure: string;
+    micUnsupported: string;
+    micUnknown: string;
+    listeningHint: string;
     yourAssistant: string;
     runsInside: string;
     bilingualFact: string;
@@ -168,6 +174,12 @@ export const translations: Record<Language, Translations> = {
       unsupportedVoice: 'This browser cannot speak or listen',
       speakNow: 'Speak',
       tapToPoke: 'Tap to say hi',
+      micDenied: 'Microphone is blocked. Allow it for this site in your browser settings, then try again.',
+      micNoDevice: 'No microphone was found on this device.',
+      micInsecure: 'Voice input needs a secure connection (https, or localhost).',
+      micUnsupported: 'This browser cannot do voice input. Typing works just as well.',
+      micUnknown: 'Could not start the microphone. You can type instead.',
+      listeningHint: 'Listening…',
       yourAssistant: 'Your assistant',
       runsInside: 'Runs inside Apptify',
       bilingualFact: 'English and Chinese — speaks and listens',
@@ -260,6 +272,12 @@ export const translations: Record<Language, Translations> = {
       unsupportedVoice: '这个浏览器不支持说话或收音',
       speakNow: '说话',
       tapToPoke: '点一下打个招呼',
+      micDenied: '麦克风被拦截了。请在浏览器设置里允许本站使用麦克风，然后重试。',
+      micNoDevice: '没有找到麦克风设备。',
+      micInsecure: '语音输入需要安全连接（https 或 localhost）。',
+      micUnsupported: '这个浏览器不支持语音输入，直接打字也一样。',
+      micUnknown: '无法启动麦克风，可以直接打字。',
+      listeningHint: '正在听……',
       yourAssistant: '你的助理',
       runsInside: '运行在 Apptify 里',
       bilingualFact: '英语与中文——能说也能听',

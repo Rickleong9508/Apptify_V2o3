@@ -420,7 +420,10 @@
 .binggo-call__btn--end:hover i { background: #1a1a1d; }
 .binggo-call__btn--end { color: #fff; }
 
-/* Expanding rings in white, since the page is already blue */
+/* Expanding rings, shown ONLY while actually listening or speaking.
+   They used to loop permanently, which meant an unexplained white circle was
+   always on screen and read as an artefact rather than as a signal. Tied to the
+   live state they mean something: sound is moving. */
 .binggo-call__halo {
   position: absolute;
   top: 50%;
@@ -429,13 +432,18 @@
   height: 280px;
   margin: -140px 0 0 -140px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.34);
   pointer-events: none;
-  animation: binggo-call-halo 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  opacity: 0;
+  animation: none;
 }
 
-.binggo-call__halo:nth-child(2) { animation-delay: 1.12s; }
-.binggo-call__halo:nth-child(3) { animation-delay: 2.24s; }
+.binggo-call[data-live="true"] .binggo-call__halo {
+  animation: binggo-call-halo 3s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.binggo-call[data-live="true"] .binggo-call__halo:nth-child(2) { animation-delay: 1s; }
+.binggo-call[data-live="true"] .binggo-call__halo:nth-child(3) { animation-delay: 2s; }
 
 /* The ring must be gone before it reaches the screen edges. At scale 1.55 a
    280px circle grows to 434px on a 440px screen, so the last visible trace of

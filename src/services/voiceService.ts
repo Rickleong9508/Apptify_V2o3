@@ -248,6 +248,40 @@ const pickVoiceImpl = (locale: string): SpeechSynthesisVoice | null => {
   return sameLanguage.find((voice) => voice.localService) ?? sameLanguage[0];
 };
 
+/**
+ * Ask for the microphone before starting recognition.
+ *
+ * SpeechRecognition triggers the permission prompt itself, but on iOS — and
+ * especially in a home-screen web app — that prompt often never appears, and
+ * the session just fails with nothing the user can act on. Requesting the
+ * stream explicitly makes the prompt happen, and turns a silent failure into a
+ * specific, reportable reason.
+ *
+ * Returns a reason string on failure, or null on success / no-op.
+ */
+export type MicFailure = 'unsupported' | 'denied' | 'no-device' | 'insecure' | 'unknown';
+
+export const requestMicPermission = async (): Promise<MicFailure | null> => {
+  if (typeof window === 'undefined') return 'unsupported';
+  // getUserMedia is gated behind a secure context; plain http on a LAN IP fails
+  // here even though the page itself loads fine.
+  if (!window.isSecureContext) return 'insecure';
+  if (!navigator.mediaDevices?.getUserMedia) return 'unsupported';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Release immediately — recognition opens its own capture. Holding this
+    // stream would keep the recording indicator on for no reason.
+    stream.getTracks().forEach((t) => t.stop());
+    return null;
+  } catch (err) {
+    const name = (err as { name?: string })?.name || '';
+    if (name === 'NotAllowedError' || name === 'SecurityError') return 'denied';
+    if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'no-device';
+    return 'unknown';
+  }
+};
+
 export const voiceService = {
   /**
    * `speechSynthesis` exists in every modern browser, but not in SSR, old
@@ -496,6 +530,8 @@ export const voiceService = {
 
     return handle;
   },
+
+  requestMicPermission,
 
   isListening(): boolean {
     return listening;
