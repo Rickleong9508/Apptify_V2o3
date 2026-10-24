@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import processInputHandler from './api/process_input.js';
 import { getNews } from './api/news_sources.js';
+import ttsHandler from './api/tts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,6 +27,16 @@ async function createServer() {
         } catch (e) {
             console.error("API Handler Error", e);
             res.status(500).json({ error: e.message });
+        }
+    });
+
+    // Neural TTS Route for BingGo cute voice synthesis
+    app.post('/api/tts', express.json(), async (req, res) => {
+        try {
+            await ttsHandler(req, res);
+        } catch (e) {
+            console.error("TTS Error", e);
+            res.status(204).end();
         }
     });
 
