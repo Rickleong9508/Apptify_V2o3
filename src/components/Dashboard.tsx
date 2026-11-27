@@ -1,5 +1,14 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Account, MonthlyData, Loan, Stock, Expense, CashHolding, BudgetHistoryItem } from '../types';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,7 +19,9 @@ import {
   Lock, 
   Layers, 
   Sparkles, 
-  ChevronDown 
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Language, SupportedLanguage, getStoredLanguage } from '../utils/i18n';
 
@@ -377,9 +388,168 @@ interface MonthlyHistoryProps {
   lang?: SupportedLanguage;
 }
 
+const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const fmtRM = (val: number) =>
+  Math.abs(val).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+const fmtAxis = (val: number) => {
+  if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+  if (val >= 1000) return `${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}k`;
+  return `${val}`;
+};
+
+interface ActualChartTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: any }>;
+  lang: SupportedLanguage;
+}
+
+const ActualChartTooltip: React.FC<ActualChartTooltipProps> = ({ active, payload, lang }) => {
+  if (!active || !payload || payload.length === 0) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+
+  return (
+    <div
+      style={{
+        backgroundColor: '#0A0A0B',
+        color: '#FFFFFF',
+        border: '1px solid rgba(255,255,255,0.16)',
+        borderRadius: '14px',
+        padding: '12px 14px',
+        boxShadow: '0 16px 36px -14px rgba(10,10,11,0.55)',
+        minWidth: '220px'
+      }}
+    >
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/15">
+        <span className="font-mono text-[11px] font-black text-[#FFBF00]">{row.month}</span>
+        <span className="font-mono text-[10px] text-white/50">
+          {lang === 'zh' ? '实际现金流' : 'ACTUAL FLOW'}
+        </span>
+      </div>
+      <div className="space-y-2 text-xs">
+        <div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-1.5 text-white/80">
+              <i className="w-2 h-2 rounded-full bg-[#2600FD] inline-block" />
+              {lang === 'zh' ? 'Wallet 进账' : 'Wallet In'}
+            </span>
+            <span className="font-bold font-mono-numbers text-white">+RM {fmtRM(row.walletIn)}</span>
+          </div>
+          <div className="text-[10px] text-white/45 text-right font-mono-numbers">
+            {lang === 'zh' ? '原本余额' : 'Opening'}: {row.walletOpening < 0 ? '-' : ''}RM {fmtRM(row.walletOpening)}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-1.5 text-white/80">
+              <i className="w-2 h-2 rounded-full bg-[#FFBF00] inline-block" />
+              {lang === 'zh' ? 'Budget剩+钱包' : 'Budget+Wallets'}
+            </span>
+            <span className="font-bold font-mono-numbers text-[#FFBF00]">
+              {row.budgetPlusWallets < 0 ? '-' : ''}RM {fmtRM(row.budgetPlusWallets)}
+            </span>
+          </div>
+          <div className="text-[10px] text-white/45 text-right font-mono-numbers">
+            {lang === 'zh' ? '预算' : 'Budget'} {row.budgetRemaining < 0 ? '-' : ''}RM {fmtRM(row.budgetRemaining)} + {lang === 'zh' ? '钱包' : 'Wallets'} {row.walletClosing < 0 ? '-' : ''}RM {fmtRM(row.walletClosing)}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-1.5 text-white/80">
+              <i className="w-2 h-2 rounded-full bg-white/75 inline-block" />
+              {lang === 'zh' ? '本月共花' : 'Total Spent'}
+            </span>
+            <span className="font-bold font-mono-numbers text-white">-RM {fmtRM(row.totalSpent)}</span>
+          </div>
+          <div className="text-[10px] text-white/45 text-right font-mono-numbers">
+            Wallet RM {fmtRM(row.walletOut)} · Budget RM {fmtRM(row.budgetOut)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface ProjectionChartTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: any }>;
+  lang: SupportedLanguage;
+}
+
+const ProjectionChartTooltip: React.FC<ProjectionChartTooltipProps> = ({ active, payload, lang }) => {
+  if (!active || !payload || payload.length === 0) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+
+  return (
+    <div
+      style={{
+        backgroundColor: '#0A0A0B',
+        color: '#FFFFFF',
+        border: '1px solid rgba(255,255,255,0.16)',
+        borderRadius: '14px',
+        padding: '12px 14px',
+        boxShadow: '0 16px 36px -14px rgba(10,10,11,0.55)',
+        minWidth: '215px'
+      }}
+    >
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/15">
+        <span className="font-mono text-[11px] font-black text-[#FFBF00]">{row.month}</span>
+        <span className="font-mono text-[10px] text-white/50">
+          {lang === 'zh' ? '收支对照' : 'PROJECTION'}
+        </span>
+      </div>
+      <div className="space-y-2 text-xs">
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5 text-white/80">
+            <i className="w-2 h-2 rounded-full bg-[#2600FD] inline-block" />
+            {lang === 'zh' ? '进 Wallet 现金' : 'Wallet Cash In'}
+          </span>
+          <span className="font-bold font-mono-numbers text-white">+RM {fmtRM(row.inflow)}</span>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-1.5 text-white/80">
+              <i className="w-2 h-2 rounded-full bg-white/75 inline-block" />
+              {lang === 'zh' ? 'Budget+Wallets 支出' : 'Budget+Wallets Out'}
+            </span>
+            <span className="font-bold font-mono-numbers text-white">-RM {fmtRM(row.outflow)}</span>
+          </div>
+          <div className="text-[10px] text-white/45 text-right font-mono-numbers">
+            Budget RM {fmtRM(row.budgetOut)} · Wallets RM {fmtRM(row.walletOut)}
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-white/15 flex items-center justify-between gap-4">
+          <span className="text-[11px] font-mono font-bold text-white/70">
+            {lang === 'zh' ? '净差额 (NET)' : 'NET BALANCE'}
+          </span>
+          <span
+            className="text-xs font-black font-mono-numbers px-1.5 py-0.5 rounded-md"
+            style={{
+              backgroundColor: row.balance >= 0 ? '#FFBF00' : 'rgba(244,63,94,0.22)',
+              color: row.balance >= 0 ? '#0A0A0B' : '#FDA4AF'
+            }}
+          >
+            {row.balance >= 0 ? '+' : '-'}RM {fmtRM(row.balance)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses, monthlyData, budgetHistory, lang = 'en' }) => {
   const [showAll, setShowAll] = useState(false);
   const [viewMode, setViewMode] = useState<'actual' | 'budget'>('actual');
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const chartScrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollState, setScrollState] = useState({ canLeft: false, canRight: false });
 
   const historyData = useMemo(() => {
     const months = new Set<string>();
@@ -388,14 +558,14 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
       months.add(monthlyData.targetDate);
     }
     if (budgetHistory) {
-      budgetHistory.forEach(h => {
+      budgetHistory.forEach((h) => {
         if (h.month) months.add(h.month);
       });
     }
     if (accounts) {
-      accounts.forEach(acc => {
+      accounts.forEach((acc) => {
         if (acc.history) {
-          acc.history.forEach(tx => {
+          acc.history.forEach((tx) => {
             if (tx.date) months.add(tx.date.slice(0, 7));
           });
         }
@@ -403,75 +573,155 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
     }
 
     const sortedMonths = Array.from(months).sort((a, b) => b.localeCompare(a));
+    const currentWalletTotal = round2((accounts || []).reduce((sum, acc) => sum + (Number(acc.balance) || 0), 0));
 
-    return sortedMonths.map(month => {
-      let actualIn = 0;
-      let actualOut = 0;
+    return sortedMonths.map((month) => {
+      let walletIn = 0;
+      let walletOut = 0;
+      let futureNet = 0;
+
       if (accounts) {
-        accounts.forEach(acc => {
+        accounts.forEach((acc) => {
           if (acc.history) {
-            acc.history.forEach(tx => {
-              if (tx.date && tx.date.startsWith(month)) {
-                if (tx.type === 'IN') actualIn += tx.amount;
-                else if (tx.type === 'OUT') actualOut += tx.amount;
+            acc.history.forEach((tx) => {
+              if (!tx.date) return;
+              const txMonth = tx.date.slice(0, 7);
+              const amt = Number(tx.amount) || 0;
+              if (txMonth === month) {
+                if (tx.type === 'IN') walletIn += amt;
+                else if (tx.type === 'OUT') walletOut += amt;
+              } else if (txMonth > month) {
+                futureNet += tx.type === 'IN' ? amt : -amt;
               }
             });
           }
         });
       }
-      const actualBalance = actualIn - actualOut;
+
+      walletIn = round2(walletIn);
+      walletOut = round2(walletOut);
+      const walletClosing = round2(currentWalletTotal - futureNet);
+      const walletOpening = round2(walletClosing - walletIn + walletOut);
 
       let budgetIn = 0;
       let budgetOut = 0;
       if (monthlyData && monthlyData.targetDate === month) {
-        budgetIn = monthlyData.income;
+        budgetIn = Number(monthlyData.income) || 0;
         const currentVariableExpenses = monthlyData.expenses || [];
         const allExp = [...(fixedExpenses || []), ...currentVariableExpenses];
-        budgetOut = allExp.reduce((sum, item) => sum + item.amount, 0);
+        budgetOut = round2(allExp.reduce((sum, item) => sum + (Number(item.amount) || 0), 0));
       } else {
-        const histItem = budgetHistory?.find(h => h.month === month);
+        const histItem = budgetHistory?.find((h) => h.month === month);
         if (histItem) {
-          budgetIn = histItem.income;
-          budgetOut = histItem.totalExpenses;
+          budgetIn = Number(histItem.income) || 0;
+          budgetOut = Number(histItem.totalExpenses) || 0;
         }
       }
-      const budgetBalance = budgetIn - budgetOut;
+
+      const budgetRemaining = round2(budgetIn - budgetOut);
+      const budgetPlusWallets = round2(budgetRemaining + walletClosing);
+      const totalSpent = round2(budgetOut + walletOut);
+      const projectionNet = round2(walletIn - totalSpent);
 
       return {
         month,
-        actual: { totalIn: actualIn, totalOut: actualOut, balance: actualBalance },
-        budget: { totalIn: budgetIn, totalOut: budgetOut, balance: budgetBalance }
+        walletIn,
+        walletOut,
+        walletOpening,
+        walletClosing,
+        budgetIn,
+        budgetOut,
+        budgetRemaining,
+        budgetPlusWallets,
+        totalSpent,
+        projectionNet
       };
     });
   }, [accounts, fixedExpenses, monthlyData, budgetHistory]);
 
-  const displayData = showAll ? historyData : historyData.slice(0, 6);
+  // Charts show up to the most recent 12 months (1 year); table shows 12 by default with Show More for older records
+  const yearlyData = useMemo(() => historyData.slice(0, 12), [historyData]);
+  const displayData = showAll ? historyData : yearlyData;
 
-  // Monthly flow chart series. Bars are scaled against the largest single
-  // figure in the window so inflow and outflow stay directly comparable.
-  const flowChart = useMemo(() => {
-    const rows = displayData.map((item) => {
-      const d = viewMode === 'actual' ? item.actual : item.budget;
-      return {
-        month: item.month,
-        inflow: d.totalIn || 0,
-        outflow: d.totalOut || 0,
-        balance: d.balance || 0,
-      };
-    });
-    const peak = Math.max(1, ...rows.map((r) => Math.max(r.inflow, r.outflow)));
-    return rows.map((r) => ({
-      ...r,
-      inPct: Math.max(r.inflow > 0 ? 3 : 0, Math.round((r.inflow / peak) * 100)),
-      outPct: Math.max(r.outflow > 0 ? 3 : 0, Math.round((r.outflow / peak) * 100)),
+  const activeMonthRow = useMemo(() => {
+    if (historyData.length === 0) return null;
+    if (selectedMonth) {
+      const found = historyData.find((item) => item.month === selectedMonth);
+      if (found) return found;
+    }
+    if (monthlyData?.targetDate) {
+      const current = historyData.find((item) => item.month === monthlyData.targetDate);
+      if (current) return current;
+    }
+    return historyData[0];
+  }, [historyData, selectedMonth, monthlyData]);
+
+  // Chronological series (oldest -> newest, up to 12 months) for Actual Cash Flow grouped bar chart
+  const actualChartData = useMemo(() => {
+    return [...yearlyData].reverse().map((item) => ({
+      ...item,
+      budgetPlusWalletsBar: Math.max(0, item.budgetPlusWallets)
     }));
-  }, [displayData, viewMode]);
+  }, [yearlyData]);
 
-  const flowTotals = useMemo(() => {
-    const inflow = flowChart.reduce((a, r) => a + r.inflow, 0);
-    const outflow = flowChart.reduce((a, r) => a + r.outflow, 0);
-    return { inflow, outflow, net: inflow - outflow };
-  }, [flowChart]);
+  // Budget Projection flow chart series (chronological oldest -> newest, up to 12 months):
+  // Blue bar = cash into wallets (walletIn)
+  // Ink bar  = combined spend across budget + wallets (totalSpent)
+  const projectionChart = useMemo(() => {
+    return [...yearlyData].reverse().map((item) => ({
+      month: item.month,
+      inflow: item.walletIn,
+      outflow: item.totalSpent,
+      budgetOut: item.budgetOut,
+      walletOut: item.walletOut,
+      balance: item.projectionNet
+    }));
+  }, [yearlyData]);
+
+  const projectionTotals = useMemo(() => {
+    const inflow = round2(projectionChart.reduce((a, r) => a + r.inflow, 0));
+    const outflow = round2(projectionChart.reduce((a, r) => a + r.outflow, 0));
+    const budgetOut = round2(projectionChart.reduce((a, r) => a + r.budgetOut, 0));
+    const walletOut = round2(projectionChart.reduce((a, r) => a + r.walletOut, 0));
+    return { inflow, outflow, budgetOut, walletOut, net: round2(inflow - outflow) };
+  }, [projectionChart]);
+
+  const updateScrollButtons = () => {
+    const el = chartScrollRef.current;
+    if (!el) {
+      setScrollState({ canLeft: false, canRight: false });
+      return;
+    }
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setScrollState({
+      canLeft: el.scrollLeft > 4,
+      canRight: maxScroll - el.scrollLeft > 4
+    });
+  };
+
+  // Auto-scroll chart viewport to the latest month (rightmost) whenever mode or month count changes
+  useEffect(() => {
+    const el = chartScrollRef.current;
+    if (!el) return;
+    const raf = requestAnimationFrame(() => {
+      el.scrollLeft = el.scrollWidth;
+      updateScrollButtons();
+    });
+    window.addEventListener('resize', updateScrollButtons);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', updateScrollButtons);
+    };
+  }, [viewMode, yearlyData.length]);
+
+  const scrollChartBy = (delta: number) => {
+    const el = chartScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: delta, behavior: 'smooth' });
+  };
+
+  const actualChartMinWidth = actualChartData.length > 5 ? `${actualChartData.length * 108}px` : '100%';
+  const projectionChartMinWidth = projectionChart.length > 6 ? `${projectionChart.length * 92}px` : '100%';
 
   if (historyData.length === 0) return null;
 
@@ -483,7 +733,7 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
             <Activity size={16} />
           </div>
           <div>
-            <h3 className="font-black text-base sm:text-lg leading-8 text-zinc-950 dark:text-white uppercase tracking-tight whitespace-nowrap">
+            <h3 className="font-black text-base sm:text-lg leading-8 text-zinc-950 uppercase tracking-tight whitespace-nowrap">
               {lang === 'zh' ? '历史月度对账账目表' : 'Monthly Reconciliation'}
             </h3>
             <span className="font-mono text-[9px] text-zinc-400 uppercase">MONTHLY RECONCILIATION LEDGER</span>
@@ -491,161 +741,551 @@ const MonthlyHistory: React.FC<MonthlyHistoryProps> = ({ accounts, fixedExpenses
         </div>
 
         {/* Mode Toggle Switch */}
-        <div className="flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/90 border border-zinc-200/70 dark:border-zinc-700/60 font-mono text-xs font-bold w-fit">
+        <div className="flex p-1 rounded-xl bg-zinc-100 border border-zinc-200/70 font-mono text-xs font-bold w-fit">
           <button
             onClick={() => setViewMode('actual')}
             className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-              viewMode === 'actual' 
-                ? 'bg-zinc-950 dark:bg-[#FFBF00] text-[#FFBF00] dark:text-black shadow-xs' 
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              viewMode === 'actual'
+                ? 'bg-zinc-950 text-[#FFBF00] shadow-xs'
+                : 'text-zinc-500 hover:text-zinc-900'
             }`}
           >
-            {lang === 'zh' ? '实际钱包流水' : 'Actual Cash Flow'}
+            {lang === 'zh' ? '实际现金流' : 'Actual Cash Flow'}
           </button>
           <button
             onClick={() => setViewMode('budget')}
             className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-              viewMode === 'budget' 
-                ? 'bg-zinc-950 dark:bg-[#FFBF00] text-[#FFBF00] dark:text-black shadow-xs' 
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              viewMode === 'budget'
+                ? 'bg-zinc-950 text-[#FFBF00] shadow-xs'
+                : 'text-zinc-500 hover:text-zinc-900'
             }`}
           >
-            {lang === 'zh' ? '预算规划收支' : 'Budget Projection'}
+            {lang === 'zh' ? '预算收支对照' : 'Budget Projection'}
           </button>
         </div>
       </div>
 
-      {/* Monthly flow — the shape of the ledger at a glance */}
-      <div className="avant-card rounded-3xl p-4 sm:p-6">
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
-          <div>
-            <span className="signal-label text-black/45 dark:text-white/45">
-              {lang === 'zh' ? '月度现金流' : 'Monthly cash flow'}
-            </span>
-            <p className="mt-1 text-[12px] text-black/50 dark:text-white/50">
-              {lang === 'zh'
-                ? '蓝 = 流入 · 墨 = 流出 · 底部为当月经结余'
-                : 'Blue = inflow · ink = outflow · net below each month'}
-            </p>
-          </div>
-          <div className="flex items-center gap-4 font-mono text-[11px]">
-            <span className="flex items-center gap-1.5 text-black/60 dark:text-white/60">
-              <i className="w-2.5 h-2.5 rounded-[3px] bg-[#2600FD]" />
-              {lang === 'zh' ? '流入' : 'IN'}
-            </span>
-            <span className="flex items-center gap-1.5 text-black/60 dark:text-white/60">
-              <i className="w-2.5 h-2.5 rounded-[3px] bg-[#0A0A0B] dark:bg-white" />
-              {lang === 'zh' ? '流出' : 'OUT'}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-end gap-1.5 sm:gap-3 h-44">
-          {flowChart.map((row) => (
-            <div key={row.month} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full gap-2">
-              <div className="flex items-end justify-center gap-1 w-full flex-1 min-h-0">
-                <div
-                  className="w-1/2 max-w-[16px] rounded-t-[4px] bg-[#2600FD] transition-[height] duration-500"
-                  style={{ height: `${row.inPct}%` }}
-                  title={`${lang === 'zh' ? '流入' : 'Inflow'}: RM ${row.inflow.toLocaleString()}`}
-                />
-                <div
-                  className="w-1/2 max-w-[16px] rounded-t-[4px] bg-[#0A0A0B] dark:bg-white/85 transition-[height] duration-500"
-                  style={{ height: `${row.outPct}%` }}
-                  title={`${lang === 'zh' ? '流出' : 'Outflow'}: RM ${row.outflow.toLocaleString()}`}
-                />
+      {viewMode === 'actual' && activeMonthRow ? (
+        <>
+          {/* Actual Cash Flow — 3-pillar snapshot for the active/selected month */}
+          <div className="avant-card rounded-3xl p-4 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-200/70">
+              <div>
+                <span className="signal-label text-black/45">
+                  {lang === 'zh' ? '实际现金流快照' : 'Actual Cash Flow Snapshot'}
+                </span>
+                <p className="mt-0.5 text-[12px] text-black/50">
+                  {lang === 'zh'
+                    ? '点击下方任意月份行可切换查看该月现金入账、可用总资金与支出明细'
+                    : 'Select any month row below to inspect wallet cash in, combined cash, and total spend'}
+                </p>
               </div>
-              <span className="w-full text-center font-mono text-[9px] text-black/40 dark:text-white/40 truncate">
-                {row.month}
-              </span>
-              <span
-                className={`w-full text-center font-mono text-[10px] font-semibold font-mono-numbers ${
-                  row.balance >= 0 ? 'text-[#2600FD]' : 'text-[#0A0A0B] dark:text-white'
-                }`}
-              >
-                {row.balance >= 0 ? '+' : ''}
-                {Math.round(row.balance).toLocaleString()}
+              <span className="font-mono text-xs font-black px-3 py-1 rounded-full bg-[#0A0A0B] text-[#FFBF00]">
+                {activeMonthRow.month}
               </span>
             </div>
-          ))}
-        </div>
 
-        <div className="mt-5 pt-4 border-t border-black/[0.08] dark:border-white/[0.09] grid grid-cols-3 gap-3">
-          <div>
-            <span className="signal-label block text-black/40 dark:text-white/40">
-              {lang === 'zh' ? '总流入' : 'Total in'}
-            </span>
-            <p className="mt-1 font-mono font-semibold text-[15px] font-mono-numbers text-[#2600FD]">
-              +RM {Math.round(flowTotals.inflow).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <span className="signal-label block text-black/40 dark:text-white/40">
-              {lang === 'zh' ? '总流出' : 'Total out'}
-            </span>
-            <p className="mt-1 font-mono font-semibold text-[15px] font-mono-numbers text-[#0A0A0B] dark:text-white">
-              -RM {Math.round(flowTotals.outflow).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <span className="signal-label block text-black/40 dark:text-white/40">
-              {lang === 'zh' ? '净结余' : 'Net'}
-            </span>
-            <p className={`mt-1 font-mono font-semibold text-[15px] font-mono-numbers ${
-              flowTotals.net >= 0 ? 'text-[#2600FD]' : 'text-[#0A0A0B] dark:text-white'
-            }`}>
-              {flowTotals.net >= 0 ? '+' : ''}RM {Math.round(flowTotals.net).toLocaleString()}
-            </p>
-          </div>
-        </div>
-      </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              {/* 1. Wallet Cash In & Opening Wallet Balance */}
+              <div className="p-4 rounded-2xl bg-zinc-50/90 border border-zinc-200/80 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    {lang === 'zh' ? '01 // 本月进账 & 原本余额' : '01 // WALLET IN & OPENING'}
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-[#2600FD]" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-zinc-500">
+                    {lang === 'zh' ? '本月进入 Wallet 现金' : 'Cash Into Wallets'}
+                  </p>
+                  <p className="text-2xl font-black font-mono-numbers text-[#2600FD] mt-0.5">
+                    +RM {fmtRM(activeMonthRow.walletIn)}
+                  </p>
+                </div>
+                <div className="pt-2.5 border-t border-zinc-200/80 flex items-center justify-between text-xs">
+                  <span className="text-zinc-500 font-medium">
+                    {lang === 'zh' ? '原本 Wallet 余额' : 'Opening Wallet'}
+                  </span>
+                  <span className="font-bold font-mono-numbers text-zinc-900">
+                    {activeMonthRow.walletOpening < 0 ? '-' : ''}RM {fmtRM(activeMonthRow.walletOpening)}
+                  </span>
+                </div>
+              </div>
 
-      <div className="avant-card rounded-3xl overflow-hidden p-4 sm:p-6">
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full min-w-[480px]">
-            <thead>
-              <tr className="text-[10px] text-zinc-400 font-mono font-bold uppercase tracking-wider border-b border-zinc-200/60 dark:border-zinc-800/60">
-                <th className="pb-3 pl-2 text-left">{lang === 'zh' ? '月份 // CYCLE' : 'MONTH // CYCLE'}</th>
-                <th className="pb-3 text-right">{lang === 'zh' ? '总流入 // INFLOW' : 'INFLOW (+)'}</th>
-                <th className="pb-3 text-right">{lang === 'zh' ? '总流出 // OUTFLOW' : 'OUTFLOW (-)'}</th>
-                <th className="pb-3 text-right pr-2">{lang === 'zh' ? '净结余 // BALANCE' : 'NET BALANCE'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200/50 dark:divide-zinc-800/50 font-mono">
-              {displayData.map((item) => {
-                const data = viewMode === 'actual' ? item.actual : item.budget;
-                return (
-                  <tr key={item.month} className="hover:bg-zinc-100/60 dark:hover:bg-white/5 transition-colors text-sm font-medium">
-                    <td className="py-3.5 pl-2 font-black text-zinc-950 dark:text-white text-left">
-                      {item.month}
-                    </td>
-                    <td className="py-3.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">
-                      +RM {data.totalIn.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </td>
-                    <td className="py-3.5 text-right text-rose-600 dark:text-rose-400 font-bold">
-                      -RM {data.totalOut.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </td>
-                    <td className={`py-3.5 text-right pr-2 font-black ${data.balance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      {data.balance >= 0 ? '+' : ''}RM {data.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </td>
+              {/* 2. Budget Remaining + Total Wallets Cash */}
+              <div className="p-4 rounded-2xl bg-[#0A0A0B] text-white border border-zinc-900 flex flex-col justify-between gap-3 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#FFBF00]">
+                    {lang === 'zh' ? '02 // BUDGET 剩余 + WALLETS' : '02 // BUDGET LEFT + WALLETS'}
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-[#FFBF00]" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-white/60">
+                    {lang === 'zh' ? '本月 Budget 结余 + Wallets 整体现金' : 'Budget Remaining + Total Wallets Cash'}
+                  </p>
+                  <p className="text-2xl font-black font-mono-numbers text-white mt-0.5">
+                    {activeMonthRow.budgetPlusWallets < 0 ? '-' : ''}RM {fmtRM(activeMonthRow.budgetPlusWallets)}
+                  </p>
+                </div>
+                <div className="pt-2.5 border-t border-white/15 grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="block text-white/45">{lang === 'zh' ? 'Budget 剩余' : 'Budget Left'}</span>
+                    <span className={`font-bold font-mono-numbers ${activeMonthRow.budgetRemaining >= 0 ? 'text-white' : 'text-[#FFBF00]'}`}>
+                      {activeMonthRow.budgetRemaining < 0 ? '-' : ''}RM {fmtRM(activeMonthRow.budgetRemaining)}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-white/45">{lang === 'zh' ? 'Wallets 整体现金' : 'Wallets Total'}</span>
+                    <span className="font-bold font-mono-numbers text-white">
+                      {activeMonthRow.walletClosing < 0 ? '-' : ''}RM {fmtRM(activeMonthRow.walletClosing)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Total Spent This Month & Wallet Outflow */}
+              <div className="p-4 rounded-2xl bg-zinc-50/90 border border-zinc-200/80 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    {lang === 'zh' ? '03 // 本月共花 & WALLET 支出' : '03 // TOTAL SPENT & WALLET OUT'}
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-[#0A0A0B]" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-zinc-500">
+                    {lang === 'zh' ? '本月共花费 (Budget + Wallets)' : 'Total Spent (Budget + Wallets)'}
+                  </p>
+                  <p className="text-2xl font-black font-mono-numbers text-zinc-950 mt-0.5">
+                    -RM {fmtRM(activeMonthRow.totalSpent)}
+                  </p>
+                </div>
+                <div className="pt-2.5 border-t border-zinc-200/80 grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="block text-zinc-400">{lang === 'zh' ? 'Wallet 支出' : 'Wallet Spent'}</span>
+                    <span className="font-bold font-mono-numbers text-rose-600">
+                      -RM {fmtRM(activeMonthRow.walletOut)}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-zinc-400">{lang === 'zh' ? 'Budget 支出' : 'Budget Spent'}</span>
+                    <span className="font-bold font-mono-numbers text-zinc-800">
+                      -RM {fmtRM(activeMonthRow.budgetOut)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actual Cash Flow Interactive Bar Chart (Up to 12 Months, Horizontally Scrollable) */}
+            <div className="pt-4 border-t border-zinc-200/70">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    {lang === 'zh' ? '月度三维度趋势对比 (点击柱子切换月份)' : 'MONTHLY 3-PILLAR COMPARISON (CLICK BAR TO INSPECT)'}
+                  </span>
+                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600">
+                    {lang === 'zh'
+                      ? `近 ${actualChartData.length} 个月 / 最多 12 月`
+                      : `${actualChartData.length} / 12 MO`}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3.5 font-mono text-[11px]">
+                  <span className="flex items-center gap-1.5 text-zinc-600">
+                    <i className="w-2.5 h-2.5 rounded-[3px] bg-[#2600FD] inline-block" />
+                    {lang === 'zh' ? 'Wallet 进账' : 'Wallet In'}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-zinc-600">
+                    <i className="w-2.5 h-2.5 rounded-[3px] bg-[#FFBF00] inline-block" />
+                    {lang === 'zh' ? 'Budget 剩 + 钱包' : 'Budget Left + Wallets'}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-zinc-600">
+                    <i className="w-2.5 h-2.5 rounded-[3px] bg-[#0A0A0B] inline-block" />
+                    {lang === 'zh' ? '本月共花' : 'Total Spent'}
+                  </span>
+
+                  {(scrollState.canLeft || scrollState.canRight) && (
+                    <div className="flex items-center gap-1 pl-1 border-l border-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => scrollChartBy(-280)}
+                        disabled={!scrollState.canLeft}
+                        className="w-6 h-6 rounded-lg border border-zinc-200 bg-white flex items-center justify-center text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        title={lang === 'zh' ? '向左滑动查看更多月份' : 'Scroll left'}
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollChartBy(280)}
+                        disabled={!scrollState.canRight}
+                        className="w-6 h-6 rounded-lg border border-zinc-200 bg-white flex items-center justify-center text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        title={lang === 'zh' ? '向右滑动查看较新月份' : 'Scroll right'}
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div
+                ref={chartScrollRef}
+                onScroll={updateScrollButtons}
+                className="w-full overflow-x-auto pb-2 scroll-smooth"
+              >
+                <div style={{ width: actualChartMinWidth, minWidth: '100%' }} className="h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={actualChartData}
+                      margin={{ top: 14, right: 16, left: -6, bottom: 4 }}
+                      barGap={6}
+                      onClick={(state: any) => {
+                        if (state && state.activeLabel) {
+                          setSelectedMonth(String(state.activeLabel));
+                        }
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(10,10,11,0.08)" />
+                      <XAxis
+                        dataKey="month"
+                        tick={{ fontSize: 11, fill: '#717177', fontFamily: 'monospace' }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={0}
+                      />
+                      <YAxis
+                        tickFormatter={fmtAxis}
+                        tick={{ fontSize: 10, fill: '#717177', fontFamily: 'monospace' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={48}
+                      />
+                      <Tooltip
+                        content={<ActualChartTooltip lang={lang} />}
+                        cursor={{ fill: 'rgba(38, 0, 253, 0.04)', radius: 8 }}
+                        wrapperStyle={{ outline: 'none', zIndex: 20 }}
+                      />
+                      <Bar
+                        dataKey="walletIn"
+                        name="Wallet In"
+                        fill="#2600FD"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={24}
+                        isAnimationActive={false}
+                        className="cursor-pointer"
+                      />
+                      <Bar
+                        dataKey="budgetPlusWalletsBar"
+                        name="Budget Left + Wallets"
+                        fill="#FFBF00"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={24}
+                        isAnimationActive={false}
+                        className="cursor-pointer"
+                      />
+                      <Bar
+                        dataKey="totalSpent"
+                        name="Total Spent"
+                        fill="#0A0A0B"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={24}
+                        isAnimationActive={false}
+                        className="cursor-pointer"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              {(scrollState.canLeft || scrollState.canRight) && (
+                <p className="text-[10px] font-mono text-zinc-400 text-right mt-1">
+                  {lang === 'zh' ? '← 可在图表区域左右滑动浏览近一年数据 →' : '← Swipe or scroll chart horizontally to browse up to 12 months →'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Actual Cash Flow Monthly Ledger Table */}
+          <div className="avant-card rounded-3xl overflow-hidden p-4 sm:p-6">
+            <div className="overflow-x-auto no-scrollbar">
+              <table className="w-full min-w-[640px]">
+                <thead>
+                  <tr className="text-[10px] text-zinc-400 font-mono font-bold uppercase tracking-wider border-b border-zinc-200/60">
+                    <th className="pb-3 pl-2 text-left">{lang === 'zh' ? '月份 // CYCLE' : 'MONTH // CYCLE'}</th>
+                    <th className="pb-3 text-right">{lang === 'zh' ? 'WALLET 进账 / 原余额' : 'WALLET IN / OPENING'}</th>
+                    <th className="pb-3 text-right">{lang === 'zh' ? 'BUDGET 剩余 + WALLETS' : 'BUDGET LEFT + WALLETS'}</th>
+                    <th className="pb-3 text-right pr-2">{lang === 'zh' ? '共花 / WALLET 支出' : 'TOTAL SPENT / WALLET OUT'}</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="divide-y divide-zinc-200/50">
+                  {displayData.map((item) => {
+                    const isSelected = activeMonthRow.month === item.month;
+                    return (
+                      <tr
+                        key={item.month}
+                        onClick={() => setSelectedMonth(item.month)}
+                        className={`transition-colors text-sm cursor-pointer ${
+                          isSelected ? 'bg-[#2600FD]/[0.05]' : 'hover:bg-zinc-100/60'
+                        }`}
+                      >
+                        <td className="py-3.5 pl-2 font-mono font-black text-zinc-950 text-left align-top">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                isSelected ? 'bg-[#2600FD]' : 'bg-zinc-300'
+                              }`}
+                            />
+                            <span>{item.month}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 text-right align-top">
+                          <div className="font-bold font-mono-numbers text-[#2600FD]">
+                            +RM {fmtRM(item.walletIn)}
+                          </div>
+                          <div className="text-[11px] font-mono-numbers text-zinc-400 mt-0.5">
+                            {lang === 'zh' ? '原余额' : 'Opening'} {item.walletOpening < 0 ? '-' : ''}RM {fmtRM(item.walletOpening)}
+                          </div>
+                        </td>
+                        <td className="py-3.5 text-right align-top">
+                          <div className="font-black font-mono-numbers text-zinc-950">
+                            {item.budgetPlusWallets < 0 ? '-' : ''}RM {fmtRM(item.budgetPlusWallets)}
+                          </div>
+                          <div className="text-[11px] font-mono-numbers text-zinc-400 mt-0.5">
+                            {lang === 'zh' ? '预算剩' : 'Budget'} {item.budgetRemaining < 0 ? '-' : ''}RM {fmtRM(item.budgetRemaining)} + {lang === 'zh' ? '钱包' : 'Wallets'} {item.walletClosing < 0 ? '-' : ''}RM {fmtRM(item.walletClosing)}
+                          </div>
+                        </td>
+                        <td className="py-3.5 text-right pr-2 align-top">
+                          <div className="font-bold font-mono-numbers text-rose-600">
+                            -RM {fmtRM(item.totalSpent)}
+                          </div>
+                          <div className="text-[11px] font-mono-numbers text-zinc-400 mt-0.5">
+                            Wallet RM {fmtRM(item.walletOut)} · Budget RM {fmtRM(item.budgetOut)}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-        {historyData.length > 6 && (
-          <div className="mt-5 flex justify-center">
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 px-5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 active:scale-95 transition-all cursor-pointer border border-zinc-200/70 dark:border-zinc-700/60"
-            >
-              {showAll ? (lang === 'zh' ? '收起更少' : 'Show Less') : (lang === 'zh' ? `展开查看更多 (${historyData.length} 个月)` : `Show More (${historyData.length} Months)`)}
-            </button>
+            {historyData.length > 12 && (
+              <div className="mt-5 flex justify-center">
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-xs font-mono font-bold text-zinc-700 px-5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 transition-all cursor-pointer border border-zinc-200/70"
+                >
+                  {showAll ? (lang === 'zh' ? '收起至近 12 个月' : 'Show Last 12 Months') : (lang === 'zh' ? `展开查看全部 (${historyData.length} 个月)` : `Show All (${historyData.length} Months)`)}
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        <>
+          {/* Budget Projection — Cash into Wallets vs Budget + Wallets Outflow */}
+          <div className="avant-card rounded-3xl p-4 sm:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="signal-label text-black/45">
+                    {lang === 'zh' ? '月度现金进出对照 (WALLETS & BUDGET)' : 'Monthly Cash In vs Budget & Wallets Spend'}
+                  </span>
+                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600">
+                    {lang === 'zh'
+                      ? `近 ${projectionChart.length} 个月 / 最多 12 月`
+                      : `${projectionChart.length} / 12 MO`}
+                  </span>
+                </div>
+                <p className="mt-1 text-[12px] text-black/50">
+                  {lang === 'zh'
+                    ? '蓝 = 该月进入 Wallet 现金 · 墨 = 该月 Budget + Wallets 总支出 · 悬停查看净差额'
+                    : 'Blue = cash into wallets · ink = budget + wallets spend · hover for net breakdown'}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 font-mono text-[11px]">
+                <span className="flex items-center gap-1.5 text-black/60">
+                  <i className="w-2.5 h-2.5 rounded-[3px] bg-[#2600FD]" />
+                  {lang === 'zh' ? '进 Wallet' : 'WALLET IN'}
+                </span>
+                <span className="flex items-center gap-1.5 text-black/60">
+                  <i className="w-2.5 h-2.5 rounded-[3px] bg-[#0A0A0B]" />
+                  {lang === 'zh' ? 'Budget + Wallets 支出' : 'BUDGET + WALLETS OUT'}
+                </span>
+
+                {(scrollState.canLeft || scrollState.canRight) && (
+                  <div className="flex items-center gap-1 pl-1 border-l border-zinc-200">
+                    <button
+                      type="button"
+                      onClick={() => scrollChartBy(-280)}
+                      disabled={!scrollState.canLeft}
+                      className="w-6 h-6 rounded-lg border border-zinc-200 bg-white flex items-center justify-center text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      title={lang === 'zh' ? '向左滑动查看更多月份' : 'Scroll left'}
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollChartBy(280)}
+                      disabled={!scrollState.canRight}
+                      className="w-6 h-6 rounded-lg border border-zinc-200 bg-white flex items-center justify-center text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      title={lang === 'zh' ? '向右滑动查看较新月份' : 'Scroll right'}
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
+              ref={chartScrollRef}
+              onScroll={updateScrollButtons}
+              className="w-full overflow-x-auto pb-2 scroll-smooth"
+            >
+              <div style={{ width: projectionChartMinWidth, minWidth: '100%' }} className="h-60">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={projectionChart}
+                    margin={{ top: 14, right: 16, left: -6, bottom: 4 }}
+                    barGap={8}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(10,10,11,0.08)" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11, fill: '#717177', fontFamily: 'monospace' }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                    />
+                    <YAxis
+                      tickFormatter={fmtAxis}
+                      tick={{ fontSize: 10, fill: '#717177', fontFamily: 'monospace' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={48}
+                    />
+                    <Tooltip
+                      content={<ProjectionChartTooltip lang={lang} />}
+                      cursor={{ fill: 'rgba(38, 0, 253, 0.04)', radius: 8 }}
+                      wrapperStyle={{ outline: 'none', zIndex: 20 }}
+                    />
+                    <Bar
+                      dataKey="inflow"
+                      name="Wallet Cash In"
+                      fill="#2600FD"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={28}
+                      isAnimationActive={false}
+                    />
+                    <Bar
+                      dataKey="outflow"
+                      name="Budget + Wallets Out"
+                      fill="#0A0A0B"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={28}
+                      isAnimationActive={false}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            {(scrollState.canLeft || scrollState.canRight) && (
+              <p className="text-[10px] font-mono text-zinc-400 text-right mt-1">
+                {lang === 'zh' ? '← 可在图表区域左右滑动浏览近一年数据 →' : '← Swipe or scroll chart horizontally to browse up to 12 months →'}
+              </p>
+            )}
+
+            <div className="mt-5 pt-4 border-t border-black/[0.08] grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <span className="signal-label block text-black/40">
+                  {lang === 'zh' ? '总进入 Wallet 现金' : 'Total wallet cash in'}
+                </span>
+                <p className="mt-1 font-mono font-semibold text-[15px] font-mono-numbers text-[#2600FD]">
+                  +RM {fmtRM(projectionTotals.inflow)}
+                </p>
+              </div>
+              <div>
+                <span className="signal-label block text-black/40">
+                  {lang === 'zh' ? '总支出 (BUDGET + WALLETS)' : 'Total out (Budget + Wallets)'}
+                </span>
+                <p className="mt-1 font-mono font-semibold text-[15px] font-mono-numbers text-[#0A0A0B]">
+                  -RM {fmtRM(projectionTotals.outflow)}
+                </p>
+                <p className="text-[10px] font-mono text-black/45 mt-0.5 font-mono-numbers">
+                  Budget RM {fmtRM(projectionTotals.budgetOut)} · Wallets RM {fmtRM(projectionTotals.walletOut)}
+                </p>
+              </div>
+              <div>
+                <span className="signal-label block text-black/40">
+                  {lang === 'zh' ? '净现金差额' : 'Net cash flow'}
+                </span>
+                <p
+                  className={`mt-1 font-mono font-semibold text-[15px] font-mono-numbers ${
+                    projectionTotals.net >= 0 ? 'text-[#2600FD]' : 'text-rose-600'
+                  }`}
+                >
+                  {projectionTotals.net >= 0 ? '+' : '-'}RM {fmtRM(projectionTotals.net)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="avant-card rounded-3xl overflow-hidden p-4 sm:p-6">
+            <div className="overflow-x-auto no-scrollbar">
+              <table className="w-full min-w-[540px]">
+                <thead>
+                  <tr className="text-[10px] text-zinc-400 font-mono font-bold uppercase tracking-wider border-b border-zinc-200/60">
+                    <th className="pb-3 pl-2 text-left">{lang === 'zh' ? '月份 // CYCLE' : 'MONTH // CYCLE'}</th>
+                    <th className="pb-3 text-right">{lang === 'zh' ? '进入 WALLET 现金 (+)' : 'WALLET CASH IN (+)'}</th>
+                    <th className="pb-3 text-right">{lang === 'zh' ? 'BUDGET & WALLETS 支出 (-)' : 'BUDGET & WALLETS OUT (-)'}</th>
+                    <th className="pb-3 text-right pr-2">{lang === 'zh' ? '净差额 // NET' : 'NET BALANCE'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200/50">
+                  {displayData.map((item) => (
+                    <tr key={item.month} className="hover:bg-zinc-100/60 transition-colors text-sm font-medium">
+                      <td className="py-3.5 pl-2 font-mono font-black text-zinc-950 text-left align-top">
+                        {item.month}
+                      </td>
+                      <td className="py-3.5 text-right font-mono-numbers text-[#2600FD] font-bold align-top">
+                        +RM {fmtRM(item.walletIn)}
+                      </td>
+                      <td className="py-3.5 text-right align-top">
+                        <div className="font-bold font-mono-numbers text-rose-600">
+                          -RM {fmtRM(item.totalSpent)}
+                        </div>
+                        <div className="text-[11px] font-mono-numbers text-zinc-400 mt-0.5">
+                          Budget RM {fmtRM(item.budgetOut)} · Wallets RM {fmtRM(item.walletOut)}
+                        </div>
+                      </td>
+                      <td
+                        className={`py-3.5 text-right pr-2 font-black font-mono-numbers align-top ${
+                          item.projectionNet >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
+                      >
+                        {item.projectionNet >= 0 ? '+' : '-'}RM {fmtRM(item.projectionNet)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {historyData.length > 12 && (
+              <div className="mt-5 flex justify-center">
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-xs font-mono font-bold text-zinc-700 px-5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 transition-all cursor-pointer border border-zinc-200/70"
+                >
+                  {showAll ? (lang === 'zh' ? '收起至近 12 个月' : 'Show Last 12 Months') : (lang === 'zh' ? `展开查看全部 (${historyData.length} 个月)` : `Show All (${historyData.length} Months)`)}
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

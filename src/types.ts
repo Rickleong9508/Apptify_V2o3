@@ -33,12 +33,20 @@ export enum ExpenseCategory {
   OTHER = 'Other'
 }
 
+export interface ExpenseSubItem {
+  id: string;
+  label: string;
+  type: 'out' | 'in'; // 'out' = expense/outflow (+), 'in' = inflow/reimbursement/offset (-)
+  amount: number;
+}
+
 export interface Expense {
   id: string;
   name: string;
   amount: number;
   category: ExpenseCategory | string;
   isFixed: boolean;
+  subItems?: ExpenseSubItem[];
 }
 
 export interface BudgetHistoryItem {
