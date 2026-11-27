@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import processInputHandler from './api/process_input.js';
 import { getNews } from './api/news_sources.js';
 import ttsHandler from './api/tts.js';
+import webSearchHandler from './api/web_search.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -50,6 +51,16 @@ async function createServer() {
         } catch (e) {
             console.error("News API Error", e);
             res.status(500).json({ error: e.message });
+        }
+    });
+
+    // Live Web Search Route for BingGo
+    app.all('/api/web_search', express.json(), async (req, res) => {
+        try {
+            await webSearchHandler(req, res);
+        } catch (e) {
+            console.error("Web Search API Error", e);
+            res.status(500).json({ success: false, error: e.message, results: [] });
         }
     });
 

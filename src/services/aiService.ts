@@ -6,6 +6,41 @@ export interface AIResponse {
     text: string;
 }
 
+export interface ChatTurn {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+export interface ChatOptions {
+    history?: ChatTurn[];
+    enableGoogleSearch?: boolean;
+}
+
+/**
+ * Normalize multi-turn history so providers with strict role alternation
+ * (like DeepSeek Reasoner and Anthropic) never fail on adjacent duplicate roles.
+ */
+const normalizeHistory = (history?: ChatTurn[]): ChatTurn[] => {
+    if (!Array.isArray(history) || history.length === 0) return [];
+    const cleaned: ChatTurn[] = [];
+    for (const turn of history) {
+        const text = String(turn?.content || '').trim();
+        if (!text) continue;
+        if (cleaned.length === 0 && turn.role !== 'user') continue;
+        const prev = cleaned[cleaned.length - 1];
+        if (prev && prev.role === turn.role) {
+            prev.content = `${prev.content}\n${text}`;
+        } else {
+            cleaned.push({ role: turn.role, content: text });
+        }
+    }
+    // Ensure the last history turn is assistant so appending the new user prompt alternates cleanly
+    while (cleaned.length > 0 && cleaned[cleaned.length - 1].role === 'user') {
+        cleaned.pop();
+    }
+    return cleaned.slice(-16);
+};
+
 export interface ModelMetadata {
     id: string;
     name: string;
@@ -29,7 +64,8 @@ export interface AIProviderInstance {
         apiKey: string,
         prompt: string,
         systemInstruction?: string,
-        images?: string[]
+        images?: string[],
+        options?: ChatOptions
     ): Promise<string>;
     embeddings?(model: string, apiKey: string, input: string | string[]): Promise<number[][]>;
     image?(model: string, apiKey: string, prompt: string, options?: any): Promise<string[]>;
@@ -108,26 +144,52 @@ export const GeminiProvider: AIProviderInstance = {
         ];
     },
 
-    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[]): Promise<string> {
+    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[], options?: ChatOptions): Promise<string> {
         const ai = new GoogleGenAI({ apiKey });
-        const contents: any[] = [prompt];
-        if (systemInstruction) contents.unshift(systemInstruction);
+        const history = normalizeHistory(options?.history);
+        const contents: any[] = history.map((turn) => ({
+            role: turn.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: turn.content }],
+        }));
 
+        const currentParts: any[] = [{ text: prompt }];
         if (images && images.length > 0) {
-            images.forEach(img => {
+            images.forEach((img) => {
                 const [meta, data] = img.split(',');
                 const mimeType = meta.split(':')[1].split(';')[0];
-                contents.push({
+                currentParts.push({
                     inlineData: { mimeType, data }
                 });
             });
         }
+        contents.push({ role: 'user', parts: currentParts });
 
-        const response = await ai.models.generateContent({
-            model,
-            contents: [{ parts: contents.map(c => typeof c === 'string' ? { text: c } : c) }]
-        });
-        return response.text || "";
+        const config: any = {};
+        if (systemInstruction) config.systemInstruction = systemInstruction;
+        if (options?.enableGoogleSearch) {
+            config.tools = [{ googleSearch: {} }];
+        }
+
+        try {
+            const response = await ai.models.generateContent({
+                model,
+                contents,
+                config: Object.keys(config).length ? config : undefined,
+            });
+            return response.text || "";
+        } catch (err) {
+            // Fallback if a legacy Gemini model rejects googleSearch tool
+            if (options?.enableGoogleSearch) {
+                delete config.tools;
+                const retry = await ai.models.generateContent({
+                    model,
+                    contents,
+                    config: Object.keys(config).length ? config : undefined,
+                });
+                return retry.text || "";
+            }
+            throw err;
+        }
     }
 };
 
@@ -180,9 +242,12 @@ export const DeepSeekProvider: AIProviderInstance = {
         ];
     },
 
-    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[]): Promise<string> {
-        const messages = [];
+    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[], options?: ChatOptions): Promise<string> {
+        const messages: any[] = [];
         if (systemInstruction) messages.push({ role: 'system', content: systemInstruction });
+        normalizeHistory(options?.history).forEach((turn) => {
+            messages.push({ role: turn.role, content: turn.content });
+        });
 
         let finalPrompt = prompt;
         if (images && images.length > 0) {
@@ -283,9 +348,12 @@ export const OpenAIProvider: AIProviderInstance = {
         ];
     },
 
-    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[]): Promise<string> {
-        const messages = [];
+    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[], options?: ChatOptions): Promise<string> {
+        const messages: any[] = [];
         if (systemInstruction) messages.push({ role: 'system', content: systemInstruction });
+        normalizeHistory(options?.history).forEach((turn) => {
+            messages.push({ role: turn.role, content: turn.content });
+        });
 
         if (images && images.length > 0) {
             const contentParts: any[] = [{ type: 'text', text: prompt }];
@@ -350,8 +418,11 @@ export const AnthropicProvider: AIProviderInstance = {
         ];
     },
 
-    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[]): Promise<string> {
-        const messages: any[] = [];
+    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[], options?: ChatOptions): Promise<string> {
+        const messages: any[] = normalizeHistory(options?.history).map((turn) => ({
+            role: turn.role,
+            content: turn.content,
+        }));
         
         if (images && images.length > 0) {
             const contentParts: any[] = [];
@@ -422,9 +493,12 @@ export const OpenRouterProvider: AIProviderInstance = {
         ];
     },
 
-    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[]): Promise<string> {
-        const messages = [];
+    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[], options?: ChatOptions): Promise<string> {
+        const messages: any[] = [];
         if (systemInstruction) messages.push({ role: 'system', content: systemInstruction });
+        normalizeHistory(options?.history).forEach((turn) => {
+            messages.push({ role: turn.role, content: turn.content });
+        });
 
         if (images && images.length > 0) {
             const contentParts: any[] = [{ type: 'text', text: prompt }];
@@ -577,11 +651,14 @@ export const SiliconFlowProvider: AIProviderInstance = {
         });
     },
 
-    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[]): Promise<string> {
-        const messages = [];
+    async chat(model: string, apiKey: string, prompt: string, systemInstruction?: string, images?: string[], options?: ChatOptions): Promise<string> {
+        const messages: any[] = [];
         if (systemInstruction) {
             messages.push({ role: 'system', content: systemInstruction });
         }
+        normalizeHistory(options?.history).forEach((turn) => {
+            messages.push({ role: turn.role, content: turn.content });
+        });
 
         if (images && images.length > 0 && model.toLowerCase().includes('vl')) {
             const contentParts: any[] = [{ type: 'text', text: prompt }];
@@ -719,14 +796,15 @@ export const aiService = {
         apiKey: string,
         prompt: string,
         systemInstruction?: string,
-        images?: string[]
+        images?: string[],
+        options?: ChatOptions
     ): Promise<string> => {
         const key = apiKey.trim();
         if (!key) throw new Error("API Key Missing");
 
         const pInstance = providersMap[provider];
         if (!pInstance) throw new Error(`Unsupported AI Provider: ${provider}`);
-        return await pInstance.chat(model, key, prompt, systemInstruction, images);
+        return await pInstance.chat(model, key, prompt, systemInstruction, images, options);
     },
 
     embeddings: async (

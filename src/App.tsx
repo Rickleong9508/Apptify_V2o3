@@ -958,6 +958,7 @@ const App: React.FC = () => {
         onClose={() => setBinggoOpen(false)}
         t={t.binggo}
         lang={lang}
+        currentApp={currentApp}
         seed={binggoSeed}
         initialMode={binggoMode}
         onSeedConsumed={() => setBinggoSeed(null)}

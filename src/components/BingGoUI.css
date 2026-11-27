@@ -172,28 +172,135 @@
 .binggo-hero__cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
 /* --------------------------------------------------------------------------
-   ASSISTANT SHEET — chat mode
+   ASSISTANT COMPANION PANEL — non-fullscreen floating card (desktop) &
+   bottom drawer (mobile), with one-click expand mode
    -------------------------------------------------------------------------- */
+
+.binggo-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 68;
+  background: rgba(10, 10, 11, 0.28);
+  backdrop-filter: blur(4px);
+  animation: binggo-fade-in 220ms ease both;
+}
+
+@keyframes binggo-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 .binggo-sheet {
   position: fixed;
-  inset: 0;
+  right: calc(var(--gutter-x, 24px) + env(safe-area-inset-right, 0px));
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  height: min(640px, calc(100vh - 128px));
   z-index: 70;
   display: flex;
   flex-direction: column;
   background: #fff;
-  animation: binggo-sheet-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  border-radius: 28px;
+  border: 1px solid rgba(10, 10, 11, 0.13);
+  box-shadow: 0 24px 64px -20px rgba(10, 10, 11, 0.34),
+              0 4px 16px -4px rgba(10, 10, 11, 0.12);
+  overflow: hidden;
+  transform-origin: bottom right;
+  animation: binggo-sheet-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.binggo-sheet--expanded {
+  right: auto;
+  bottom: auto;
+  top: 50%;
+  left: 50%;
+  width: min(860px, calc(100vw - 48px));
+  height: min(86vh, 840px);
+  transform-origin: center center;
+  animation: binggo-sheet-expand 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes binggo-sheet-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.99); }
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.binggo-sheet--closing { animation: binggo-sheet-out 260ms cubic-bezier(0.4, 0, 1, 1) both; }
+@keyframes binggo-sheet-expand {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.binggo-sheet--closing { animation: binggo-sheet-out 220ms cubic-bezier(0.4, 0, 1, 1) both; }
+.binggo-sheet--expanded.binggo-sheet--closing { animation: binggo-sheet-expand-out 200ms cubic-bezier(0.4, 0, 1, 1) both; }
 
 @keyframes binggo-sheet-out {
-  to { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 0; transform: translateY(12px) scale(0.96); }
+}
+
+@keyframes binggo-sheet-expand-out {
+  to { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+}
+
+/* Mobile: sleek 78vh bottom drawer instead of a harsh fullscreen takeover */
+@media (max-width: 639px) {
+  .binggo-sheet {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 78vh;
+    max-height: 84vh;
+    border-radius: 28px 28px 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    box-shadow: 0 -16px 48px -12px rgba(10, 10, 11, 0.28);
+    transform-origin: bottom center;
+  }
+
+  .binggo-sheet--expanded {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 95vh;
+    max-height: 95vh;
+    border-radius: 22px 22px 0 0;
+    animation: binggo-sheet-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .binggo-sheet--expanded.binggo-sheet--closing {
+    animation: binggo-sheet-out 200ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+}
+
+.binggo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(10, 10, 11, 0.12);
+  background: rgba(10, 10, 11, 0.025);
+  color: #0a0a0b;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.binggo-chip:hover {
+  background: rgba(38, 0, 253, 0.06);
+  border-color: rgba(38, 0, 253, 0.35);
+  color: #2600fd;
+}
+
+.binggo-chip:active {
+  transform: scale(0.96);
 }
 
 .binggo-live {

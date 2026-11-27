@@ -30,8 +30,10 @@ export const loadMyWealthData = () => {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
+        ...parsed,
         accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [],
         monthlyData: parsed.monthlyData || { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) },
+        fixedExpenses: Array.isArray(parsed.fixedExpenses) ? parsed.fixedExpenses : [],
         budgetHistory: Array.isArray(parsed.budgetHistory) ? parsed.budgetHistory : [],
         loans: Array.isArray(parsed.loans) ? parsed.loans : [],
         stocks: Array.isArray(parsed.stocks) ? parsed.stocks : [],
@@ -43,11 +45,9 @@ export const loadMyWealthData = () => {
     console.error('Failed to load MyWealth data:', e);
   }
   return {
-    accounts: [
-      { id: 'acc-1', name: 'Maybank', balance: 5000, reservations: [], history: [] },
-      { id: 'acc-2', name: 'Cash Wallet', balance: 500, reservations: [], history: [] }
-    ],
+    accounts: [],
     monthlyData: { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) },
+    fixedExpenses: [],
     budgetHistory: [],
     loans: [],
     stocks: [],
@@ -57,7 +57,11 @@ export const loadMyWealthData = () => {
 };
 
 export const saveMyWealthData = (data: any) => {
-  localStorage.setItem(MYWEALTH_STORAGE_KEY, JSON.stringify(data));
+  const payload = {
+    ...data,
+    lastUpdated: new Date().toISOString(),
+  };
+  localStorage.setItem(MYWEALTH_STORAGE_KEY, JSON.stringify(payload));
   window.dispatchEvent(new Event('apptify_data_changed'));
   window.dispatchEvent(new Event('storage'));
 };
@@ -117,7 +121,8 @@ export const computeAppMetrics = () => {
       available: Math.max(0, bal - reserved),
       reservations: reservations.map((r: any) => ({ reason: r.reason, amount: Number(r.amount) || 0 })),
       interestRate: a.interestRate || 0,
-      recentHistory: Array.isArray(a.history) ? a.history.slice(0, 5) : [],
+      recentHistory: Array.isArray(a.history) ? a.history.slice(0, 15) : [],
+      fullHistory: Array.isArray(a.history) ? a.history : [],
     };
   });
 
@@ -175,26 +180,89 @@ export const computeAppMetrics = () => {
   const totalDebt = loanSummaries.reduce((s: number, l: any) => s + l.remainingAmount, 0);
   const totalMonthlyLoanPayment = loanSummaries.reduce((s: number, l: any) => s + l.monthlyPayment, 0);
 
-  // Monthly Budget & Expenses
+  // Monthly Budget & Expenses (combine mw.fixedExpenses + mw.monthlyData.expenses cleanly)
   const monthlyIncome = Number(mw.monthlyData?.income) || 0;
-  const expenses = Array.isArray(mw.monthlyData?.expenses) ? mw.monthlyData.expenses : [];
-  const fixedExpenses = expenses.filter((e: any) => e.isFixed);
-  const variableExpenses = expenses.filter((e: any) => !e.isFixed);
+  const rawFixed = Array.isArray(mw.fixedExpenses) ? mw.fixedExpenses : [];
+  const rawVariable = Array.isArray(mw.monthlyData?.expenses) ? mw.monthlyData.expenses : [];
+  const seenExpenseIds = new Set<string>();
+  const allExpenses: any[] = [];
+  for (const e of [...rawFixed.map((x: any) => ({ ...x, isFixed: true })), ...rawVariable]) {
+    const key = e.id || `${e.name}-${e.amount}-${e.isFixed}`;
+    if (!seenExpenseIds.has(key)) {
+      seenExpenseIds.add(key);
+      allExpenses.push(e);
+    }
+  }
+  const fixedExpenses = allExpenses.filter((e: any) => e.isFixed);
+  const variableExpenses = allExpenses.filter((e: any) => !e.isFixed);
   const totalFixedExpenses = fixedExpenses.reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0);
   const totalVariableExpenses = variableExpenses.reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0);
-  const totalMonthlyExpenses = totalFixedExpenses + totalVariableExpenses + totalMonthlyLoanPayment;
+  const totalMonthlyExpenses = totalFixedExpenses + totalVariableExpenses;
 
   const categoryTotals: Record<string, number> = {};
-  expenses.forEach((e: any) => {
+  allExpenses.forEach((e: any) => {
     const cat = e.category || 'Other';
     categoryTotals[cat] = (categoryTotals[cat] || 0) + (Number(e.amount) || 0);
   });
-  if (totalMonthlyLoanPayment > 0) {
-    categoryTotals['Loan'] = (categoryTotals['Loan'] || 0) + totalMonthlyLoanPayment;
-  }
 
   const netMonthlySurplus = monthlyIncome - totalMonthlyExpenses;
   const savingsRatePct = monthlyIncome > 0 ? Math.round((netMonthlySurplus / monthlyIncome) * 100) : 0;
+
+  // Monthly Reconciliation across up to 12 months (matching Overview -> Monthly Reconciliation)
+  const monthSet = new Set<string>();
+  if (mw.monthlyData?.targetDate) monthSet.add(mw.monthlyData.targetDate);
+  (mw.budgetHistory || []).forEach((h: any) => { if (h?.month) monthSet.add(h.month); });
+  (mw.accounts || []).forEach((a: any) => {
+    (a.history || []).forEach((tx: any) => { if (tx?.date) monthSet.add(String(tx.date).slice(0, 7)); });
+  });
+  const sortedMonths = Array.from(monthSet).sort((a, b) => b.localeCompare(a)).slice(0, 12);
+  const monthlyReconciliation = sortedMonths.map((month) => {
+    let walletIn = 0;
+    let walletOut = 0;
+    let futureNet = 0;
+    (mw.accounts || []).forEach((a: any) => {
+      (a.history || []).forEach((tx: any) => {
+        if (!tx?.date) return;
+        const txMonth = String(tx.date).slice(0, 7);
+        const amt = Number(tx.amount) || 0;
+        if (txMonth === month) {
+          if (tx.type === 'IN') walletIn += amt;
+          else if (tx.type === 'OUT') walletOut += amt;
+        } else if (txMonth > month) {
+          futureNet += tx.type === 'IN' ? amt : -amt;
+        }
+      });
+    });
+    const walletClosing = Number((totalCash - futureNet).toFixed(2));
+    const walletOpening = Number((walletClosing - walletIn + walletOut).toFixed(2));
+    let budgetIn = 0;
+    let budgetOut = 0;
+    if (mw.monthlyData?.targetDate === month) {
+      budgetIn = monthlyIncome;
+      budgetOut = totalMonthlyExpenses;
+    } else {
+      const h = (mw.budgetHistory || []).find((x: any) => x.month === month);
+      if (h) {
+        budgetIn = Number(h.income) || 0;
+        budgetOut = Number(h.totalExpenses) || 0;
+      }
+    }
+    const budgetRemaining = Number((budgetIn - budgetOut).toFixed(2));
+    const totalSpent = Number((budgetOut + walletOut).toFixed(2));
+    return {
+      month,
+      walletIn: Number(walletIn.toFixed(2)),
+      walletOut: Number(walletOut.toFixed(2)),
+      walletOpening,
+      walletClosing,
+      budgetIn,
+      budgetOut: Number(budgetOut.toFixed(2)),
+      budgetRemaining,
+      budgetPlusWallets: Number((budgetRemaining + walletClosing).toFixed(2)),
+      totalSpent,
+      projectionNet: Number((walletIn - totalSpent).toFixed(2)),
+    };
+  });
 
   const grossNetWorth = totalCash + totalInvestmentMyr;
   const netWorthAfterDebt = grossNetWorth - totalDebt;
@@ -218,8 +286,11 @@ export const computeAppMetrics = () => {
     totalMonthlyExpenses,
     netMonthlySurplus,
     savingsRatePct,
-    expenses,
+    expenses: allExpenses,
+    fixedExpenses,
+    variableExpenses,
     categoryTotals,
+    monthlyReconciliation,
     loanSummaries,
     totalDebt,
     stockSummaries,
@@ -236,29 +307,100 @@ export const computeAppMetrics = () => {
 };
 
 /**
+ * Deeply search across ALL Apptify data (transactions, budget items & sub-items,
+ * monthly reconciliation history, loans, stocks, NoteDown notes & tasks).
+ */
+export const searchAppData = (query: string) => {
+  const m = computeAppMetrics();
+  const q = (query || '').trim().toLowerCase();
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const matches = (text: string) => {
+    if (!q) return true;
+    const hay = (text || '').toLowerCase();
+    return hay.includes(q) || (tokens.length > 1 && tokens.every((tok) => hay.includes(tok)));
+  };
+
+  const matchedTransactions: any[] = [];
+  m.walletSummaries.forEach((w: any) => {
+    (w.fullHistory || []).forEach((tx: any) => {
+      const hay = `${w.name} ${tx.description || ''} ${tx.type || ''} ${tx.date || ''} ${tx.amount}`;
+      if (matches(hay)) {
+        matchedTransactions.push({
+          wallet: w.name,
+          date: String(tx.date || '').slice(0, 10),
+          type: tx.type,
+          amount: Number(tx.amount) || 0,
+          description: tx.description || '',
+        });
+      }
+    });
+  });
+
+  const matchedExpenses = m.expenses.filter((e: any) => {
+    const subText = Array.isArray(e.subItems)
+      ? e.subItems.map((s: any) => `${s.label} ${s.type} ${s.amount}`).join(' ')
+      : '';
+    return matches(`${e.name} ${e.category} ${e.isFixed ? 'fixed recurring 固定' : 'variable one-time 浮动'} ${e.amount} ${subText}`);
+  });
+
+  const matchedMonths = m.monthlyReconciliation.filter((r: any) => matches(r.month));
+
+  const matchedNotes = m.notes.filter((n: any) =>
+    matches(`${n.title || ''} ${n.content || ''} ${n.category || ''} ${n.tag || ''}`)
+  );
+
+  const matchedTasks = [...m.pendingTasks, ...m.completedTasks].filter((t: any) =>
+    matches(`${t.title || ''} ${t.priority || ''} ${t.dueDate || ''} ${t.completed ? 'completed 已完成' : 'pending 待办'}`)
+  );
+
+  const matchedLoans = m.loanSummaries.filter((l: any) => matches(l.name));
+  const matchedStocks = m.stockSummaries.filter((s: any) => matches(`${s.symbol} ${s.name} ${s.currency}`));
+
+  return {
+    query,
+    matchedTransactions: matchedTransactions.slice(0, 20),
+    matchedExpenses: matchedExpenses.slice(0, 20),
+    matchedMonths: matchedMonths.slice(0, 12),
+    matchedNotes: matchedNotes.slice(0, 12).map((n: any) => ({
+      title: n.title,
+      category: n.category || n.tag || 'note',
+      pinned: !!n.pinned,
+      content: String(n.content || '').slice(0, 500),
+      updatedAt: n.updatedAt,
+    })),
+    matchedTasks: matchedTasks.slice(0, 15),
+    matchedLoans,
+    matchedStocks,
+  };
+};
+
+/**
  * Builds the complete App Knowledge + Live Data Snapshot for BingGo's System Prompt.
  */
-export const buildFullAppContextSnapshot = (lang: 'en' | 'zh' = 'zh'): string => {
+export const buildFullAppContextSnapshot = (lang: 'en' | 'zh' = 'zh', currentApp: string = 'launcher'): string => {
   const m = computeAppMetrics();
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   return `
 === APPTIFY MODULE & FEATURE MAP (YOU KNOW EVERY FEATURE INSIDE OUT) ===
+Today's Date: ${todayStr}
+Current Active Screen: ${currentApp}
 1. MyWealth (资产中心 - target: "mywealth"):
-   - Overview (概览): Net Worth (Cash + Investments), Asset Allocation, Cash Flow summary, AI Financial Insights.
+   - Overview (概览): Net Worth (Cash + Investments, excl. loans), Asset Allocation, Monthly Cash Pulse, and Monthly Reconciliation (Actual Cash Flow: Wallet Cash In & Opening, Budget Left + Total Wallets Cash, Total Spent & Wallet Out; Budget Projection: Cash into Wallets vs Budget + Wallets Spend, with 12-month horizontally scrollable bar charts).
    - Wallets (钱包账户): Multi-account balances, earmarked Reservations (预留冻结资金), Interest rates, Transaction history (IN/OUT/Transfer).
-   - Budget (月度预算): Monthly Income setting, 50/30/20 allocation rule, Fixed Bills vs Variable Expenses, Category breakdown (Self Maintenance, Family Expenses, Loan, Saving, Other).
+   - Budget (月度预算): Expected Monthly Income, Fixed Recurring Bills & Variable Expenses, Click-to-Edit Modal with Itemized Outflow/Inflow Sub-Items (细分明细出账/进账自动汇总，最低归零), Projected Surplus (60/40 Investment/Emergency split), and Expense Breakdown Pie Chart with Category % Legend.
    - Loans (借贷负债): Mortgage/Car/Personal loans tracking, total principal, remaining balance, monthly installment, remaining months, one-click repayment.
-   - Investments (投资组合): Multi-currency Stocks (MYR & USD) with live P&L and valuation scenarios, plus Multi-currency Investment Cash Pool (MYR, USD, HKD) and custom FX rates.
+   - Investments (投资组合): Multi-currency Stocks (MYR & USD) with live P&L & AI Valuation, plus Multi-currency Investment Cash Pool (MYR, USD, HKD) and custom FX rates.
 2. NoteDown (便签与待办工作台 - target: "knowledgevault"):
-   - Quick Notes (灵感便签): Categorized notes (work, idea, meeting, life), Pinning (置顶), keyword search, full markdown/text editing.
-   - Action Tasks (待办清单): Todo items with Priority (high, medium, low), Due Dates (YYYY-MM-DD), completion tracking, batch clear completed.
-   - Focus Pomodoro (专注计时器): 25-min work / 5-min break timer for deep work sessions.
+   - Quick Notes (灵感便签): Categorized notes (work, idea, meeting, life), Pinning (置顶), keyword search, full editing.
+   - Action Tasks (待办清单): Todo items with Priority (high, medium, low), Due Dates (YYYY-MM-DD), completion tracking, clear completed.
+   - Focus Pomodoro (专注计时器): 25-min work / 5-min break timer.
 3. NewsHub (全球科技与财经雷达 - target: "newshub"):
    - Live curated feeds across AI Infra, Chips, Macro Markets, and Fintech with AI summarization.
 4. System Settings & Cloud Sync (系统设置 - target: "settings"):
-   - Multi-provider AI Model switching (Google Gemini, DeepSeek, OpenAI, Anthropic, OpenRouter, SiliconFlow), Bilingual switch (中文/EN), Google Drive Backup & Sync.
+   - Multi-provider AI Model switching (Google Gemini, DeepSeek, OpenAI, Anthropic, OpenRouter, SiliconFlow), Bilingual UI switch (EN/中), JSON Export/Restore Backup, and Google Drive Sync.
 
-=== LIVE USER DATA SNAPSHOT (REAL-TIME) ===
+=== LIVE USER DATA SNAPSHOT (REAL-TIME, 100% ACCURATE) ===
 [WEALTH SUMMARY]
 - Gross Net Worth (Cash + Investments): RM ${m.grossNetWorth.toFixed(2)}
 - Net Worth After Debt: RM ${m.netWorthAfterDebt.toFixed(2)}
@@ -273,15 +415,24 @@ ${JSON.stringify(m.walletSummaries.map((w: any) => ({
   available: w.available,
   reserved: w.reserved,
   reservations: w.reservations,
-  recentTx: w.recentHistory.slice(0, 3).map((h: any) => `${h.type} RM${h.amount} (${h.description})`),
+  recentTx: w.recentHistory.slice(0, 8).map((h: any) => `${String(h.date || '').slice(0, 10)} ${h.type} RM${h.amount} (${h.description})`),
 })))}
 
 [MONTHLY BUDGET & CASHFLOW]
 - Monthly Income: RM ${m.monthlyIncome.toFixed(2)}
-- Total Monthly Outflow: RM ${m.totalMonthlyExpenses.toFixed(2)} (Fixed: RM ${m.totalFixedExpenses.toFixed(2)}, Variable: RM ${m.totalVariableExpenses.toFixed(2)}, Loans: RM ${m.totalMonthlyLoanPayment.toFixed(2)})
-- Monthly Net Surplus: RM ${m.netMonthlySurplus.toFixed(2)} (Savings Rate: ${m.savingsRatePct}%)
+- Total Monthly Budget Outflow: RM ${m.totalMonthlyExpenses.toFixed(2)} (Fixed Bills: RM ${m.totalFixedExpenses.toFixed(2)}, Variable Expenses: RM ${m.totalVariableExpenses.toFixed(2)})
+- Monthly Net Surplus (Budget Left): RM ${m.netMonthlySurplus.toFixed(2)} (Savings Rate: ${m.savingsRatePct}%)
 - Category Breakdown: ${JSON.stringify(m.categoryTotals)}
-- Expense Items (${m.expenses.length}): ${JSON.stringify(m.expenses.map((e: any) => ({ name: e.name, amount: e.amount, category: e.category, isFixed: e.isFixed })))}
+- All Budget Items (${m.expenses.length}): ${JSON.stringify(m.expenses.map((e: any) => ({
+  name: e.name,
+  amount: e.amount,
+  category: e.category,
+  isFixed: !!e.isFixed,
+  ...(Array.isArray(e.subItems) && e.subItems.length > 0 ? { subItems: e.subItems.map((s: any) => ({ label: s.label, type: s.type, amount: s.amount })) } : {}),
+})))}
+
+[MONTHLY RECONCILIATION HISTORY (UP TO 12 MONTHS)]
+${JSON.stringify(m.monthlyReconciliation)}
 
 [LOANS (${m.loanSummaries.length})]
 ${JSON.stringify(m.loanSummaries)}
@@ -293,14 +444,14 @@ ${JSON.stringify(m.loanSummaries)}
 
 [NOTEDOWN TASKS (Pending: ${m.pendingTasks.length}, Completed: ${m.completedTasks.length})]
 - Pending Tasks: ${JSON.stringify(m.pendingTasks.map((t: any) => ({ title: t.title, priority: t.priority, dueDate: t.dueDate || 'none' })))}
-- Completed Tasks: ${JSON.stringify(m.completedTasks.slice(0, 8).map((t: any) => t.title))}
+- Completed Tasks: ${JSON.stringify(m.completedTasks.slice(0, 10).map((t: any) => t.title))}
 
 [NOTEDOWN NOTES (${m.notes.length})]
-${JSON.stringify(m.notes.slice(0, 12).map((n: any) => ({
+${JSON.stringify(m.notes.slice(0, 20).map((n: any) => ({
   title: n.title,
   category: n.category || n.tag || 'work',
   pinned: !!n.pinned,
-  contentPreview: String(n.content || '').slice(0, 160),
+  content: String(n.content || '').slice(0, 400),
 })))}
 `.trim();
 };
@@ -328,8 +479,8 @@ ${skillsDocumentation}
 `;
 };
 
-export const executeAction = async (intent: string, data: any): Promise<ExecutionResponse> => {
-  const lang = getStoredLanguage();
+export const executeAction = async (intent: string, data: any, overrideLang?: 'en' | 'zh'): Promise<ExecutionResponse> => {
+  const lang = overrideLang || getStoredLanguage();
   const isZh = lang === 'zh';
   const normalizedIntent = (intent || '').toUpperCase().trim();
 
@@ -340,7 +491,7 @@ export const executeAction = async (intent: string, data: any): Promise<Executio
     let navigateTarget: string | undefined;
     for (const act of data.actions) {
       if (!act?.intent) continue;
-      const res = await executeAction(act.intent, act.data || {});
+      const res = await executeAction(act.intent, act.data || {}, lang);
       messages.push(res.message);
       if (res.result?.details) details.push(...res.result.details);
       if (res.navigateTarget) navigateTarget = res.navigateTarget;
@@ -721,15 +872,22 @@ export const executeAction = async (intent: string, data: any): Promise<Executio
       const category = data?.category || 'Self Maintenance';
       const isFixed = data?.isFixed !== undefined ? Boolean(data.isFixed) : true;
 
-      if (!mw.monthlyData) mw.monthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
-      if (!Array.isArray(mw.monthlyData.expenses)) mw.monthlyData.expenses = [];
-      mw.monthlyData.expenses.push({
+      const entry = {
         id: `exp-${Date.now()}`,
         name,
         amount,
         category,
         isFixed,
-      });
+      };
+
+      if (isFixed) {
+        if (!Array.isArray(mw.fixedExpenses)) mw.fixedExpenses = [];
+        mw.fixedExpenses.push(entry);
+      } else {
+        if (!mw.monthlyData) mw.monthlyData = { income: 0, expenses: [], targetDate: new Date().toISOString().slice(0, 7) };
+        if (!Array.isArray(mw.monthlyData.expenses)) mw.monthlyData.expenses = [];
+        mw.monthlyData.expenses.push(entry);
+      }
       saveMyWealthData(mw);
 
       return {
@@ -751,8 +909,11 @@ export const executeAction = async (intent: string, data: any): Promise<Executio
     case 'UPDATE_BUDGET': {
       const mw = loadMyWealthData();
       const targetName = (data?.name || '').trim().toLowerCase();
-      const expenses = mw.monthlyData?.expenses || [];
-      const item = expenses.find((e: any) => String(e.name || '').toLowerCase().includes(targetName));
+      const fixedList = Array.isArray(mw.fixedExpenses) ? mw.fixedExpenses : [];
+      const varList = Array.isArray(mw.monthlyData?.expenses) ? mw.monthlyData.expenses : [];
+      const item =
+        fixedList.find((e: any) => String(e.name || '').toLowerCase().includes(targetName)) ||
+        varList.find((e: any) => String(e.name || '').toLowerCase().includes(targetName));
       if (!item) {
         return { message: isZh ? `未在月度预算中找到「${data?.name || ''}」。` : `Budget item "${data?.name || ''}" not found.` };
       }
@@ -774,12 +935,19 @@ export const executeAction = async (intent: string, data: any): Promise<Executio
     case 'DELETE_BUDGET': {
       const mw = loadMyWealthData();
       const targetName = (data?.name || '').trim().toLowerCase();
-      const expenses = mw.monthlyData?.expenses || [];
-      const idx = expenses.findIndex((e: any) => String(e.name || '').toLowerCase().includes(targetName));
-      if (idx === -1) {
+      const fixedList = Array.isArray(mw.fixedExpenses) ? mw.fixedExpenses : [];
+      const varList = Array.isArray(mw.monthlyData?.expenses) ? mw.monthlyData.expenses : [];
+      let removed: any = null;
+      const fixedIdx = fixedList.findIndex((e: any) => String(e.name || '').toLowerCase().includes(targetName));
+      if (fixedIdx !== -1) {
+        [removed] = fixedList.splice(fixedIdx, 1);
+      } else {
+        const varIdx = varList.findIndex((e: any) => String(e.name || '').toLowerCase().includes(targetName));
+        if (varIdx !== -1) [removed] = varList.splice(varIdx, 1);
+      }
+      if (!removed) {
         return { message: isZh ? `未在月度预算中找到「${data?.name || ''}」。` : `Budget item "${data?.name || ''}" not found.` };
       }
-      const [removed] = expenses.splice(idx, 1);
       saveMyWealthData(mw);
       return {
         message: isZh ? `已从月度预算中删除「${removed.name}」（RM ${Number(removed.amount).toFixed(2)}）。` : `Removed "${removed.name}" (RM ${Number(removed.amount).toFixed(2)}) from monthly budget.`,
@@ -1398,6 +1566,45 @@ export const executeAction = async (intent: string, data: any): Promise<Executio
       };
     }
 
+    case 'SEARCH_APP_DATA': {
+      const q = String(data?.query || '').trim();
+      const found = searchAppData(q);
+      const totalHits =
+        found.matchedTransactions.length +
+        found.matchedExpenses.length +
+        found.matchedMonths.length +
+        found.matchedNotes.length +
+        found.matchedTasks.length +
+        found.matchedLoans.length +
+        found.matchedStocks.length;
+
+      const details: string[] = [];
+      found.matchedExpenses.slice(0, 4).forEach((e: any) => {
+        details.push(`${isZh ? '预算' : 'Budget'}: ${e.name} — RM ${Number(e.amount).toFixed(2)} (${e.category})`);
+      });
+      found.matchedTransactions.slice(0, 4).forEach((tx: any) => {
+        details.push(`${tx.date} [${tx.wallet}] ${tx.type} RM ${tx.amount.toFixed(2)} · ${tx.description}`);
+      });
+      found.matchedNotes.slice(0, 3).forEach((n: any) => {
+        details.push(`${isZh ? '笔记' : 'Note'}: ${n.title}`);
+      });
+      found.matchedTasks.slice(0, 3).forEach((t: any) => {
+        details.push(`${isZh ? '待办' : 'Task'}: ${t.title} (${t.completed ? 'Done' : 'Pending'})`);
+      });
+
+      return {
+        message: isZh
+          ? `在 Apptify 中共找到 ${totalHits} 条与「${q}」相关的记录。`
+          : `Found ${totalHits} matching record(s) across Apptify for "${q}".`,
+        result: {
+          type: 'system',
+          badge: isZh ? '应用数据检索' : 'APP DATA SEARCH',
+          title: isZh ? `匹配结果 (${totalHits})` : `Matches (${totalHits})`,
+          details: details.length ? details.slice(0, 8) : [isZh ? '未找到匹配记录' : 'No matching records found'],
+        },
+      };
+    }
+
     case 'NAVIGATE': {
       const target = (data?.target || 'launcher').toLowerCase();
       return {
@@ -1419,9 +1626,9 @@ export const executeAction = async (intent: string, data: any): Promise<Executio
   }
 };
 
-export const tryLocalRuleParser = (input: string): LocalParseResult | null => {
+export const tryLocalRuleParser = (input: string, overrideLang?: 'en' | 'zh'): LocalParseResult | null => {
   const text = input.trim();
-  const isZh = getStoredLanguage() === 'zh';
+  const isZh = overrideLang ? overrideLang === 'zh' : /[\u4e00-\u9fff]/.test(text);
 
   // 0. Deep Butler Analysis: "分析我的财务" / "管家体检" / "全面分析"
   if (/^(?:帮我)?(?:全面)?(?:分析|诊断|盘点|体检)(?:一下)?(?:我的)?(?:财务|资产|数据|开销|消费|app|全部数据|账目)/i.test(text) || /^analyze\s+(?:my\s+)?(?:finances?|data|wealth|spending|app)/i.test(text)) {
