@@ -843,11 +843,11 @@ const MyWealthApp: React.FC<MyWealthAppProps> = ({ onExit }) => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] overflow-hidden bg-transparent text-gray-900 dark:text-gray-100 font-sans relative">
+    <div className="flex min-h-full bg-transparent text-gray-900 dark:text-gray-100 font-sans relative">
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full h-full overflow-y-auto relative scroll-smooth">
-        <div className="max-w-5xl mx-auto px-gutter pt-4 pb-36">
+      <main className="flex-1 w-full relative">
+        <div className="max-w-5xl mx-auto px-gutter pt-4 pb-12">
 
           {/* Minimal Header Sync Status */}
           <div className="flex items-center justify-between mb-4 sm:mb-6 animate-fade-in-down">
